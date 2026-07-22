@@ -38,9 +38,9 @@ export default function ProfileScreen() {
     : "U";
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.bg }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={["top"]}>
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
@@ -50,51 +50,43 @@ export default function ProfileScreen() {
           locations={[0, 0.46, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0.15 }}
-          className="overflow-hidden pb-10 pt-5"
+          style={{ overflow: "hidden", paddingBottom: 40, paddingTop: 20 }}
         >
           <Text
-            className="mb-5 px-6 text-left text-base font-extrabold text-white"
-            style={{ fontFamily: "Urbanist_800ExtraBold" }}
+            style={{ marginBottom: 20, paddingHorizontal: 24, textAlign: "left", fontSize: 16, fontWeight: "800", color: "#fff", fontFamily: "Urbanist_800ExtraBold" }}
           >
             My Profile
           </Text>
           {/* Avatar */}
-          <View className="flex-row items-center gap-4 px-6">
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 16, paddingHorizontal: 24 }}>
             {/* Avatar */}
-            <View className="relative">
-              <View
-                className="h-[72px] w-[72px] items-center justify-center rounded-full border-[3px] border-white/45 bg-white/20"
-              >
+            <View style={{ position: "relative" }}>
+              <View style={{ height: 72, width: 72, alignItems: "center", justifyContent: "center", borderRadius: 999, borderWidth: 3, borderColor: "rgba(255,255,255,0.45)", backgroundColor: "rgba(255,255,255,0.2)" }}>
                 <Text
-                  className="text-[26px] font-extrabold text-white"
-                  style={{ fontFamily: "Urbanist_800ExtraBold" }}
+                  style={{ fontSize: 26, fontWeight: "800", color: "#fff", fontFamily: "Urbanist_800ExtraBold" }}
                 >
                   {initials}
                 </Text>
               </View>
               {/* Edit button */}
-              <View
-                className="absolute bottom-0 right-0 h-6 w-6 items-center justify-center rounded-full border-2 border-white"
-                style={{ backgroundColor: Colors.orange }}
-              >
+              <View style={{ position: "absolute", bottom: 0, right: 0, height: 24, width: 24, alignItems: "center", justifyContent: "center", borderRadius: 999, borderWidth: 2, borderColor: "#fff", backgroundColor: Colors.orange }}>
                 <Pencil size={11} color="#fff" strokeWidth={2.5} />
               </View>
             </View>
             {/* Details */}
-            <View className="flex-1 gap-0.5">
-              <View className="flex-row items-center gap-1.5">
+            <View style={{ flex: 1, gap: 2 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <Text
-                  className="text-lg font-extrabold text-white"
-                  style={{ fontFamily: "Urbanist_800ExtraBold" }}
+                  style={{ fontSize: 18, fontWeight: "800", color: "#fff", fontFamily: "Urbanist_800ExtraBold" }}
                 >
                   {user?.name ?? "User"}
                 </Text>
                 <BadgeCheck size={17} color={Colors.orange} />
               </View>
-              <Text className="text-[13px] font-semibold text-white/85">
+              <Text style={{ fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.85)" }}>
                 {user?.phone ?? "+233 00 000 0000"}
               </Text>
-              <Text className="text-xs text-white/65">
+              <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.65)" }}>
                 {user?.email ?? "user@mpay.com"}
               </Text>
             </View>
@@ -146,7 +138,7 @@ export default function ProfileScreen() {
         </LinearGradient>
 
         {/* Sections */}
-        <View className="mt-5 gap-5 px-5">
+        <View style={{ marginTop: 20, gap: 20, paddingHorizontal: 20 }}>
           {MOCK_PROFILE_SECTIONS.map((section) => (
             <View key={section.title}>
               <Text
@@ -175,15 +167,12 @@ export default function ProfileScreen() {
                     <TouchableOpacity
                       accessibilityRole="button"
                       accessibilityLabel={item.label}
-                      className="flex-row items-center gap-3 px-4 py-3.5"
+                      style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14 }}
                     >
-                      <View
-                        className="h-9 w-9 items-center justify-center rounded-xl"
-                        style={{ backgroundColor: item.bg }}
-                      >
+                      <View style={{ height: 36, width: 36, alignItems: "center", justifyContent: "center", borderRadius: 12, backgroundColor: item.bg }}>
                         <Icon name={item.iconName} size={17} color={item.color} />
                       </View>
-                      <Text className="flex-1 text-sm font-semibold" style={{ color: Colors.navy }}>
+                      <Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: Colors.navy }}>
                         {item.label}
                       </Text>
                       {item.badge ? (
@@ -220,7 +209,7 @@ export default function ProfileScreen() {
                       )}
                     </TouchableOpacity>
                     {i < section.items.length - 1 && (
-                      <View className="mx-4 h-px" style={{ backgroundColor: Colors.divider }} />
+                      <View style={{ marginHorizontal: 16, height: 1, backgroundColor: Colors.divider }} />
                     )}
                   </View>
                 ))}
@@ -233,13 +222,13 @@ export default function ProfileScreen() {
             onPress={handleLogout}
             accessibilityRole="button"
             accessibilityLabel="Sign out"
-            className="mt-1 flex-row items-center justify-center gap-2.5 rounded-2xl border-[1.5px] border-[#E8334A24] bg-[#E8334A12] py-4"
+            style={{ marginTop: 4, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 16, borderWidth: 1.5, borderColor: "#E8334A24", backgroundColor: "#E8334A12", paddingVertical: 16 }}
           >
             <LogOut size={17} color={Colors.red} />
-            <Text className="text-sm font-bold" style={{ color: Colors.red }}>Sign Out</Text>
+            <Text style={{ fontSize: 14, fontWeight: "700", color: Colors.red }}>Sign Out</Text>
           </TouchableOpacity>
 
-          <Text className="mt-1 text-center text-[10px]" style={{ color: Colors.pale }}>
+          <Text style={{ marginTop: 4, textAlign: "center", fontSize: 10, color: Colors.pale }}>
             M-Pay v1.0.0 · © 2025 M-Pay Inc.
           </Text>
         </View>

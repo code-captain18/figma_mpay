@@ -25,16 +25,14 @@ export default function HomeScreen() {
   const displayName = user?.name.split(" ")[0] ?? "there";
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.bg }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={["top"]}>
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View
-          className="flex-row items-center justify-between px-6 pb-3.5 pt-2.5"
-        >
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingBottom: 14, paddingTop: 10 }}>
           <View>
             <Text style={{ fontSize: 13, fontWeight: "500", color: "#7E95B7" }}>
               Good afternoon,
@@ -43,7 +41,7 @@ export default function HomeScreen() {
               {displayName} 👋
             </Text>
           </View>
-          <View className="flex-row items-center gap-2">
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="Notifications"
@@ -78,7 +76,7 @@ export default function HomeScreen() {
               colors={[Colors.gradientStart, Colors.gradientEnd]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              className="h-12 w-12 items-center justify-center rounded-full"
+              style={{ height: 48, width: 48, alignItems: "center", justifyContent: "center", borderRadius: 999 }}
             >
               <Text style={{ fontSize: 18, fontWeight: "700", color: "#fff" }}>
                 {displayName[0].toUpperCase()}
@@ -166,7 +164,7 @@ export default function HomeScreen() {
             <Text style={{ fontSize: 16 / 2, color: "rgba(255,255,255,0.58)", marginBottom: 26 }}>
               {MOCK_WALLETS[activeWallet].sub}
             </Text>
-            <View className="flex-row items-center gap-2">
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               {MOCK_WALLETS.map((_, i) => (
                 <TouchableOpacity
                   key={i}
@@ -212,11 +210,10 @@ export default function HomeScreen() {
                   }}
                   accessibilityRole="button"
                   accessibilityLabel={action.label}
-                  className="flex-1 items-center gap-[9px] rounded-2xl py-3.5"
-                  style={{ backgroundColor: action.bg }}
+                  style={{ flex: 1, alignItems: "center", gap: 9, borderRadius: 16, paddingVertical: 14, backgroundColor: action.bg }}
                 >
                   <Icon name={action.iconName} size={22} color={action.color} />
-                  <Text className="text-center text-[11px] font-semibold" style={{ color: Colors.mid }}>
+                  <Text style={{ textAlign: "center", fontSize: 11, fontWeight: "600", color: Colors.mid }}>
                     {action.label}
                   </Text>
                 </TouchableOpacity>
@@ -241,7 +238,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="View all sales"
-              className="flex-row items-center gap-0.5"
+              style={{ flexDirection: "row", alignItems: "center", gap: 2 }}
             >
               <Text style={{ fontSize: 14 / 1.2, fontWeight: "600", color: Colors.blue }}>View all</Text>
               <ChevronRight size={15} color={Colors.blue} />
@@ -263,10 +260,7 @@ export default function HomeScreen() {
                   ...shadowStyle(0.04, 8),
                 }}
               >
-                <View
-                  className="mb-2.5 h-10 w-10 items-center justify-center rounded-full"
-                  style={{ backgroundColor: card.bg }}
-                >
+                <View style={{ marginBottom: 10, height: 40, width: 40, alignItems: "center", justifyContent: "center", borderRadius: 999, backgroundColor: card.bg }}>
                   <Icon name={card.iconName} size={18} color={card.color} />
                 </View>
                 <Text style={{ fontSize: 13 / 1.2, color: Colors.muted, fontWeight: "500" }}>
@@ -296,7 +290,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="See all transactions"
-              className="flex-row items-center gap-0.5"
+              style={{ flexDirection: "row", alignItems: "center", gap: 2 }}
             >
               <Text style={{ fontSize: 14 / 1.2, fontWeight: "600", color: Colors.blue }}>See all</Text>
               <ChevronRight size={15} color={Colors.blue} />
@@ -320,7 +314,7 @@ export default function HomeScreen() {
                   showRelativeTime
                 />
                 {i < arr.length - 1 && (
-                  <View className="ml-[74px] mr-4 h-px" style={{ backgroundColor: Colors.divider }} />
+                  <View style={{ marginLeft: 74, marginRight: 16, height: 1, backgroundColor: Colors.divider }} />
                 )}
               </View>
             ))}

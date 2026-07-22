@@ -1,72 +1,16 @@
-import {
-  Urbanist_400Regular,
-  Urbanist_500Medium,
-  Urbanist_600SemiBold,
-  Urbanist_700Bold,
-  Urbanist_800ExtraBold,
-  useFonts,
-} from "@expo-google-fonts/urbanist";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect } from "react";
-import { View } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import { AuthProvider, useAuth } from "@/store/auth.store";
-import { Colors } from "@/theme/colors";
-import "../../global.css";
-
-function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const segments = useSegments();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (isLoading) return;
-    const inAuthGroup = segments[0] === "(auth)";
-    if (!isAuthenticated && !inAuthGroup) {
-      router.replace("/(auth)/login");
-    } else if (isAuthenticated && inAuthGroup) {
-      router.replace("/(app)/(tabs)");
-    }
-  }, [isAuthenticated, isLoading, segments]);
-
-  if (isLoading) {
-    return <View className="flex-1 bg-mpay-bg" />;
-  }
-
-  return <>{children}</>;
-}
-
-function RootLayoutContent() {
-  const segments = useSegments();
-  const inAuthGroup = segments[0] === "(auth)";
-
-  return (
-    <AuthGuard>
-      <StatusBar style={inAuthGroup ? "dark" : "auto"} />
-      <Stack screenOptions={{ headerShown: false }} />
-    </AuthGuard>
-  );
-}
+import { AuthProvider } from "@/store/auth.store";
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    Urbanist_400Regular,
-    Urbanist_500Medium,
-    Urbanist_600SemiBold,
-    Urbanist_700Bold,
-    Urbanist_800ExtraBold,
-  });
-
-  if (!fontsLoaded) {
-    return <View className="flex-1 bg-mpay-bg" />;
-  }
-
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <RootLayoutContent />
-      </AuthProvider>
-    </SafeAreaProvider>
+    <AuthProvider>
+      <StatusBar style="light" />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(app)" />
+      </Stack>
+    </AuthProvider>
   );
 }

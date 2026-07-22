@@ -28,21 +28,18 @@ export default function WalletScreen() {
   const totalBalance = MOCK_WALLET_CARDS.reduce((s, w) => s + w.balance, 0);
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.bg }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={["top"]}>
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View
-          className="flex-row items-center justify-between px-6 pb-3 pt-5"
-        >
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingBottom: 12, paddingTop: 20 }}>
           <View>
-            <Text className="text-xs font-semibold" style={{ color: Colors.muted }}>My Wallets</Text>
+            <Text style={{ fontSize: 12, fontWeight: "600", color: Colors.muted }}>My Wallets</Text>
             <Text
-              className="text-lg font-extrabold"
-              style={{ color: Colors.navy, fontFamily: "Urbanist_800ExtraBold" }}
+              style={{ fontSize: 18, fontWeight: "800", color: Colors.navy, fontFamily: "Urbanist_800ExtraBold" }}
             >
               M-PAY Wallet
             </Text>
@@ -65,7 +62,7 @@ export default function WalletScreen() {
             }}
           >
             {hidden ? <EyeOff size={13} color={Colors.muted} /> : <Eye size={13} color={Colors.muted} />}
-            <Text className="text-xs font-bold" style={{ color: Colors.muted }}>
+            <Text style={{ fontSize: 12, fontWeight: "700", color: Colors.muted }}>
               {hidden ? "Show" : "Hide"}
             </Text>
           </TouchableOpacity>
@@ -102,11 +99,11 @@ export default function WalletScreen() {
                 {hidden ? "GHS ••••••" : `GHS ${totalBalance.toFixed(2)}`}
               </Text>
             </View>
-            <View className="items-end gap-1">
+            <View style={{ alignItems: "flex-end", gap: 4 }}>
               {[{ color: Colors.blue, label: "eTop-Up" }, { color: Colors.deep, label: "MoMo" }].map((item) => (
-                <View key={item.label} className="flex-row items-center gap-1.5">
-                  <View className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
-                  <Text className="text-[10px] font-semibold" style={{ color: Colors.muted }}>
+                <View key={item.label} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <View style={{ height: 8, width: 8, borderRadius: 999, backgroundColor: item.color }} />
+                  <Text style={{ fontSize: 10, fontWeight: "600", color: Colors.muted }}>
                     {item.label}
                   </Text>
                 </View>
@@ -185,7 +182,7 @@ export default function WalletScreen() {
               </View>
             </View>
           </LinearGradient>
-          <View className="mt-3 flex-row justify-center gap-2">
+          <View style={{ marginTop: 12, flexDirection: "row", justifyContent: "center", gap: 8 }}>
             {MOCK_WALLET_CARDS.map((_, i) => (
               <TouchableOpacity
                 key={i}
@@ -221,11 +218,10 @@ export default function WalletScreen() {
                 key={a.label}
                 accessibilityRole="button"
                 accessibilityLabel={a.label}
-                className="flex-1 items-center gap-2 rounded-xl py-3"
-                style={{ backgroundColor: a.bg }}
+                style={{ flex: 1, alignItems: "center", gap: 8, borderRadius: 12, paddingVertical: 12, backgroundColor: a.bg }}
               >
-                <Text className="text-lg font-bold" style={{ color: a.color }}>{a.icon}</Text>
-                <Text className="text-[10px] font-bold text-center" style={{ color: Colors.mid }}>
+                <Text style={{ fontSize: 18, fontWeight: "700", color: a.color }}>{a.icon}</Text>
+                <Text style={{ fontSize: 10, fontWeight: "700", textAlign: "center", color: Colors.mid }}>
                   {a.label}
                 </Text>
               </TouchableOpacity>
@@ -276,10 +272,10 @@ export default function WalletScreen() {
               { label: "Data Bundle", pct: 79, amount: "GHS30.00", color: Colors.green },
               { label: "Mobile Money", pct: 26, amount: "GHS20.00", color: Colors.orange },
             ].map((cat) => (
-              <View key={cat.label} className="mb-3">
-                <View className="mb-1.5 flex-row justify-between">
-                  <Text className="text-[11px] font-semibold" style={{ color: Colors.muted }}>{cat.label}</Text>
-                  <Text className="text-[11px] font-bold" style={{ color: Colors.navy }}>{cat.amount}</Text>
+              <View key={cat.label} style={{ marginBottom: 12 }}>
+                <View style={{ marginBottom: 6, flexDirection: "row", justifyContent: "space-between" }}>
+                  <Text style={{ fontSize: 11, fontWeight: "600", color: Colors.muted }}>{cat.label}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: Colors.navy }}>{cat.amount}</Text>
                 </View>
                 <View
                   style={{
@@ -320,9 +316,9 @@ export default function WalletScreen() {
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="See all transactions"
-              className="flex-row items-center gap-0.5"
+              style={{ flexDirection: "row", alignItems: "center", gap: 2 }}
             >
-              <Text className="text-xs font-bold" style={{ color: Colors.blue }}>See all</Text>
+              <Text style={{ fontSize: 12, fontWeight: "700", color: Colors.blue }}>See all</Text>
               <ChevronRight size={13} color={Colors.blue} />
             </TouchableOpacity>
           </View>
@@ -340,7 +336,7 @@ export default function WalletScreen() {
               <View key={tx.id}>
                 <TransactionRow transaction={tx} onPress={() => setSelectedTx(tx)} />
                 {i < arr.length - 1 && (
-                  <View className="mx-4 h-px" style={{ backgroundColor: Colors.divider }} />
+                  <View style={{ marginHorizontal: 16, height: 1, backgroundColor: Colors.divider }} />
                 )}
               </View>
             ))}
