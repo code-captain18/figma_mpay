@@ -1,10 +1,12 @@
 import { z } from "zod";
 
+const emailOrPhoneRegex = /^(?:\+?\d{9,15}|[^\s@]+@[^\s@]+\.[^\s@]+)$/;
+
 export const loginSchema = z.object({
   email: z
     .string()
-    .min(1, "Email is required")
-    .email("Enter a valid email address"),
+    .min(1, "Email or phone is required")
+    .regex(emailOrPhoneRegex, "Enter a valid email address or phone number"),
   password: z
     .string()
     .min(4, "Password must be at least 4 characters"),

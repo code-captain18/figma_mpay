@@ -41,8 +41,8 @@ export default function HistoryScreen() {
     (s, t) => s + t.amount,
     0
   );
-  const totalOut = MOCK_TRANSACTIONS.filter((t) => t.fee > 0).reduce(
-    (s, t) => s + t.amount,
+  const totalOut = MOCK_TRANSACTIONS.filter((t) => t.amount < 0).reduce(
+    (s, t) => s + Math.abs(t.amount),
     0
   );
 

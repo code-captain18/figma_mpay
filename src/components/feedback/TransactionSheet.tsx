@@ -140,7 +140,7 @@ export function TransactionSheet({ transaction: tx, onClose }: TransactionSheetP
                 <TouchableOpacity
                   accessibilityRole="button"
                   accessibilityLabel="Copy reference"
-                  className="h-[26px] w-[26px] items-center justify-center rounded-lg bg-[#1878CE14]"
+                  className="h-11 w-11 items-center justify-center rounded-lg bg-[#1878CE14]"
                 >
                   <Copy size={12} color={Colors.blue} />
                 </TouchableOpacity>

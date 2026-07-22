@@ -25,6 +25,7 @@ type Recipient = "self" | "other";
 export default function AirtimeScreen() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("form");
+  const [isProcessing, setIsProcessing] = useState(false);
   const [network, setNetwork] = useState(NETWORKS[0]);
   const [recipient, setRecipient] = useState<Recipient>("self");
   const [phone, setPhone] = useState("");
@@ -42,6 +43,16 @@ export default function AirtimeScreen() {
     { label: "Fee (1%)", value: `GHS${fee.toFixed(2)}` },
     { label: "Total", value: `GHS${total.toFixed(2)}`, green: true },
   ];
+
+  const handleConfirmPurchase = () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    // Simulate processing window to prevent accidental duplicate submissions.
+    setTimeout(() => {
+      setStep("success");
+      setIsProcessing(false);
+    }, 900);
+  };
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.bg }} edges={["top", "bottom"]}>
@@ -448,7 +459,11 @@ export default function AirtimeScreen() {
             >
               <ReceiptRows rows={receiptRows} />
             </View>
-            <GradientButton label="Confirm & Buy" onPress={() => setStep("success")} />
+            <GradientButton
+              label={isProcessing ? "Processing..." : "Confirm & Buy"}
+              disabled={isProcessing}
+              onPress={handleConfirmPurchase}
+            />
             <TouchableOpacity
               onPress={() => setStep("form")}
               accessibilityRole="button"

@@ -1,27 +1,55 @@
+import { loginSchema, type LoginFormValues } from "@/features/auth/schemas/auth.schema";
+import { shadowStyle } from "@/theme/shadows";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowRight, Eye, EyeOff, Fingerprint, Lock, User } from "lucide-react-native";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Image,
+  Platform,
+  Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
-import { loginSchema, type LoginFormValues } from "@/features/auth/schemas/auth.schema";
-import { Colors } from "@/theme/colors";
-import { shadowStyle } from "@/theme/shadows";
 
 interface LoginFormProps {
   onSuccess: () => void;
   onNavigateSignup: () => void;
 }
 
+const L = {
+  bg: "#F4F7FF",
+  bgTop: "#EAF0FF",
+  card: "#FFFFFF",
+  border: "#E4EAF6",
+  focus: "#1565C0",
+  blue: "#1565C0",
+  text: "#0C1A3A",
+  mid: "#5A6A8A",
+  dim: "#9BAAC4",
+  inputBg: "#F8FAFF",
+};
+
+const cardShadow = (color: string, opacity: number, radius: number, elevation: number) =>
+  Platform.select({
+    ios: {
+      shadowColor: color,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: opacity,
+      shadowRadius: radius,
+    },
+    android: { elevation },
+    default: {},
+  });
+
 export function LoginForm({ onSuccess, onNavigateSignup }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [credFocus, setCredFocus] = useState(false);
+  const [passFocus, setPassFocus] = useState(false);
 
   const {
     control,
@@ -39,109 +67,134 @@ export function LoginForm({ onSuccess, onNavigateSignup }: LoginFormProps) {
   const appLogo = require("../../../../assets/logo.png");
 
   return (
-    <LinearGradient
-      colors={["#EAF1FF", "#F8FBFF"]}
-      locations={[0, 1]}
-      start={{ x: 0.2, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      className="flex-1"
-    >
+    <View style={{ flex: 1, backgroundColor: L.bg }}>
+      <View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            height: 320,
+            backgroundColor: L.bgTop,
+            borderBottomLeftRadius: 40,
+            borderBottomRightRadius: 40,
+          },
+        ]}
+      />
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 28 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="px-3.5 pt-2.5">
-          <View className="items-center mb-5.5">
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 24, paddingTop: 12 }}>
+
+        </View>
+
+        <View style={{ alignItems: "center", paddingHorizontal: 24, paddingTop: 28, paddingBottom: 32 }}>
+          <View style={{ alignItems: "center", marginBottom: 12 }}>
             <View
-              className="w-[84px] h-[84px] rounded-[22px] overflow-hidden mb-3.5"
               style={{
-                ...shadowStyle(0.12, 18),
+                width: 80,
+                height: 80,
+                borderRadius: 22,
+                overflow: "hidden",
+                marginBottom: 12,
+                ...cardShadow(L.blue, 0.28, 16, 10),
               }}
             >
-              <Image
-                source={appLogo}
-                resizeMode="cover"
-                style={{
-                  width: 124,
-                  height: 124,
-                  marginLeft: -20,
-                  marginTop: -20,
-                }}
-              />
+              <Image source={appLogo} resizeMode="cover" style={{ width: 80, height: 80 }} />
             </View>
+
             <Text
-              className="text-[24px] font-extrabold tracking-[-0.4px]"
               style={{
-                color: "#0E2B5C",
+                fontSize: 28,
+                fontWeight: "800",
+                color: L.text,
+                letterSpacing: -0.8,
                 fontFamily: "Urbanist_800ExtraBold",
               }}
             >
               M-PAY
             </Text>
-            <Text className="text-[15.5px] mt-2" style={{ color: "#4A6A99" }}>
+
+            <Text
+              style={{
+                fontSize: 12.5,
+                color: L.mid,
+                fontWeight: "500",
+                letterSpacing: 0.1,
+                textAlign: "center",
+                marginTop: 6,
+              }}
+            >
               Sell airtime, data, fiber and SMS bundles
             </Text>
+          </View>
 
-            <View className="flex-row items-center gap-[10px] mt-3">
-              <View className="h-px w-[58px] bg-[#C2D6F5]" />
-              <View className="h-1.5 w-1.5 rounded-full bg-[#77A7ED]" />
-              <View className="h-px w-[58px] bg-[#C2D6F5]" />
-            </View>
+          <View style={{ flexDirection: "row", alignItems: "center", width: 200, gap: 8 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: L.border }} />
+            <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: L.blue, opacity: 0.4 }} />
+            <View style={{ flex: 1, height: 1, backgroundColor: L.border }} />
           </View>
         </View>
 
         <View
-          className="mx-3 mt-1 rounded-[26px] bg-white border px-5 pt-6 pb-6"
           style={{
-            borderColor: "#DAE7FA",
-            ...shadowStyle(0.08, 16),
+            marginHorizontal: 20,
+            marginTop: 4,
+            borderRadius: 24,
+            backgroundColor: L.card,
+            borderWidth: 1,
+            borderColor: L.border,
+            padding: 24,
+            ...cardShadow(L.blue, 0.09, 16, 6),
           }}
         >
           <Text
-            className="text-[17px] font-extrabold"
             style={{
-              color: "#0A2B60",
+              fontSize: 20,
+              fontWeight: "800",
+              color: L.text,
+              letterSpacing: -0.5,
+              marginBottom: 4,
               fontFamily: "Urbanist_800ExtraBold",
             }}
           >
             Welcome back 👋
           </Text>
-          <Text className="text-[15px] mt-1.5 mb-[18px]" style={{ color: "#5E7CA8" }}>
+          <Text style={{ fontSize: 13, color: L.mid, fontWeight: "500", marginBottom: 24 }}>
             Use your login credentials to sign in.
           </Text>
 
-          <View className="mb-3.5">
-            <Text
-              className="text-xs font-extrabold tracking-[0.5px] mb-[9px]"
-              style={{
-                color: "#9BB2D6",
-                fontFamily: "Urbanist_800ExtraBold",
-              }}
-            >
-              EMAIL OR PHONE
-            </Text>
+          <View style={{ marginBottom: 14 }}>
+            <Text style={styles.label}>Email or Phone</Text>
             <Controller
               control={control}
               name="email"
               render={({ field: { onChange, onBlur, value } }) => (
                 <View
-                  className="flex-row items-center h-[54px] rounded-2xl border px-3.5"
-                  style={{
-                    borderColor: errors.email ? Colors.red : "#D7E3F5",
-                    backgroundColor: "#F8FBFF",
-                  }}
+                  style={[
+                    styles.inputWrap,
+                    {
+                      borderColor: errors.email ? "#F87171" : credFocus ? L.focus : L.border,
+                      backgroundColor: credFocus ? L.card : L.inputBg,
+                    },
+                    !credFocus && styles.inputShadow,
+                  ]}
                 >
-                  <User size={16} color="#96AFD4" />
-                  <View className="mx-3 h-[18px] w-px bg-[#D4E1F4]" />
+                  <User size={16} color={credFocus ? L.blue : L.dim} />
+                  <View style={styles.inputDivider} />
                   <TextInput
-                    className="flex-1 text-[15px]"
-                    style={{ color: Colors.navy }}
+                    style={{ flex: 1, color: L.text, height: 54, fontSize: 14, fontWeight: "500" }}
                     placeholder="you@example.com"
-                    placeholderTextColor="#90A8CC"
+                    placeholderTextColor={L.dim}
                     value={value}
                     onChangeText={onChange}
-                    onBlur={onBlur}
+                    onBlur={() => {
+                      setCredFocus(false);
+                      onBlur();
+                    }}
+                    onFocus={() => setCredFocus(true)}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoComplete="email"
@@ -150,127 +203,211 @@ export function LoginForm({ onSuccess, onNavigateSignup }: LoginFormProps) {
                 </View>
               )}
             />
-            {errors.email && <Text className="text-[11px] mt-[5px]" style={{ color: Colors.red }}>{errors.email.message}</Text>}
+            {errors.email && (
+              <Text style={{ color: "#F87171", fontSize: 11, marginTop: 6 }}>
+                {errors.email.message}
+              </Text>
+            )}
           </View>
 
-          <View className="mb-2">
-            <Text
-              className="text-xs font-extrabold tracking-[0.5px] mb-[9px]"
-              style={{
-                color: "#9BB2D6",
-                fontFamily: "Urbanist_800ExtraBold",
-              }}
-            >
-              PASSWORD
-            </Text>
+          <View style={{ marginBottom: 8 }}>
+            <Text style={styles.label}>Password</Text>
             <Controller
               control={control}
               name="password"
               render={({ field: { onChange, onBlur, value } }) => (
                 <View
-                  className="flex-row items-center h-[54px] rounded-2xl border px-3.5"
-                  style={{
-                    borderColor: errors.password ? Colors.red : "#D7E3F5",
-                    backgroundColor: "#F8FBFF",
-                  }}
+                  style={[
+                    styles.inputWrap,
+                    {
+                      borderColor: errors.password ? "#F87171" : passFocus ? L.focus : L.border,
+                      backgroundColor: passFocus ? L.card : L.inputBg,
+                    },
+                    !passFocus && styles.inputShadow,
+                  ]}
                 >
-                  <Lock size={16} color="#96AFD4" />
-                  <View className="mx-3 h-[18px] w-px bg-[#D4E1F4]" />
+                  <Lock size={16} color={passFocus ? L.blue : L.dim} />
+                  <View style={styles.inputDivider} />
                   <TextInput
-                    className="flex-1 text-[15px]"
-                    style={{ color: Colors.navy }}
+                    style={{ flex: 1, color: L.text, height: 54, fontSize: 14, fontWeight: "500" }}
                     placeholder="Enter your password"
-                    placeholderTextColor="#90A8CC"
+                    placeholderTextColor={L.dim}
                     value={value}
                     onChangeText={onChange}
-                    onBlur={onBlur}
+                    onBlur={() => {
+                      setPassFocus(false);
+                      onBlur();
+                    }}
+                    onFocus={() => setPassFocus(true)}
                     secureTextEntry={!showPassword}
                     autoComplete="password"
                     accessibilityLabel="Password"
+                    onSubmitEditing={handleSubmit(onSubmit)}
                   />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword((p) => !p)}
+                  <Pressable
+                    onPress={() => setShowPassword((v) => !v)}
+                    hitSlop={8}
                     accessibilityRole="button"
                     accessibilityLabel={showPassword ? "Hide password" : "Show password"}
                   >
-                    {showPassword ? <Eye size={17} color="#96AFD4" /> : <EyeOff size={17} color="#96AFD4" />}
-                  </TouchableOpacity>
+                    {showPassword ? <Eye size={17} color={L.dim} /> : <EyeOff size={17} color={L.dim} />}
+                  </Pressable>
                 </View>
               )}
             />
-            {errors.password && <Text className="text-[11px] mt-[5px]" style={{ color: Colors.red }}>{errors.password.message}</Text>}
-          </View>
-
-          <View className="items-end mt-2 mb-[18px]">
-            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Forgot password">
-              <Text className="text-[14px] font-bold" style={{ color: "#0F58B8" }}>Forgot password?</Text>
-            </TouchableOpacity>
-          </View>
-
-          <LinearGradient
-            colors={["#2F76C9", "#1E63BA", "#1552AA"]}
-            locations={[0, 0.52, 1]}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            className="rounded-2xl"
-          >
-            <TouchableOpacity
-              onPress={handleSubmit(onSubmit)}
-              accessibilityRole="button"
-              accessibilityLabel="Sign in"
-              accessibilityState={{ disabled: isSubmitting }}
-              className="h-14 rounded-2xl items-center justify-center flex-row gap-[10px]"
-              style={{
-                opacity: isSubmitting ? 0.75 : 1,
-              }}
-              disabled={isSubmitting}
-            >
-              <Text className="text-[16px] font-extrabold" style={{ color: "#fff", fontFamily: "Urbanist_800ExtraBold" }}>
-                {isSubmitting ? "Signing In" : "Sign In"}
+            {errors.password && (
+              <Text style={{ color: "#F87171", fontSize: 11, marginTop: 6 }}>
+                {errors.password.message}
               </Text>
-              <ArrowRight size={17} color="#fff" />
-            </TouchableOpacity>
-          </LinearGradient>
+            )}
+          </View>
 
-          <View className="my-5 flex-row items-center gap-3">
-            <View className="h-px flex-1 bg-[#D8EAF6]" />
-            <Text className="text-xs font-semibold" style={{ color: Colors.pale }}>
+          <View style={{ alignItems: "flex-end", marginTop: 8, marginBottom: 24 }}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Forgot password" hitSlop={8}>
+              <Text style={{ fontSize: 12.5, fontWeight: "700", color: L.blue }}>
+                Forgot password?
+              </Text>
+            </Pressable>
+          </View>
+
+          <Pressable
+            onPress={handleSubmit(onSubmit)}
+            disabled={isSubmitting}
+            accessibilityRole="button"
+            accessibilityLabel="Sign in"
+            accessibilityState={{ disabled: isSubmitting }}
+            style={({ pressed }) => [{ opacity: pressed || isSubmitting ? 0.92 : 1 }]}
+          >
+            <LinearGradient
+              colors={["#1565C0", "#1976D2", "#0D47A1"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[
+                {
+                  height: 54,
+                  borderRadius: 14,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                },
+                shadowStyle(0.22, 12),
+              ]}
+            >
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 15,
+                  fontWeight: "800",
+                  letterSpacing: -0.2,
+                  fontFamily: "Urbanist_800ExtraBold",
+                }}
+              >
+                {isSubmitting ? "Signing in..." : "Sign In"}
+              </Text>
+              {!isSubmitting ? <ArrowRight size={15} color="#fff" /> : null}
+            </LinearGradient>
+          </Pressable>
+
+          <View style={{ marginVertical: 20, flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: "#D8EAF6" }} />
+            <Text style={{ fontSize: 12, fontWeight: "600", color: L.dim }}>
               or continue with
             </Text>
-            <View className="h-px flex-1 bg-[#D8EAF6]" />
+            <View style={{ flex: 1, height: 1, backgroundColor: "#D8EAF6" }} />
           </View>
 
-          <TouchableOpacity
+          <Pressable
             onPress={onSuccess}
             accessibilityRole="button"
             accessibilityLabel="Use biometric login"
-            className="flex-row items-center justify-center gap-2.5 rounded-2xl border-[1.5px] bg-white py-3.5"
-            style={{
-              borderColor: Colors.border,
-              ...shadowStyle(),
-            }}
+            style={({ pressed }) => [{ opacity: pressed ? 0.92 : 1 }]}
           >
-            <Fingerprint size={18} color={Colors.blue} />
-            <Text className="text-sm font-bold" style={{ color: Colors.mid }}>
-              Use Biometric Login
-            </Text>
-          </TouchableOpacity>
+            <LinearGradient
+              colors={["#3B82D6", "#2A6FC4", "#1B57A8"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[
+                {
+                  height: 54,
+                  borderRadius: 14,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                },
+                shadowStyle(0.22, 12),
+              ]}
+            >
+              <Fingerprint size={17} color="#fff" />
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 15,
+                  fontWeight: "800",
+                  letterSpacing: -0.2,
+                  fontFamily: "Urbanist_800ExtraBold",
+                }}
+              >
+                Use Biometric Login
+              </Text>
+            </LinearGradient>
+          </Pressable>
         </View>
 
-        <View className="items-center mt-5 px-5">
-          <View className="flex-row">
-            <Text className="text-[15px]" style={{ color: "#4C6997" }}>Need access? </Text>
-            <TouchableOpacity
+        <View style={{ alignItems: "center", marginTop: 20, paddingHorizontal: 20 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center" }}>
+            <Text style={{ fontSize: 13, color: L.mid, fontWeight: "500" }}>Need access? </Text>
+            <Pressable
               onPress={onNavigateSignup}
               accessibilityRole="button"
               accessibilityLabel="Contact administrator"
+              hitSlop={8}
             >
-              <Text className="text-[15px] font-bold" style={{ color: "#0C55B7" }}>Contact your administrator</Text>
-            </TouchableOpacity>
+              <Text style={{ fontSize: 13, fontWeight: "700", color: L.blue }}>
+                Contact your administrator
+              </Text>
+            </Pressable>
           </View>
-          <Text className="mt-3 text-[14px]" style={{ color: "#93AACC" }}>v1.0.0</Text>
+          <Text style={{ marginTop: 12, fontSize: 11, fontWeight: "400", color: L.dim }}>v1.0.0</Text>
         </View>
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  label: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: L.dim,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+    marginBottom: 7,
+    fontFamily: "Urbanist_700Bold",
+  },
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: 54,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  inputDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: L.border,
+  },
+  inputShadow: Platform.select({
+    ios: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.04,
+      shadowRadius: 3,
+    },
+    android: { elevation: 1 },
+    default: {},
+  }),
+});

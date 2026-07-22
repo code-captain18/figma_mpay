@@ -27,6 +27,7 @@ type Recipient = "self" | "other";
 export default function DataBundleScreen() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("form");
+  const [isProcessing, setIsProcessing] = useState(false);
   const [network, setNetwork] = useState(NETWORKS[0]);
   const [recipient, setRecipient] = useState<Recipient>("self");
   const [phone, setPhone] = useState("");
@@ -44,6 +45,16 @@ export default function DataBundleScreen() {
         { label: "Price", value: `GHS${selected.price.toFixed(2)}`, green: true },
       ]
     : [];
+
+  const handleConfirmActivation = () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    // Simulate processing window to prevent accidental duplicate submissions.
+    setTimeout(() => {
+      setStep("success");
+      setIsProcessing(false);
+    }, 900);
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={["top", "bottom"]}>
@@ -499,7 +510,11 @@ export default function DataBundleScreen() {
             >
               <ReceiptRows rows={receiptRows} />
             </View>
-            <GradientButton label="Confirm & Activate" onPress={() => setStep("success")} />
+            <GradientButton
+              label={isProcessing ? "Processing..." : "Confirm & Activate"}
+              disabled={isProcessing}
+              onPress={handleConfirmActivation}
+            />
             <TouchableOpacity
               onPress={() => setStep("form")}
               accessibilityRole="button"
