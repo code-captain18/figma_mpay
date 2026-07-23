@@ -3,15 +3,14 @@ import { useRouter } from "expo-router";
 import { ChevronRight, Search, X } from "lucide-react-native";
 
 import React, { useState } from "react";
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
 import {
   MOCK_FEATURED_OFFERS,
   MOCK_SERVICE_CATEGORIES,
 } from "@/mocks/services";
-import { Colors } from "@/theme/colors";
-import { shadowStyle } from "@/theme/shadows";
+import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
 
 export default function ServicesScreen() {
   const [query, setQuery] = useState("");
@@ -28,7 +27,7 @@ export default function ServicesScreen() {
       : [];
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.bg }} edges={["top"]}>
+    <SafeAreaView style={SS.root} edges={["top"]}>
       <LinearGradient
         colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
         locations={[0, 0.42, 1]}
@@ -78,55 +77,35 @@ export default function ServicesScreen() {
       </LinearGradient>
 
       <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24 }}
+        style={SS.scroll}
+        contentContainerStyle={SS.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {query.length > 0 ? (
-          <View
-            style={{
-              borderRadius: 16,
-              overflow: "hidden",
-              backgroundColor: Colors.white,
-              borderWidth: 1,
-              borderColor: "rgba(24,120,206,0.08)",
-              ...shadowStyle(0.06, 12),
-            }}
-          >
+          <View style={[SS.searchResultsCard, Shadows.subtle]}>
             {results.length === 0 ? (
-              <View
-                className="items-center justify-center gap-2 py-10"
-              >
-                <Search size={22} color={Colors.pale} />
-                <Text className="text-xs font-semibold" style={{ color: Colors.light }}>
-                  No services found
-                </Text>
+              <View style={SS.emptySearch}>
+                <Search size={22} color={Colors.textDisabled} />
+                <Text style={SS.emptySearchText}>No services found</Text>
               </View>
             ) : (
               results.map((s, i) => (
                 <View key={s.label}>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    accessibilityLabel={s.label}
-                    className="flex-row items-center gap-3 px-4 py-3.5"
-                  >
-                    <View
-                      className="h-9 w-9 items-center justify-center rounded-xl"
-                      style={{ backgroundColor: s.bg }}
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      accessibilityLabel={s.label}
+                      style={SS.searchResultItem}
                     >
-                      <Icon name={s.iconName} size={18} color={s.color} />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-sm font-semibold" style={{ color: Colors.navy }}>
-                        {s.label}
-                      </Text>
-                      <Text className="text-[10px]" style={{ color: Colors.light }}>{s.cat}</Text>
-                    </View>
-                    <ChevronRight size={14} color={Colors.pale} />
-                  </TouchableOpacity>
-                  {i < results.length - 1 && (
-                    <View className="mx-4 h-px" style={{ backgroundColor: Colors.divider }} />
-                  )}
+                      <View style={[SS.searchResultIcon, { backgroundColor: s.bg }]}>
+                        <Icon name={s.iconName} size={18} color={s.color} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={SS.searchResultLabel}>{s.label}</Text>
+                        <Text style={SS.searchResultCat}>{s.cat}</Text>
+                      </View>
+                      <ChevronRight size={14} color={Colors.textDisabled} />
+                    </TouchableOpacity>
+                    {i < results.length - 1 && <View style={SS.resultDivider} />}
                 </View>
               ))
             )}
@@ -134,19 +113,9 @@ export default function ServicesScreen() {
         ) : (
           <>
             {/* Featured Offers */}
-            <View className="mb-5">
-              <Text
-                style={{
-                  fontSize: 10,
-                  fontWeight: "700",
-                  letterSpacing: 1.5,
-                  color: Colors.light,
-                  marginBottom: 12,
-                }}
-              >
-                FEATURED OFFERS
-              </Text>
-              <View className="flex-row gap-3">
+            <View style={SS.featuredSection}>
+              <Text style={SS.categoryHeader}>FEATURED OFFERS</Text>
+              <View style={SS.featuredRow}>
                 {MOCK_FEATURED_OFFERS.map((offer) => (
                   <TouchableOpacity
                     key={offer.label}
@@ -195,21 +164,10 @@ export default function ServicesScreen() {
 
             {/* Service Categories */}
             {MOCK_SERVICE_CATEGORIES.map((cat) => (
-              <View key={cat.title} className="mb-5">
-                <View
-                  className="mb-3 flex-row items-center gap-2"
-                >
-                  <View className="h-4 w-1 rounded" style={{ backgroundColor: cat.color }} />
-                  <Text
-                    style={{
-                      fontSize: 10,
-                      fontWeight: "700",
-                      letterSpacing: 1.2,
-                      color: Colors.navy,
-                    }}
-                  >
-                    {cat.title.toUpperCase()}
-                  </Text>
+              <View key={cat.title} style={SS.catSection}>
+                <View style={SS.catTitleRow}>
+                  <View style={[SS.catBar, { backgroundColor: cat.color }]} />
+                  <Text style={SS.catTitle}>{cat.title.toUpperCase()}</Text>
                 </View>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
                   {cat.services.map((svc) => (
@@ -222,19 +180,7 @@ export default function ServicesScreen() {
                       activeOpacity={0.8}
                       accessibilityRole="button"
                       accessibilityLabel={svc.label}
-                      style={{
-                        width: "48%",
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 12,
-                        borderRadius: 16,
-                        paddingHorizontal: 16,
-                        paddingVertical: 16,
-                        backgroundColor: Colors.white,
-                        borderWidth: 1,
-                        borderColor: "rgba(24,120,206,0.08)",
-                        ...shadowStyle(0.04, 8),
-                      }}
+                      style={[SS.svcCard, Shadows.subtle]}
                     >
                       {svc.badge && (
                         <View
@@ -245,7 +191,7 @@ export default function ServicesScreen() {
                             borderRadius: 99,
                             paddingHorizontal: 6,
                             paddingVertical: 2,
-                            backgroundColor: svc.badge === "New" ? Colors.blue : Colors.orange,
+                            backgroundColor: svc.badge === "New" ? Colors.primary : Colors.orange,
                           }}
                         >
                           <Text style={{ fontSize: 8, fontWeight: "700", color: "#fff" }}>
@@ -287,3 +233,47 @@ export default function ServicesScreen() {
     </SafeAreaView>
   );
 }
+
+const SS = StyleSheet.create({
+  root: { flex: 1, backgroundColor: Colors.bg },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xl, paddingBottom: Spacing["2xl"] },
+
+  // Search results
+  searchResultsCard: {
+    borderRadius: Radius.lg, overflow: "hidden",
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+  },
+  emptySearch: { alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: Spacing["3xl"] },
+  emptySearchText: { ...T.bodySM, fontFamily: "Urbanist_600SemiBold", color: Colors.textLight },
+  searchResultItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: Spacing.lg, paddingVertical: 14 },
+  searchResultIcon: { width: 36, height: 36, borderRadius: Radius.md, alignItems: "center", justifyContent: "center" },
+  searchResultLabel: { ...T.bodyMD, fontFamily: "Urbanist_600SemiBold", color: Colors.textPrimary },
+  searchResultCat:   { ...T.caption, color: Colors.textLight },
+  resultDivider:     { height: 1, backgroundColor: Colors.divider, marginHorizontal: Spacing.lg },
+
+  // Featured
+  featuredSection: { marginBottom: Spacing.xl },
+  categoryHeader:  { ...T.label, color: Colors.textLight, marginBottom: Spacing.md },
+  featuredRow:     { flexDirection: "row", gap: 12 },
+
+  // Categories
+  catSection: { marginBottom: Spacing.xl },
+  catTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
+  catBar:      { width: 4, height: 16, borderRadius: 2 },
+  catTitle:    { ...T.label, color: Colors.textPrimary },
+
+  // Service card (2-col grid)
+  svcCard: {
+    width: "48%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+});

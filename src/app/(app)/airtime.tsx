@@ -2,8 +2,7 @@ import { NetworkLogo } from "@/components/svg/NetworkLogo";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { ReceiptRows } from "@/components/ui/ReceiptRows";
 import { NETWORKS, PRESET_AMOUNTS } from "@/constants/networks";
-import { Colors } from "@/theme/colors";
-import { shadowStyle } from "@/theme/shadows";
+import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Check, PhoneCall } from "lucide-react-native";
@@ -12,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -214,7 +214,7 @@ export default function AirtimeScreen() {
                 borderWidth: 1,
                 borderColor: "#E7EEF9",
                 marginBottom: 24,
-                ...shadowStyle(0.03, 6),
+                ...Shadows.subtle,
               }}
             >
               {(["self", "other"] as Recipient[]).map((r) => {
@@ -284,7 +284,7 @@ export default function AirtimeScreen() {
                 backgroundColor: Colors.white,
                 overflow: "hidden",
                 marginBottom: 26,
-                ...shadowStyle(0.03, 6),
+                ...Shadows.subtle,
               }}
             >
               <View
@@ -336,7 +336,7 @@ export default function AirtimeScreen() {
                       borderColor: active ? Colors.blue : "#E7EEF9",
                       backgroundColor: active ? "transparent" : Colors.white,
                       overflow: "hidden",
-                      ...(active ? shadowStyle(0.14, 10) : shadowStyle(0.02, 4)),
+                      ...(active ? Shadows.subtle : Shadows.subtle),
                     }}
                   >
                     {active ? (
@@ -380,7 +380,7 @@ export default function AirtimeScreen() {
                 height: 52,
                 gap: 8,
                 marginBottom: 22,
-                ...shadowStyle(0.02, 4),
+                ...Shadows.subtle,
               }}
             >
               <Text style={{ fontSize: 15, fontWeight: "700", color: "#7089AB" }}>GHS</Text>
@@ -454,7 +454,7 @@ export default function AirtimeScreen() {
                 borderColor: "rgba(24,120,206,0.08)",
                 padding: 20,
                 marginBottom: 24,
-                ...shadowStyle(0.04, 10),
+                ...Shadows.subtle,
               }}
             >
               <ReceiptRows rows={receiptRows} />
@@ -525,7 +525,7 @@ export default function AirtimeScreen() {
                 borderColor: "rgba(24,120,206,0.08)",
                 padding: 20,
                 marginBottom: 28,
-                ...shadowStyle(0.04, 10),
+                ...Shadows.subtle,
               }}
             >
               <ReceiptRows rows={receiptRows} />

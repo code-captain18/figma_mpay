@@ -1,8 +1,7 @@
 import { ArrowDownLeft, ArrowUpRight, CheckCircle2, Clock } from "lucide-react-native";
-import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Icon } from "@/components/ui/Icon";
-import { Colors } from "@/theme/colors";
+import { Colors, Radius, Spacing } from "@/theme";
 import type { Transaction } from "@/types";
 
 interface TransactionRowProps {
@@ -13,10 +12,6 @@ interface TransactionRowProps {
 
 export function TransactionRow({ transaction: tx, onPress, showRelativeTime = false }: TransactionRowProps) {
   const timeLabel = showRelativeTime ? tx.time : tx.date.split("· ")[1];
-  const rowGap = showRelativeTime ? 12 : 14;
-  const rowVertical = showRelativeTime ? 13 : 15;
-  const iconSize = showRelativeTime ? 44 : 46;
-  const iconRadius = showRelativeTime ? 14 : 15;
 
   return (
     <TouchableOpacity
@@ -24,81 +19,61 @@ export function TransactionRow({ transaction: tx, onPress, showRelativeTime = fa
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={`${tx.label}, ${tx.amount > 0 ? "received" : "sent"} GHS${Math.abs(tx.amount).toFixed(2)}`}
-      className="flex-row items-center"
-      style={{
-        gap: rowGap,
-        paddingHorizontal: 18,
-        paddingVertical: rowVertical,
-      }}
+      style={[R.row, showRelativeTime ? R.rowCompact : R.rowFull]}
     >
-      <View
-        className="items-center justify-center"
-        style={{
-          width: iconSize,
-          height: iconSize,
-          borderRadius: iconRadius,
-          backgroundColor: tx.bg,
-        }}
-      >
-        <Icon name={tx.iconName} size={18} color={tx.color} />
+      <View style={[R.iconWrap, { backgroundColor: tx.bg }, showRelativeTime ? R.iconWrapSm : R.iconWrapLg]}>
+        <Icon name={tx.iconName} size={22} color={tx.color} />
       </View>
 
-      <View className="flex-1" style={{ minWidth: 0 }}>
-        <Text className="text-base font-bold" style={{ color: Colors.navy }} numberOfLines={1}>
-          {tx.label}
-        </Text>
-        <View className="flex-row items-center mt-0.5" style={{ gap: 4 }}>
-          {tx.status === "success" ? (
-            <CheckCircle2 size={10} color={Colors.green} />
-          ) : (
-            <Clock size={10} color={Colors.orange} />
-          )}
-          <Text
-            style={{
-              fontSize: 11,
-              fontWeight: "600",
-              color: tx.status === "success" ? Colors.green : Colors.orange,
-            }}
-          >
+      <View style={R.mid}>
+        <Text style={R.label} numberOfLines={1}>{tx.label}</Text>
+        <View style={R.subRow}>
+          {tx.status === "success"
+            ? <CheckCircle2 size={11} color={Colors.green} />
+            : <Clock size={11} color={Colors.orange} />}
+          <Text style={[R.statusText, { color: tx.status === "success" ? Colors.green : Colors.orange }]}>
             {tx.status === "success" ? "Success" : "Pending"}
           </Text>
-          <Text className="text-[11px] text-[#93A7C7]">· {timeLabel}</Text>
+          <Text style={R.timeText}>· {timeLabel}</Text>
         </View>
       </View>
 
       {showRelativeTime ? (
-        <View className="flex-row items-center" style={{ gap: 4 }}>
-          {tx.amount > 0 ? (
-            <ArrowDownLeft size={14} color={Colors.green} />
-          ) : (
-            <ArrowUpRight size={14} color={Colors.red} />
-          )}
-          <Text
-            style={{
-              fontSize: 29 / 2,
-              fontWeight: "700",
-              color: tx.amount > 0 ? Colors.green : Colors.red,
-              fontFamily: "Urbanist_700Bold",
-            }}
-          >
+        <View style={R.amountRow}>
+          {tx.amount > 0
+            ? <ArrowDownLeft size={14} color={Colors.green} />
+            : <ArrowUpRight size={14} color={Colors.red} />}
+          <Text style={[R.amountSm, { color: tx.amount > 0 ? Colors.green : Colors.red }]}>
             GHS{Math.abs(tx.amount).toFixed(2)}
           </Text>
         </View>
       ) : (
-        <View className="items-end gap-0.5">
-          <Text
-            style={{
-              fontSize: 17,
-              fontWeight: "700",
-              color: tx.amount > 0 ? Colors.green : Colors.red,
-              fontFamily: "Urbanist_800ExtraBold",
-            }}
-          >
-            {tx.amount > 0 ? "+" : "−"}GHS{Math.abs(tx.amount).toFixed(2)}
+        <View style={R.amountCol}>
+          <Text style={[R.amountLg, { color: tx.amount > 0 ? Colors.green : Colors.red }]}>
+            {tx.amount > 0 ? "+" : "-"}GHS{Math.abs(tx.amount).toFixed(2)}
           </Text>
-          <Text className="text-[11px] font-semibold text-[#B4C4DE]">{tx.network}</Text>
+          <Text style={R.network}>{tx.network}</Text>
         </View>
       )}
     </TouchableOpacity>
   );
 }
+
+const R = StyleSheet.create({
+  row:        { flexDirection: "row", alignItems: "center", paddingHorizontal: Spacing.lg },
+  rowCompact: { gap: 12, paddingVertical: 13 },
+  rowFull:    { gap: 14, paddingVertical: 15 },
+  iconWrap:   { alignItems: "center", justifyContent: "center" },
+  iconWrapSm: { width: 48, height: 48, borderRadius: Radius.lg },
+  iconWrapLg: { width: 50, height: 50, borderRadius: Radius.lg + 1 },
+  mid:        { flex: 1, minWidth: 0 },
+  label:      { fontSize: 15, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textPrimary },
+  subRow:     { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3 },
+  statusText: { fontSize: 12, fontWeight: "600", fontFamily: "Urbanist_600SemiBold" },
+  timeText:   { fontSize: 12, color: Colors.textLight, fontFamily: "Urbanist_500Medium" },
+  amountRow:  { flexDirection: "row", alignItems: "center", gap: 4 },
+  amountSm:   { fontSize: 15, fontWeight: "700", fontFamily: "Urbanist_700Bold" },
+  amountCol:  { alignItems: "flex-end", gap: 2 },
+  amountLg:   { fontSize: 17, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold" },
+  network:    { fontSize: 12, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: Colors.textLight },
+});

@@ -1,3 +1,4 @@
+import { Colors } from "@/theme/colors";
 import { Tabs } from "expo-router";
 import {
   FileText,
@@ -6,11 +7,36 @@ import {
   User,
   Wallet,
 } from "lucide-react-native";
-import React from "react";
-import { Platform } from "react-native";
-import { Colors } from "@/theme/colors";
+import { StyleSheet, Pressable, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+function TabIcon({ icon, focused }: { icon: React.ReactNode; focused: boolean }) {
+  return (
+    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+      {icon}
+    </View>
+  );
+}
+
+function NoRippleTabButton({ children, style, onPress, onLongPress, accessibilityState, accessibilityLabel, testID }: any) {
+  return (
+    <Pressable
+      android_ripple={null}
+      style={[{ flex: 1 }, style]}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityState={accessibilityState}
+      accessibilityLabel={accessibilityLabel}
+      testID={testID}
+    >
+      {children}
+    </Pressable>
+  );
+}
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
@@ -19,58 +45,83 @@ export default function TabsLayout() {
           backgroundColor: "rgba(242,245,251,0.97)",
           borderTopWidth: 1,
           borderTopColor: "rgba(24,120,206,0.08)",
-          height: Platform.OS === "ios" ? 88 : 64,
-          paddingBottom: Platform.OS === "ios" ? 24 : 8,
-          paddingTop: 8,
+          height: 64 + insets.bottom,
+          paddingBottom: 10 + insets.bottom,
+          paddingTop: 10,
         },
         tabBarActiveTintColor: Colors.blue,
         tabBarInactiveTintColor: Colors.light,
         tabBarLabelStyle: {
-          fontSize: 9,
+          fontSize: 12,
           fontWeight: "700",
           fontFamily: "Urbanist_700Bold",
+          marginTop: 4,
+        },
+        tabBarIconStyle: {
+          marginBottom: 0,
         },
         tabBarItemStyle: {
           borderRadius: 12,
         },
-        tabBarActiveBackgroundColor: "rgba(24,120,206,0.08)",
+        tabBarButton: (props) => <NoRippleTabButton {...props} />,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon focused={focused} icon={<Home size={30} color={color} />} />
+          ),
         }}
       />
       <Tabs.Screen
         name="wallet"
         options={{
           title: "Wallet",
-          tabBarIcon: ({ color, size }) => <Wallet size={size} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon focused={focused} icon={<Wallet size={30} color={color} />} />
+          ),
         }}
       />
       <Tabs.Screen
         name="services"
         options={{
           title: "Services",
-          tabBarIcon: ({ color, size }) => <Grid3x3 size={size} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon focused={focused} icon={<Grid3x3 size={30} color={color} />} />
+          ),
         }}
       />
       <Tabs.Screen
         name="history"
         options={{
           title: "History",
-          tabBarIcon: ({ color, size }) => <FileText size={size} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon focused={focused} icon={<FileText size={30} color={color} />} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon focused={focused} icon={<User size={30} color={color} />} />
+          ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  iconWrap: {
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+  },
+  iconWrapActive: {
+    backgroundColor: "rgba(24,120,206,0.1)",
+  },
+});

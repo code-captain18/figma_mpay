@@ -1,12 +1,11 @@
 import { ArrowDownLeft, ArrowUpRight, Search, SlidersHorizontal, X } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TransactionSheet } from "@/components/feedback/TransactionSheet";
 import { TransactionRow } from "@/components/ui/TransactionRow";
 import { MOCK_TRANSACTIONS } from "@/mocks/transactions";
-import { Colors } from "@/theme/colors";
-import { shadowStyle } from "@/theme/shadows";
+import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
 import type { Transaction, TransactionCategory } from "@/types";
 
 function groupByDate(txs: Transaction[]): { date: string; items: Transaction[] }[] {
@@ -47,110 +46,43 @@ export default function HistoryScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.bg }} edges={["top"]}>
+    <SafeAreaView style={HS.root} edges={["top"]}>
       {/* Header */}
-      <View className="px-5 pt-4 pb-3">
-        <Text
-          style={{
-            fontSize: 10,
-            fontWeight: "700",
-            letterSpacing: 1.8,
-            color: "#8EA4C8",
-            marginBottom: 6,
-          }}
-        >
-          OVERVIEW
-        </Text>
-        <Text
-          style={{
-            fontSize: 18,
-            fontWeight: "800",
-            color: Colors.navy,
-            marginBottom: 18,
-            fontFamily: "Urbanist_800ExtraBold",
-          }}
-        >
-          Transaction History
-        </Text>
+      <View style={HS.headerArea}>
+        <Text style={HS.headerEyebrow}>OVERVIEW</Text>
+        <Text style={HS.headerTitle}>Transaction History</Text>
         {/* Stats */}
-        <View className="mb-[18px] flex-row gap-3.5">
+        <View style={HS.statsRow}>
           {[
-            {
-              label: "Total In",
-              amount: totalIn,
-              color: "#05A56F",
-              bg: "#E3F1F2",
-              border: "#B6E3DA",
-              Icon: ArrowDownLeft,
-            },
-            {
-              label: "Total Out",
-              amount: totalOut,
-              color: "#FF3651",
-              bg: "#FCEEF3",
-              border: "#F5CFD8",
-              Icon: ArrowUpRight,
-            },
+            { label: "Total In",  amount: totalIn,  color: Colors.success, bg: Colors.successBg, Icon: ArrowDownLeft },
+            { label: "Total Out", amount: totalOut, color: Colors.error,   bg: Colors.errorBg,   Icon: ArrowUpRight },
           ].map((stat) => (
-            <View
-              key={stat.label}
-              style={{
-                flex: 1,
-                borderRadius: 22,
-                padding: 18,
-                backgroundColor: stat.bg,
-                borderWidth: 1,
-                borderColor: stat.border,
-              }}
-            >
-              <View className="mb-3.5 flex-row justify-between">
-                <Text className="text-[15px] font-bold" style={{ color: stat.color }}>{stat.label}</Text>
-                <View
-                  className="h-[30px] w-[30px] items-center justify-center rounded-full bg-white/45"
-                >
+            <View key={stat.label} style={[HS.statCard, { backgroundColor: stat.bg }]}>
+              <View style={HS.statTop}>
+                <Text style={[HS.statLabel, { color: stat.color }]}>{stat.label}</Text>
+                <View style={HS.statIconWrap}>
                   <stat.Icon size={15} color={stat.color} />
                 </View>
               </View>
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "800",
-                  color: stat.color,
-                  fontFamily: "Urbanist_800ExtraBold",
-                  marginBottom: 5,
-                }}
-              >
+              <Text style={[HS.statAmount, { color: stat.color }]}>
                 {stat.label === "Total In" ? "+" : "−"}GHS{stat.amount.toFixed(2)}
               </Text>
-              <Text className="text-[13px] text-[#889ABD]">This month</Text>
+              <Text style={HS.statPeriod}>This month</Text>
             </View>
           ))}
         </View>
         {/* Search */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            borderRadius: 20,
-            paddingHorizontal: 18,
-            height: 54,
-            backgroundColor: Colors.white,
-            borderWidth: 1,
-            borderColor: "#EAF1FA",
-            ...shadowStyle(0.04, 8),
-          }}
-        >
-          <Search size={20} color="#9BAFCD" />
+        <View style={[HS.searchBar, Shadows.subtle]}>
+          <Search size={20} color={Colors.textLight} />
           <TextInput
-            className="ml-2.5 flex-1 text-base"
-            style={{ color: Colors.navy }}
+            style={HS.searchInput}
             placeholder="Search transactions..."
-            placeholderTextColor="#8FA4C4"
+            placeholderTextColor={Colors.textDisabled}
             value={query}
             onChangeText={setQuery}
             accessibilityLabel="Search transactions"
           />
-          <View className="ml-2.5 h-9 w-9 items-center justify-center rounded-full bg-[#EDF3FF]">
+          <View style={HS.searchAction}>
             {query.length > 0 ? (
               <TouchableOpacity
                 onPress={() => setQuery("")}
@@ -167,45 +99,25 @@ export default function HistoryScreen() {
       </View>
 
       <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 24 }}
+        style={HS.scroll}
+        contentContainerStyle={HS.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {groups.length === 0 ? (
-          <View className="items-center gap-2 pt-[60px]">
-            <Search size={28} color={Colors.pale} />
-            <Text className="text-sm font-semibold" style={{ color: Colors.light }}>
-              No transactions found
-            </Text>
+          <View style={HS.emptyState}>
+            <Search size={28} color={Colors.textDisabled} />
+            <Text style={HS.emptyText}>No transactions found</Text>
           </View>
         ) : (
           groups.map((group) => (
-            <View key={group.date} className="mb-5">
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "700",
-                  color: "#8EA4C8",
-                  marginBottom: 10,
-                }}
-              >
-                {group.date}
-              </Text>
-              <View
-                style={{
-                  borderRadius: 22,
-                  overflow: "hidden",
-                  backgroundColor: Colors.white,
-                  borderWidth: 1,
-                  borderColor: "#EAF1FA",
-                  ...shadowStyle(0.04, 10),
-                }}
-              >
+            <View key={group.date} style={HS.group}>
+              <Text style={HS.groupDate}>{group.date}</Text>
+              <View style={[HS.groupCard, Shadows.subtle]}>
                 {group.items.map((tx, i, arr) => (
-                  <View key={tx.id}>
+                    <View key={tx.id}>
                     <TransactionRow transaction={tx} onPress={() => setSelectedTx(tx)} />
                     {i < arr.length - 1 && (
-                      <View className="ml-20 mr-[18px] h-px" style={{ backgroundColor: Colors.divider }} />
+                      <View style={HS.txDivider} />
                     )}
                   </View>
                 ))}
@@ -221,3 +133,48 @@ export default function HistoryScreen() {
     </SafeAreaView>
   );
 }
+
+const HS = StyleSheet.create({
+  root:          { flex: 1, backgroundColor: Colors.bg },
+  scroll:        { flex: 1 },
+  scrollContent: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.md, paddingBottom: Spacing["2xl"] },
+
+  headerArea:    { paddingHorizontal: Spacing.xl, paddingTop: Spacing.lg, paddingBottom: Spacing.md },
+  headerEyebrow: { ...T.label, color: Colors.textLight, letterSpacing: 1.8, marginBottom: 6 },
+  headerTitle:   { ...T.headingMD, color: Colors.textPrimary, fontFamily: "Urbanist_800ExtraBold", marginBottom: Spacing.lg },
+
+  // Stats
+  statsRow:     { flexDirection: "row", gap: 14, marginBottom: Spacing.lg },
+  statCard:     { flex: 1, borderRadius: Radius["2xl"], padding: Spacing.lg },
+  statTop:      { flexDirection: "row", justifyContent: "space-between", marginBottom: 14 },
+  statLabel:    { ...T.headingSM },
+  statIconWrap: { width: 30, height: 30, borderRadius: 15, backgroundColor: "rgba(255,255,255,0.45)", alignItems: "center", justifyContent: "center" },
+  statAmount:   { ...T.amountLG, fontFamily: "Urbanist_800ExtraBold", marginBottom: 5 },
+  statPeriod:   { ...T.caption, color: Colors.textMuted },
+
+  // Search
+  searchBar:    {
+    flexDirection: "row", alignItems: "center",
+    borderRadius: Radius.xl, paddingHorizontal: Spacing.lg,
+    height: 54, backgroundColor: Colors.surface,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  searchInput:  { ...T.bodyMD, flex: 1, color: Colors.textPrimary, marginLeft: Spacing.sm },
+  searchAction: {
+    marginLeft: Spacing.sm, width: 36, height: 36, borderRadius: 18,
+    backgroundColor: Colors.primaryLight, alignItems: "center", justifyContent: "center",
+  },
+
+  // Groups
+  group:     { marginBottom: Spacing.xl },
+  groupDate: { ...T.bodySM, fontFamily: "Urbanist_700Bold", color: Colors.textMuted, marginBottom: Spacing.sm },
+  groupCard: {
+    borderRadius: Radius["2xl"], overflow: "hidden",
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+  },
+  txDivider: { height: 1, backgroundColor: Colors.divider, marginLeft: 80, marginRight: 18 },
+
+  // Empty
+  emptyState: { alignItems: "center", gap: 8, paddingTop: 60 },
+  emptyText:  { ...T.bodyMD, fontFamily: "Urbanist_600SemiBold", color: Colors.textLight },
+});

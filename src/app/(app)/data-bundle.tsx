@@ -6,6 +6,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -17,8 +18,7 @@ import { ReceiptRows } from "@/components/ui/ReceiptRows";
 import { NetworkLogo } from "@/components/svg/NetworkLogo";
 import { BUNDLE_DURATIONS, DATA_BUNDLES } from "@/constants/bundles";
 import { NETWORKS } from "@/constants/networks";
-import { Colors } from "@/theme/colors";
-import { shadowStyle } from "@/theme/shadows";
+import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
 import type { Bundle, BundleDuration } from "@/types";
 
 type Step = "form" | "confirm" | "success";
@@ -219,7 +219,7 @@ export default function DataBundleScreen() {
                 borderWidth: 1,
                 borderColor: "#E7EEF9",
                 marginBottom: 24,
-                ...shadowStyle(0.03, 6),
+                ...Shadows.subtle,
               }}
             >
               {(["self", "other"] as Recipient[]).map((r) => {
@@ -283,7 +283,7 @@ export default function DataBundleScreen() {
                 backgroundColor: Colors.white,
                 overflow: "hidden",
                 marginBottom: 26,
-                ...shadowStyle(0.03, 6),
+                ...Shadows.subtle,
               }}
             >
               <View
@@ -392,7 +392,7 @@ export default function DataBundleScreen() {
                       borderWidth: 1,
                       borderColor: active ? Colors.blue : "#E7EEF9",
                       backgroundColor: active ? "#EEF4FF" : Colors.white,
-                      ...shadowStyle(0.04, 8),
+                      ...Shadows.subtle,
                     }}
                   >
                     {b.tag ? (
@@ -505,7 +505,7 @@ export default function DataBundleScreen() {
                 borderColor: "rgba(24,120,206,0.08)",
                 padding: 20,
                 marginBottom: 24,
-                ...shadowStyle(0.04, 10),
+                ...Shadows.subtle,
               }}
             >
               <ReceiptRows rows={receiptRows} />
@@ -575,7 +575,7 @@ export default function DataBundleScreen() {
                 borderColor: "rgba(24,120,206,0.08)",
                 padding: 20,
                 marginBottom: 28,
-                ...shadowStyle(0.04, 10),
+                ...Shadows.subtle,
               }}
             >
               <ReceiptRows rows={receiptRows} />

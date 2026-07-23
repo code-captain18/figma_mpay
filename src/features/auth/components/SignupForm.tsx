@@ -5,16 +5,16 @@ import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { GradientButton } from "@/components/ui/GradientButton";
+import { Button } from "@/components/ui/Button";
 import { OrbitalMark } from "@/components/svg/OrbitalMark";
 import { signupSchema, type SignupFormValues } from "@/features/auth/schemas/auth.schema";
-import { Colors } from "@/theme/colors";
-import { shadowStyle } from "@/theme/shadows";
+import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
 
 interface SignupFormProps {
   onSuccess: () => void;
@@ -51,72 +51,52 @@ export function SignupForm({ onSuccess, onNavigateLogin }: SignupFormProps) {
   return (
     <>
       <LinearGradient
-        colors={[Colors.sky, Colors.blue, Colors.deep]}
+        colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
         locations={[0, 0.45, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.7, y: 1 }}
-        className="min-h-[200px] items-center justify-end overflow-hidden pb-10"
+        style={sStyles.header}
       >
-        <View
-          className="absolute -right-10 -top-10 h-[180px] w-[180px] rounded-full bg-white/10"
-        />
-        <View className="items-center gap-3">
+        <View style={sStyles.headerOrb} />
+        <View style={{ alignItems: "center", gap: 12 }}>
           <OrbitalMark size={56} />
-          <Text
-            className="text-[20px] font-extrabold text-white"
-            style={{ fontFamily: "Urbanist_800ExtraBold" }}
-          >
-            Create Account
-          </Text>
+          <Text style={sStyles.headerTitle}>Create Account</Text>
         </View>
       </LinearGradient>
 
       <ScrollView
-        className="flex-1 -mt-5 rounded-t-3xl bg-mpay-bg"
-        contentContainerStyle={{
-          paddingHorizontal: 24,
-          paddingTop: 28,
-          paddingBottom: 48,
-        }}
+        style={sStyles.scrollArea}
+        contentContainerStyle={sStyles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         <TouchableOpacity
-          className="mb-5 flex-row items-center gap-1"
+          style={sStyles.backRow}
           onPress={onNavigateLogin}
           accessibilityRole="button"
           accessibilityLabel="Back to login"
         >
-          <ChevronLeft size={15} color={Colors.blue} />
-          <Text className="text-xs font-bold" style={{ color: Colors.blue }}>
-            Back to Login
-          </Text>
+          <ChevronLeft size={15} color={Colors.primary} />
+          <Text style={sStyles.backText}>Back to Login</Text>
         </TouchableOpacity>
 
         {fields.map((field) => (
-          <View key={field.name} className="mb-4">
-            <Text className="mb-1.5 text-xs font-bold" style={{ color: Colors.mid }}>
-              {field.label}
-            </Text>
+          <View key={field.name} style={sStyles.fieldGroup}>
+            <Text style={sStyles.fieldLabel}>{field.label}</Text>
             <Controller
               control={control}
               name={field.name}
               render={({ field: { onChange, onBlur, value } }) => (
                 <View
-                  className="h-[52px] flex-row items-center rounded-2xl bg-white px-4"
-                  style={{
-                    gap: 12,
-                    borderWidth: 1.5,
-                    borderColor: errors[field.name] ? Colors.red : Colors.border,
-                    ...shadowStyle(),
-                  }}
+                  style={[sStyles.inputRow, {
+                    borderColor: errors[field.name] ? Colors.borderError : Colors.border,
+                  }]}
                 >
-                  {field.secure && <Lock size={16} color={Colors.light} />}
+                  {field.secure && <Lock size={16} color={Colors.textLight} />}
                   <TextInput
-                    className="flex-1 text-sm"
-                    style={{ color: Colors.navy }}
+                    style={sStyles.textInput}
                     placeholder={field.placeholder}
-                    placeholderTextColor={Colors.pale}
+                    placeholderTextColor={Colors.textDisabled}
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
@@ -130,32 +110,89 @@ export function SignupForm({ onSuccess, onNavigateLogin }: SignupFormProps) {
               )}
             />
             {errors[field.name] && (
-              <Text className="mt-1 text-[11px]" style={{ color: Colors.red }}>
-                {errors[field.name]?.message}
-              </Text>
+              <Text style={sStyles.errorText}>{errors[field.name]?.message}</Text>
             )}
           </View>
         ))}
 
-        <GradientButton
+        <Button
           label={isSubmitting ? "Creating account…" : "Create Account"}
           onPress={handleSubmit(onSubmit)}
-          disabled={isSubmitting}
+          loading={isSubmitting}
         />
 
-        <View className="mt-5 flex-row justify-center">
-          <Text className="text-xs" style={{ color: Colors.light }}>
-            {"Already have an account? "}
-          </Text>
-          <TouchableOpacity
-            onPress={onNavigateLogin}
-            accessibilityRole="button"
-            accessibilityLabel="Sign in"
-          >
-            <Text className="text-xs font-bold" style={{ color: Colors.blue }}>Sign In</Text>
+        <View style={sStyles.signInRow}>
+          <Text style={sStyles.signInText}>Already have an account? </Text>
+          <TouchableOpacity onPress={onNavigateLogin} accessibilityRole="button" accessibilityLabel="Sign in">
+            <Text style={sStyles.signInLink}>Sign In</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </>
   );
 }
+
+const sStyles = StyleSheet.create({
+  header: {
+    minHeight: 200,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    overflow: "hidden",
+    paddingBottom: Spacing["3xl"],
+  },
+  headerOrb: {
+    position: "absolute",
+    right: -40,
+    top: -40,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  headerTitle: {
+    ...T.headingLG,
+    color: "#fff",
+    fontFamily: "Urbanist_800ExtraBold",
+  },
+  scrollArea: {
+    flex: 1,
+    marginTop: -20,
+    borderTopLeftRadius: Radius["3xl"],
+    borderTopRightRadius: Radius["3xl"],
+    backgroundColor: Colors.bg,
+  },
+  scrollContent: {
+    paddingHorizontal: Spacing["2xl"],
+    paddingTop: Spacing["3xl"],
+    paddingBottom: Spacing["4xl"],
+  },
+  backRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: Spacing.xl,
+  },
+  backText: { ...T.bodySM, fontFamily: "Urbanist_700Bold", color: Colors.primary },
+  fieldGroup: { marginBottom: Spacing.lg },
+  fieldLabel: { ...T.label, color: Colors.textMuted, marginBottom: Spacing.sm },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: 52,
+    borderRadius: Radius.xl,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.md,
+    borderWidth: 1.5,
+    ...Shadows.subtle,
+  },
+  textInput: { flex: 1, ...T.bodyMD, color: Colors.textPrimary },
+  errorText: { ...T.caption, color: Colors.error, marginTop: 4 },
+  signInRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: Spacing.xl,
+  },
+  signInText: { ...T.bodySM, color: Colors.textLight },
+  signInLink: { ...T.bodySM, fontFamily: "Urbanist_700Bold", color: Colors.primary },
+});

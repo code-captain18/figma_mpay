@@ -1,31 +1,16 @@
 import { Icon } from "@/components/ui/Icon";
-import { Colors } from "@/theme/colors";
+import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
 import type { Transaction } from "@/types";
 import { LinearGradient } from "expo-linear-gradient";
 import { CheckCircle2, Clock, Copy, Share2, X } from "lucide-react-native";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-interface DetailRowProps {
-  label: string;
-  value: string;
-}
-
-function DetailRow({ label, value }: DetailRowProps) {
+function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <View
-      className="flex-row items-center justify-between border-b py-3"
-      style={{ borderBottomColor: Colors.divider }}
-    >
-      <Text className="text-xs font-medium" style={{ color: Colors.muted }}>{label}</Text>
-      <Text className="text-xs font-semibold" style={{ color: Colors.navy }}>{value}</Text>
+    <View style={DS.detailRow}>
+      <Text style={DS.detailLabel}>{label}</Text>
+      <Text style={DS.detailValue}>{value}</Text>
     </View>
   );
 }
@@ -41,150 +26,114 @@ export function TransactionSheet({ transaction: tx, onClose }: TransactionSheetP
 
   return (
     <Modal transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 justify-end">
-        <Pressable
-          className="absolute inset-0 bg-[#0D122673]"
-          onPress={onClose}
-          accessibilityLabel="Close transaction details"
-        />
-        <View
-          className="bg-white rounded-t-[28px]"
-          style={{
-            paddingBottom: insets.bottom + 8,
-            maxHeight: "82%",
-          }}
-        >
-          <View className="items-center pt-3 pb-1">
-            <View className="h-1 w-10 rounded-full bg-[#C8DCF0]" />
+      <View style={DS.backdrop}>
+        <Pressable style={DS.scrim} onPress={onClose} accessibilityLabel="Close transaction details" />
+        <View style={[DS.sheet, { paddingBottom: insets.bottom + 12 }]}>
+
+          {/* Handle */}
+          <View style={DS.handleWrap}>
+            <View style={DS.handle} />
           </View>
-          <View
-            className="flex-row items-center justify-between px-6 pb-4 pt-2"
-          >
-            <Text
-              className="text-sm font-bold"
-              style={{ color: Colors.navy, fontFamily: "Urbanist_700Bold" }}
-            >
-              Transaction Details
-            </Text>
-            <TouchableOpacity
-              onPress={onClose}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-              className="h-8 w-8 items-center justify-center rounded-full"
-              style={{ backgroundColor: Colors.bg }}
-            >
-              <X size={16} color={Colors.muted} />
+
+          {/* Header */}
+          <View style={DS.header}>
+            <Text style={DS.headerTitle}>Transaction Details</Text>
+            <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" style={DS.closeBtn}>
+              <X size={16} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
 
-          <View
-            className="items-center border-b pb-6"
-            style={{ borderBottomColor: Colors.divider }}
-          >
-            <View
-              className="mb-3 h-14 w-14 items-center justify-center rounded-2xl"
-              style={{ backgroundColor: tx.bg }}
-            >
-              <Icon name={tx.iconName} size={22} color={tx.color} />
+          {/* Hero */}
+          <View style={DS.hero}>
+            <View style={[DS.iconCircle, { backgroundColor: tx.bg }]}>
+              <Icon name={tx.iconName} size={28} color={tx.color} />
             </View>
-            <Text
-              className="text-2xl font-extrabold"
-              style={{
-                color: isCredit ? Colors.green : Colors.navy,
-                fontFamily: "Urbanist_800ExtraBold",
-              }}
-            >
-              {isCredit ? "+" : "–"}GHS{Math.abs(tx.amount).toFixed(2)}
+            <Text style={[DS.amount, { color: isCredit ? Colors.green : Colors.textPrimary }]}>
+              {isCredit ? "+" : "-"}GHS{Math.abs(tx.amount).toFixed(2)}
             </Text>
-            <Text className="mt-1 text-xs" style={{ color: Colors.muted }}>{tx.label}</Text>
-            <View
-              className="mt-2 flex-row items-center gap-1.5 rounded-full px-3 py-1"
-              style={{
-                backgroundColor:
-                  tx.status === "success" ? "rgba(13,168,112,0.1)" : "rgba(233,145,10,0.1)",
-              }}
-            >
-              {tx.status === "success" ? (
-                <CheckCircle2 size={11} color={Colors.green} />
-              ) : (
-                <Clock size={11} color={Colors.orange} />
-              )}
-              <Text
-                className="text-[11px] font-bold"
-                style={{ color: tx.status === "success" ? Colors.green : Colors.orange }}
-              >
+            <Text style={DS.amountSub}>{tx.label}</Text>
+            <View style={[DS.statusBadge, { backgroundColor: tx.status === "success" ? "rgba(13,168,112,0.1)" : "rgba(233,145,10,0.1)" }]}>
+              {tx.status === "success"
+                ? <CheckCircle2 size={12} color={Colors.green} />
+                : <Clock size={12} color={Colors.orange} />}
+              <Text style={[DS.statusText, { color: tx.status === "success" ? Colors.green : Colors.orange }]}>
                 {tx.status === "success" ? "Successful" : "Pending"}
               </Text>
             </View>
           </View>
 
-          <ScrollView className="px-6" showsVerticalScrollIndicator={false}>
-            <DetailRow label="Date & Time" value={tx.date} />
+          {/* Details */}
+          <ScrollView style={DS.scroll} showsVerticalScrollIndicator={false}>
+            <DetailRow label="Date &amp; Time" value={tx.date} />
             <DetailRow label="Category" value={tx.category} />
             <DetailRow label="Recipient" value={tx.recipient} />
             <DetailRow label="Network" value={tx.network} />
-            <DetailRow
-              label="Transaction Fee"
-              value={tx.fee === 0 ? "Free" : `GHS${tx.fee.toFixed(2)}`}
-            />
-            <View
-              className="flex-row items-center justify-between py-3"
-            >
-              <Text className="text-xs font-medium" style={{ color: Colors.muted }}>
-                Reference
-              </Text>
-              <View className="flex-row items-center gap-2">
-                <Text className="text-[11px] font-semibold" style={{ color: Colors.navy }}>
-                  {tx.ref}
-                </Text>
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Copy reference"
-                  className="h-11 w-11 items-center justify-center rounded-lg bg-[#1878CE14]"
-                >
-                  <Copy size={12} color={Colors.blue} />
+            <DetailRow label="Transaction Fee" value={tx.fee === 0 ? "Free" : `GHS${tx.fee.toFixed(2)}`} />
+
+            {/* Reference row with copy */}
+            <View style={DS.detailRow}>
+              <Text style={DS.detailLabel}>Reference</Text>
+              <View style={DS.refRow}>
+                <Text style={[DS.detailValue, { fontSize: 12 }]}>{tx.ref}</Text>
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Copy reference" style={DS.copyBtn}>
+                  <Copy size={13} color={Colors.primary} />
                 </TouchableOpacity>
               </View>
             </View>
           </ScrollView>
 
-          <View
-            className="flex-row gap-3 px-6 pt-4"
-          >
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Share receipt"
-              className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl py-3.5"
-              style={{ backgroundColor: Colors.bg }}
-            >
-              <Share2 size={15} color={Colors.mid} />
-              <Text className="text-sm font-bold" style={{ color: Colors.mid }}>
-                Share Receipt
-              </Text>
+          {/* Actions */}
+          <View style={DS.actions}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Share receipt" style={DS.shareBtn}>
+              <Share2 size={16} color={Colors.textSecondary} />
+              <Text style={DS.shareBtnText}>Share Receipt</Text>
             </TouchableOpacity>
             <LinearGradient
-              colors={[
-                Colors.buttonGradientStart,
-                Colors.buttonGradientHighlight,
-                Colors.buttonGradientMid,
-                Colors.buttonGradientEnd,
-              ]}
+              colors={[Colors.buttonGradientStart, Colors.buttonGradientHighlight, Colors.buttonGradientMid, Colors.buttonGradientEnd]}
               locations={[0, 0.24, 0.58, 1]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              className="flex-1 rounded-2xl"
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={DS.repeatGrad}
             >
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel="Repeat transaction"
-                className="flex-1 items-center justify-center py-3.5"
-              >
-                <Text className="text-sm font-bold text-white">Repeat</Text>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Repeat transaction" style={DS.repeatBtn}>
+                <Text style={DS.repeatBtnText}>Repeat Transaction</Text>
               </TouchableOpacity>
             </LinearGradient>
           </View>
+
         </View>
       </View>
     </Modal>
   );
 }
+
+const DS = StyleSheet.create({
+  backdrop:    { flex: 1, justifyContent: "flex-end" },
+  scrim:       { ...StyleSheet.absoluteFill, backgroundColor: "rgba(13,18,38,0.45)" },
+  sheet:       { backgroundColor: Colors.surface, borderTopLeftRadius: Radius["3xl"], borderTopRightRadius: Radius["3xl"], maxHeight: "84%", ...Shadows.strong },
+  handleWrap:  { alignItems: "center", paddingTop: 12, paddingBottom: 4 },
+  handle:      { width: 40, height: 4, borderRadius: Radius.pill, backgroundColor: Colors.divider },
+  header:      { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing["2xl"], paddingBottom: Spacing.lg, paddingTop: Spacing.sm },
+  headerTitle: { ...T.headingMD, color: Colors.textPrimary },
+  closeBtn:    { width: 34, height: 34, borderRadius: 17, backgroundColor: Colors.bg, alignItems: "center", justifyContent: "center" },
+
+  hero:        { alignItems: "center", paddingBottom: Spacing.xl, borderBottomWidth: 1, borderBottomColor: Colors.divider },
+  iconCircle:  { width: 72, height: 72, borderRadius: Radius["2xl"], alignItems: "center", justifyContent: "center", marginBottom: Spacing.md },
+  amount:      { ...T.display, letterSpacing: -0.5 },
+  amountSub:   { ...T.bodyMD, color: Colors.textMuted, marginTop: 4 },
+  statusBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: Radius.pill, paddingHorizontal: Spacing.md, paddingVertical: 5, marginTop: Spacing.sm },
+  statusText:  { fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold" },
+
+  scroll:      { paddingHorizontal: Spacing["2xl"] },
+  detailRow:   { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: Colors.divider },
+  detailLabel: { fontSize: 15, fontFamily: "Urbanist_500Medium", color: Colors.textMuted },
+  detailValue: { fontSize: 15, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary },
+  refRow:      { flexDirection: "row", alignItems: "center", gap: 8 },
+  copyBtn:     { width: 32, height: 32, borderRadius: Radius.md, backgroundColor: "rgba(24,120,206,0.08)", alignItems: "center", justifyContent: "center" },
+
+  actions:     { flexDirection: "row", gap: Spacing.md, paddingHorizontal: Spacing["2xl"], paddingTop: Spacing.xl },
+  shareBtn:    { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 56, borderRadius: Radius.xl, borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.surfaceRaised },
+  shareBtnText:{ fontSize: 16, fontFamily: "Urbanist_700Bold", color: Colors.textSecondary },
+  repeatGrad:  { flex: 1, borderRadius: Radius.xl },
+  repeatBtn:   { flex: 1, alignItems: "center", justifyContent: "center", height: 56 },
+  repeatBtnText: { fontSize: 16, fontFamily: "Urbanist_700Bold", color: "#fff" },
+});
