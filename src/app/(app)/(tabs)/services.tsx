@@ -38,17 +38,11 @@ export default function ServicesScreen() {
         <View
           className="absolute -right-8 -top-6 h-[140px] w-[140px] rounded-full bg-white/10"
         />
-        <Text className="mb-0.5 text-xs font-semibold text-white/60">
+        <Text style={{ fontSize: 12, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.6)", marginBottom: 2 }}>
           M-PAY
         </Text>
         <Text
-          style={{
-            fontSize: 20,
-            fontWeight: "800",
-            color: "#fff",
-            marginBottom: 16,
-            fontFamily: "Urbanist_800ExtraBold",
-          }}
+          style={{ fontSize: 20, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "#fff", marginBottom: Spacing.lg }}
         >
           Services
         </Text>
@@ -57,7 +51,7 @@ export default function ServicesScreen() {
         >
           <Search size={15} color="rgba(255,255,255,0.7)" />
           <TextInput
-            className="flex-1 text-sm text-white"
+            style={{ flex: 1, fontSize: 14, fontFamily: "Urbanist_400Regular", color: "#fff" }}
             placeholder="Search services…"
             placeholderTextColor="rgba(255,255,255,0.6)"
             value={query}
@@ -145,16 +139,11 @@ export default function ServicesScreen() {
                       <Icon name={offer.iconName} size={20} color={offer.color} />
                     </View>
                     <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "800",
-                        color: Colors.navy,
-                        marginBottom: 4,
-                      }}
+                      style={{ fontSize: 12, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: Colors.textPrimary, marginBottom: 4 }}
                     >
                       {offer.label}
                     </Text>
-                    <Text style={{ fontSize: 10, color: Colors.muted, lineHeight: 14 }}>
+                    <Text style={{ fontSize: 10, fontFamily: "Urbanist_400Regular", color: Colors.textMuted, lineHeight: 14 }}>
                       {offer.sub}
                     </Text>
                   </TouchableOpacity>
@@ -216,7 +205,8 @@ export default function ServicesScreen() {
                           flex: 1,
                           fontSize: 12,
                           fontWeight: "700",
-                          color: Colors.navy,
+                          fontFamily: "Urbanist_700Bold",
+                          color: Colors.textPrimary,
                         }}
                         numberOfLines={2}
                       >
@@ -254,14 +244,14 @@ const SS = StyleSheet.create({
 
   // Featured
   featuredSection: { marginBottom: Spacing.xl },
-  categoryHeader:  { ...T.label, color: Colors.textLight, marginBottom: Spacing.md },
+  categoryHeader:  { fontSize: 10, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textLight, letterSpacing: 1.5, marginBottom: Spacing.md },
   featuredRow:     { flexDirection: "row", gap: 12 },
 
   // Categories
   catSection: { marginBottom: Spacing.xl },
   catTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
   catBar:      { width: 4, height: 16, borderRadius: 2 },
-  catTitle:    { ...T.label, color: Colors.textPrimary },
+  catTitle:    { fontSize: 10, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textPrimary, letterSpacing: 1.2 },
 
   // Service card (2-col grid)
   svcCard: {

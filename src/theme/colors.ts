@@ -13,9 +13,9 @@ const palette = {
   blue50:  "#F0F7FF",
 
   // Gradient family
-  grad0: "#2B2EE7",
-  grad1: "#2428D9",
-  grad2: "#1E21CC",
+  grad0: "#4BAEE8",
+  grad1: "#1878CE",
+  grad2: "#052D6E",
 
   // Neutrals
   white:   "#FFFFFF",
@@ -94,7 +94,7 @@ export const Colors = {
   gradientEnd:   palette.grad2,
 
   // Button gradient (same family)
-  buttonGradientStart:     "#2F35F0",
+  buttonGradientStart:     "#4BAEE8",
   buttonGradientHighlight: palette.grad0,
   buttonGradientMid:       palette.grad1,
   buttonGradientEnd:       palette.grad2,

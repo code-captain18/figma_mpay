@@ -6,13 +6,19 @@ import {
   Urbanist_800ExtraBold,
   useFonts,
 } from "@expo-google-fonts/urbanist";
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from "@expo-google-fonts/plus-jakarta-sans";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/store/auth.store";
-import { Colors } from "@/theme/colors";
+import { Colors } from "@/theme";
 import "../../global.css";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -56,6 +62,10 @@ export default function RootLayout() {
     Urbanist_600SemiBold,
     Urbanist_700Bold,
     Urbanist_800ExtraBold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
   });
 
   if (!fontsLoaded) {

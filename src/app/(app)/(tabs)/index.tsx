@@ -5,16 +5,18 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TransactionRow } from "@/components/ui/TransactionRow";
 import { MOCK_QUICK_ACTIONS, MOCK_SALES_CARDS } from "@/mocks/services";
 import { MOCK_TRANSACTIONS } from "@/mocks/transactions";
-import { MOCK_WALLETS } from "@/mocks/wallets";
+import { MOCK_WALLET_CARDS, MOCK_WALLETS } from "@/mocks/wallets";
 import { useAuth } from "@/store/auth.store";
 import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
 import type { Transaction } from "@/types";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { Bell, Eye, EyeOff } from "lucide-react-native";
-import { useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useRef, useState } from "react";
+import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -22,6 +24,7 @@ export default function HomeScreen() {
   const [balanceHidden, setBalanceHidden] = useState(false);
   const [activeWallet, setActiveWallet] = useState(0);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const cardScrollRef = useRef<ScrollView>(null);
 
   const displayName = user?.name.split(" ")[0] ?? "there";
   const initials = displayName[0]?.toUpperCase() ?? "U";
@@ -54,46 +57,65 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Wallet Card */}
-        <View style={S.cardWrap}>
-          <LinearGradient
-            colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
-            locations={[0, 0.45, 1]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={S.walletCard}
-          >
-            {/* Decorative rings */}
-            <View style={S.ring1} />
-            <View style={S.ring2} />
+        {/* Wallet Card Carousel */}
+        <ScrollView
+          ref={cardScrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          style={{ marginBottom: Spacing["2xl"] }}
+          onMomentumScrollEnd={(e) => {
+            const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+            setActiveWallet(idx);
+          }}
+        >
+          {MOCK_WALLETS.map((wallet, i) => (
+            <View key={wallet.id} style={{ width: SCREEN_WIDTH, paddingHorizontal: Spacing["2xl"] }}>
+              <LinearGradient
+                colors={MOCK_WALLET_CARDS[i].colors}
+                locations={[0, 0.42, 1]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={S.walletCard}
+              >
+                {/* Decorative rings */}
+                <View style={S.ring1} />
+                <View style={S.ring2} />
 
-            <View style={S.walletTop}>
-              <Text style={S.walletLabel}>{MOCK_WALLETS[activeWallet].label}</Text>
-              <TouchableOpacity onPress={() => setBalanceHidden((v) => !v)}
-                accessibilityRole="button"
-                accessibilityLabel={balanceHidden ? "Show balance" : "Hide balance"}
-                style={S.hideBtn}>
-                {balanceHidden ? <EyeOff size={14} color="rgba(255,255,255,0.7)" /> : <Eye size={14} color="rgba(255,255,255,0.7)" />}
-                <Text style={S.hideText}>{balanceHidden ? "Show" : "Hide"}</Text>
-              </TouchableOpacity>
+                <View style={S.walletTop}>
+                  <Text style={S.walletLabel}>{wallet.label}</Text>
+                  <TouchableOpacity onPress={() => setBalanceHidden((v) => !v)}
+                    accessibilityRole="button"
+                    accessibilityLabel={balanceHidden ? "Show balance" : "Hide balance"}
+                    style={S.hideBtn}>
+                    {balanceHidden ? <EyeOff size={14} color="rgba(255,255,255,0.7)" /> : <Eye size={14} color="rgba(255,255,255,0.7)" />}
+                    <Text style={S.hideText}>{balanceHidden ? "Show" : "Hide"}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={S.balanceAmount}>
+                  {balanceHidden ? "••••••" : wallet.amount}
+                </Text>
+                <Text style={S.balanceSub}>{wallet.sub}</Text>
+
+                {/* Pagination */}
+                <View style={S.pagination}>
+                  {MOCK_WALLETS.map((_, j) => (
+                    <TouchableOpacity key={j}
+                      onPress={() => {
+                        cardScrollRef.current?.scrollTo({ x: j * SCREEN_WIDTH, animated: true });
+                        setActiveWallet(j);
+                      }}
+                      accessibilityRole="radio" accessibilityState={{ selected: activeWallet === j }}
+                      style={[S.pageDot, activeWallet === j && S.pageDotActive]} />
+                  ))}
+                  <Text style={S.pageCount}>{activeWallet + 1}/{MOCK_WALLETS.length}</Text>
+                </View>
+              </LinearGradient>
             </View>
-
-            <Text style={S.balanceAmount}>
-              {balanceHidden ? "••••••" : MOCK_WALLETS[activeWallet].amount}
-            </Text>
-            <Text style={S.balanceSub}>{MOCK_WALLETS[activeWallet].sub}</Text>
-
-            {/* Pagination */}
-            <View style={S.pagination}>
-              {MOCK_WALLETS.map((_, i) => (
-                <TouchableOpacity key={i} onPress={() => setActiveWallet(i)}
-                  accessibilityRole="radio" accessibilityState={{ selected: activeWallet === i }}
-                  style={[S.pageDot, activeWallet === i && S.pageDotActive]} />
-              ))}
-              <Text style={S.pageCount}>{activeWallet + 1}/{MOCK_WALLETS.length}</Text>
-            </View>
-          </LinearGradient>
-        </View>
+          ))}
+        </ScrollView>
 
         {/* Quick Actions */}
         <View style={S.cardWrap}>
@@ -110,7 +132,7 @@ export default function HomeScreen() {
                   accessibilityLabel={action.label}
                   style={[S.actionItem, { backgroundColor: action.bg }]}
                 >
-                  <Icon name={action.iconName} size={26} color={action.color} />
+                  <Icon name={action.iconName} size={22} color={action.color} />
                   <Text style={S.actionLabel}>{action.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -170,8 +192,8 @@ const S = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.lg,
   },
-  greeting: { ...T.bodyMD, color: Colors.textMuted },
-  name: { ...T.headingLG, color: Colors.textPrimary, fontFamily: "Urbanist_800ExtraBold" },
+  greeting: { fontSize: 12, fontFamily: "Urbanist_500Medium", color: Colors.textMuted },
+  name: { fontSize: 16, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary },
   headerRight: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
   bellBtn: {
     width: 44, height: 44, borderRadius: 22,
@@ -208,15 +230,15 @@ const S = StyleSheet.create({
     transform: [{ rotate: "-20deg" }], backgroundColor: "transparent",
   },
   walletTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.xs },
-  walletLabel: { ...T.bodyMD, fontFamily: "Urbanist_700Bold", color: "rgba(255,255,255,0.8)" },
+  walletLabel: { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.75)" },
   hideBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   hideText: { ...T.caption, fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.7)" },
-  balanceAmount: { ...T.display, color: "#fff", marginBottom: Spacing.xs },
-  balanceSub: { ...T.caption, color: "rgba(255,255,255,0.58)", marginBottom: Spacing["2xl"] },
+  balanceAmount: { fontSize: 30, fontFamily: "Urbanist_800ExtraBold", color: "#fff", marginBottom: Spacing.xs },
+  balanceSub: { fontSize: 12, fontFamily: "Urbanist_400Regular", color: "rgba(255,255,255,0.5)", marginBottom: Spacing["2xl"] },
   pagination: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
   pageDot: { height: 8, width: 8, borderRadius: Radius.pill, backgroundColor: "rgba(255,255,255,0.3)" },
   pageDotActive: { width: 28, backgroundColor: "#fff" },
-  pageCount: { marginLeft: "auto", ...T.caption, fontFamily: "Urbanist_700Bold", color: "rgba(255,255,255,0.55)" },
+  pageCount: { marginLeft: "auto", fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.5)" },
 
   // Quick Actions
   actionsCard: {
@@ -235,7 +257,7 @@ const S = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 8,
   },
-  actionLabel: { fontSize: 13, fontFamily: "Urbanist_700Bold", color: Colors.textSecondary, textAlign: "center" },
+  actionLabel: { fontSize: 10, fontFamily: "Urbanist_600SemiBold", color: Colors.textSecondary, textAlign: "center" },
 
   // Sales
   section: { marginBottom: Spacing["2xl"] },
@@ -255,8 +277,8 @@ const S = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
     marginBottom: 12,
   },
-  salesCardLabel: { fontSize: 13, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
-  salesAmount: { ...T.amountLG, color: Colors.textPrimary, marginTop: 4 },
+  salesCardLabel: { fontSize: 10, fontFamily: "Urbanist_500Medium", color: Colors.textMuted },
+  salesAmount: { fontSize: 14, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary, marginTop: 4 },
 
   // Transactions
   txCard: {

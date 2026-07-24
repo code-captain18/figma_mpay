@@ -1,4 +1,4 @@
-import { Colors } from "@/theme/colors";
+import { Colors } from "@/theme";
 import { Tabs } from "expo-router";
 import {
   FileText,
@@ -52,10 +52,9 @@ export default function TabsLayout() {
         tabBarActiveTintColor: Colors.blue,
         tabBarInactiveTintColor: Colors.light,
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "700",
-          fontFamily: "Urbanist_700Bold",
-          marginTop: 4,
+          fontSize: 11,
+          fontFamily: "Urbanist_600SemiBold",
+          marginTop: 2,
         },
         tabBarIconStyle: {
           marginBottom: 0,
@@ -71,7 +70,7 @@ export default function TabsLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} icon={<Home size={30} color={color} />} />
+            <TabIcon focused={focused} icon={<Home size={24} color={color} />} />
           ),
         }}
       />
@@ -80,7 +79,7 @@ export default function TabsLayout() {
         options={{
           title: "Wallet",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} icon={<Wallet size={30} color={color} />} />
+            <TabIcon focused={focused} icon={<Wallet size={24} color={color} />} />
           ),
         }}
       />
@@ -89,7 +88,7 @@ export default function TabsLayout() {
         options={{
           title: "Services",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} icon={<Grid3x3 size={30} color={color} />} />
+            <TabIcon focused={focused} icon={<Grid3x3 size={24} color={color} />} />
           ),
         }}
       />
@@ -98,7 +97,7 @@ export default function TabsLayout() {
         options={{
           title: "History",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} icon={<FileText size={30} color={color} />} />
+            <TabIcon focused={focused} icon={<FileText size={24} color={color} />} />
           ),
         }}
       />
@@ -107,7 +106,7 @@ export default function TabsLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} icon={<User size={30} color={color} />} />
+            <TabIcon focused={focused} icon={<User size={24} color={color} />} />
           ),
         }}
       />

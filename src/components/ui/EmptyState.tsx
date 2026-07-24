@@ -55,7 +55,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   message: {
-    ...T.bodySM,
+    fontSize: 12,
+    fontWeight: "500",
+    fontFamily: "Urbanist_500Medium",
     color: Colors.textMuted,
     textAlign: "center",
     marginBottom: Spacing.lg,

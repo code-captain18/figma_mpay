@@ -19,6 +19,6 @@ export const MOCK_WALLET_CARDS: WalletCard[] = [
     label: "Mobile Money Wallet",
     balance: 1.34,
     number: "****  ****  ****  7703",
-    colors: [Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd],
+    colors: ["#1D3A6E", "#0B2250", "#060F2A"],
   },
 ];

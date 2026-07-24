@@ -89,10 +89,10 @@ export default function HistoryScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Clear search"
               >
-                <X size={16} color="#6091EE" />
+                <X size={16} color={Colors.primary} />
               </TouchableOpacity>
             ) : (
-              <SlidersHorizontal size={16} color="#6091EE" />
+              <SlidersHorizontal size={16} color={Colors.primary} />
             )}
           </View>
         </View>
@@ -140,17 +140,17 @@ const HS = StyleSheet.create({
   scrollContent: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.md, paddingBottom: Spacing["2xl"] },
 
   headerArea:    { paddingHorizontal: Spacing.xl, paddingTop: Spacing.lg, paddingBottom: Spacing.md },
-  headerEyebrow: { ...T.label, color: Colors.textLight, letterSpacing: 1.8, marginBottom: 6 },
-  headerTitle:   { ...T.headingMD, color: Colors.textPrimary, fontFamily: "Urbanist_800ExtraBold", marginBottom: Spacing.lg },
+  headerEyebrow: { fontSize: 10, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textLight, letterSpacing: 1.5, marginBottom: 6 },
+  headerTitle:   { fontSize: 18, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: Colors.textPrimary, marginBottom: Spacing.lg },
 
   // Stats
   statsRow:     { flexDirection: "row", gap: 14, marginBottom: Spacing.lg },
   statCard:     { flex: 1, borderRadius: Radius["2xl"], padding: Spacing.lg },
   statTop:      { flexDirection: "row", justifyContent: "space-between", marginBottom: 14 },
-  statLabel:    { ...T.headingSM },
+  statLabel:    { fontSize: 11, fontWeight: "600", fontFamily: "Urbanist_600SemiBold" },
   statIconWrap: { width: 30, height: 30, borderRadius: 15, backgroundColor: "rgba(255,255,255,0.45)", alignItems: "center", justifyContent: "center" },
-  statAmount:   { ...T.amountLG, fontFamily: "Urbanist_800ExtraBold", marginBottom: 5 },
-  statPeriod:   { ...T.caption, color: Colors.textMuted },
+  statAmount:   { fontSize: 16, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", marginBottom: 5 },
+  statPeriod:   { fontSize: 10, fontFamily: "Urbanist_400Regular", color: Colors.textMuted },
 
   // Search
   searchBar:    {
@@ -167,7 +167,7 @@ const HS = StyleSheet.create({
 
   // Groups
   group:     { marginBottom: Spacing.xl },
-  groupDate: { ...T.bodySM, fontFamily: "Urbanist_700Bold", color: Colors.textMuted, marginBottom: Spacing.sm },
+  groupDate: { fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textLight, marginBottom: Spacing.sm },
   groupCard: {
     borderRadius: Radius["2xl"], overflow: "hidden",
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
@@ -176,5 +176,5 @@ const HS = StyleSheet.create({
 
   // Empty
   emptyState: { alignItems: "center", gap: 8, paddingTop: 60 },
-  emptyText:  { ...T.bodyMD, fontFamily: "Urbanist_600SemiBold", color: Colors.textLight },
+  emptyText:  { fontSize: 14, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: Colors.textLight },
 });

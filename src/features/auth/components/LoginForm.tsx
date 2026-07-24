@@ -1,5 +1,5 @@
 import { loginSchema, type LoginFormValues } from "@/features/auth/schemas/auth.schema";
-import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
+import { Colors, Radius, Shadows, Spacing } from "@/theme";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowRight, Eye, EyeOff, Fingerprint, Lock, User } from "lucide-react-native";
@@ -28,11 +28,20 @@ export function LoginForm({ onSuccess, onNavigateSignup }: LoginFormProps) {
 
   return (
     <View style={S.root}>
-      {/* Gradient top wash */}
+      {/* Page background gradient */}
       <LinearGradient
-        colors={["#D6E8FF", "#EBF3FF", "#F4F8FF"]}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
+        colors={["#DCE8FF", "#EAF1FF", "#E4EEFF"]}
+        locations={[0, 0.5, 1]}
+        start={{ x: 0.06, y: 0 }}
+        end={{ x: 0.94, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      {/* Login header wash */}
+      <LinearGradient
+        colors={["#EAF0FF", "#F4F7FF"]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={S.topWash}
         pointerEvents="none"
       />
@@ -42,21 +51,31 @@ export function LoginForm({ onSuccess, onNavigateSignup }: LoginFormProps) {
 
         {/* Branding */}
         <View style={S.brandingArea}>
-          <View style={[S.logoWrap, Shadows.strong]}>
-            <Image source={appLogo} resizeMode="cover" style={S.logo} />
+          <View style={S.logoGlow}>
+            <View style={S.logoWrap}>
+              <Image source={appLogo} resizeMode="cover" style={S.logo} />
+            </View>
           </View>
           <Text style={S.appName}>M-PAY</Text>
           <Text style={S.tagline}>Sell airtime, data, fiber and SMS bundles</Text>
           <View style={S.rule}>
-            <View style={S.ruleLine} />
+            <LinearGradient
+              colors={["transparent", "rgba(21,101,192,0.27)"]}
+              start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+              style={S.ruleLine}
+            />
             <View style={S.ruleDot} />
-            <View style={S.ruleLine} />
+            <LinearGradient
+              colors={["rgba(21,101,192,0.27)", "transparent"]}
+              start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+              style={S.ruleLine}
+            />
           </View>
         </View>
 
         {/* Form card */}
         <View style={[S.card, Shadows.medium]}>
-          <Text style={S.cardTitle}>Welcome back</Text>
+          <Text style={S.cardTitle}>Welcome back 👋</Text>
           <Text style={S.cardSubtitle}>Use your login credentials to sign in.</Text>
 
           {/* Email */}
@@ -71,7 +90,7 @@ export function LoginForm({ onSuccess, onNavigateSignup }: LoginFormProps) {
                   <User size={16} color={credFocus ? Colors.primary : Colors.textLight} />
                   <View style={S.inputDivider} />
                   <TextInput style={S.textInput} placeholder="you@example.com"
-                    placeholderTextColor={Colors.textDisabled} value={value}
+                    placeholderTextColor="#9BAAC4" value={value}
                     onChangeText={onChange}
                     onBlur={() => { setCredFocus(false); onBlur(); }}
                     onFocus={() => setCredFocus(true)}
@@ -94,7 +113,7 @@ export function LoginForm({ onSuccess, onNavigateSignup }: LoginFormProps) {
                   <Lock size={16} color={passFocus ? Colors.primary : Colors.textLight} />
                   <View style={S.inputDivider} />
                   <TextInput style={S.textInput} placeholder="Enter your password"
-                    placeholderTextColor={Colors.textDisabled} value={value}
+                    placeholderTextColor="#9BAAC4" value={value}
                     onChangeText={onChange}
                     onBlur={() => { setPassFocus(false); onBlur(); }}
                     onFocus={() => setPassFocus(true)}
@@ -123,9 +142,10 @@ export function LoginForm({ onSuccess, onNavigateSignup }: LoginFormProps) {
           <Pressable onPress={handleSubmit(onSubmit)} disabled={isSubmitting}
             accessibilityRole="button" accessibilityLabel="Sign in"
             accessibilityState={{ disabled: isSubmitting }}
-            style={({ pressed }) => [{ opacity: pressed || isSubmitting ? 0.85 : 1 }]}>
-            <LinearGradient colors={["#1565C0","#1976D2","#0D47A1"]}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[S.ctaBtn, Shadows.medium]}>
+            style={({ pressed }) => [{ transform: [{ scale: pressed || isSubmitting ? 0.98 : 1 }], opacity: isSubmitting ? 0.8 : 1 }]}>
+            <LinearGradient colors={["#1565C0", "#1976D2", "#0D47A1"]}
+              locations={[0, 0.55, 1]}
+              start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={[S.ctaBtn, S.ctaBtnShadow]}>
               <Text style={S.ctaBtnText}>{isSubmitting ? "Signing in..." : "Sign In"}</Text>
               {!isSubmitting && <ArrowRight size={16} color="#fff" />}
             </LinearGradient>
@@ -139,9 +159,10 @@ export function LoginForm({ onSuccess, onNavigateSignup }: LoginFormProps) {
 
           {/* Biometric */}
           <Pressable onPress={onSuccess} accessibilityRole="button" accessibilityLabel="Use biometric login"
-            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
-            <LinearGradient colors={["#3B82D6","#2A6FC4","#1B57A8"]}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[S.ctaBtn, Shadows.medium]}>
+            style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
+            <LinearGradient colors={["#1565C0", "#1976D2", "#0D47A1"]}
+              locations={[0, 0.55, 1]}
+              start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={[S.ctaBtn, S.ctaBtnShadow]}>
               <Fingerprint size={17} color="#fff" />
               <Text style={S.ctaBtnText}>Use Biometric Login</Text>
             </LinearGradient>
@@ -165,43 +186,45 @@ export function LoginForm({ onSuccess, onNavigateSignup }: LoginFormProps) {
 }
 
 const S = StyleSheet.create({
-  root:          { flex: 1, backgroundColor: "#F4F8FF" },
+  root:          { flex: 1 },
   topWash:       { ...StyleSheet.absoluteFill, height: 340, borderBottomLeftRadius: 48, borderBottomRightRadius: 48 },
   scroll:        { flex: 1 },
   scrollContent: { paddingBottom: Spacing["3xl"] },
 
   // Branding
   brandingArea:  { alignItems: "center", paddingHorizontal: Spacing["2xl"], paddingTop: Spacing["4xl"], paddingBottom: Spacing["2xl"] },
-  logoWrap:      { width: 84, height: 84, borderRadius: Radius["2xl"], overflow: "hidden", marginBottom: Spacing.lg },
+  logoGlow:      { shadowColor: "#1565C0", shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 3, marginBottom: Spacing.lg },
+  logoWrap:      { width: 84, height: 84, borderRadius: Radius["2xl"], overflow: "hidden" },
   logo:          { width: 84, height: 84 },
-  appName:       { fontSize: 30, fontFamily: "Urbanist_800ExtraBold", color: Colors.textPrimary, letterSpacing: -0.8 },
-  tagline:       { fontSize: 14, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted, letterSpacing: 0.1, textAlign: "center", marginTop: Spacing.sm },
+  appName:       { fontSize: 28, fontFamily: "PlusJakartaSans_800ExtraBold", color: "#0C1A3A", letterSpacing: -0.8 },
+  tagline:       { fontSize: 12.5, fontFamily: "PlusJakartaSans_500Medium", color: "#5A6A8A", letterSpacing: 0.1, textAlign: "center", marginTop: Spacing.sm },
   rule:          { flexDirection: "row", alignItems: "center", width: 240, gap: Spacing.sm, marginTop: Spacing.xl },
-  ruleLine:      { flex: 1, height: 1.5, backgroundColor: Colors.border },
-  ruleDot:       { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.primary, opacity: 0.65 },
+  ruleLine:      { flex: 1, height: 1.5 },
+  ruleDot:       { width: 6, height: 6, borderRadius: 3, backgroundColor: "rgba(21,101,192,0.4)" },
 
   // Form card
   card:          { marginHorizontal: Spacing.xl, borderRadius: Radius["3xl"], backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, padding: Spacing["2xl"] },
-  cardTitle:     { fontSize: 22, fontFamily: "Urbanist_800ExtraBold", color: Colors.textPrimary, letterSpacing: -0.4, marginBottom: Spacing.xs },
-  cardSubtitle:  { ...T.bodyMD, color: Colors.textMuted, marginBottom: Spacing["2xl"] },
+  cardTitle:     { fontSize: 20, fontFamily: "PlusJakartaSans_800ExtraBold", color: "#0C1A3A", letterSpacing: -0.5, marginBottom: Spacing.xs },
+  cardSubtitle:  { fontSize: 13, fontFamily: "PlusJakartaSans_500Medium", color: "#5A6A8A", marginBottom: Spacing["2xl"] },
   fieldGroup:    { marginBottom: Spacing.md },
-  inputLabel:    { ...T.label, color: Colors.textMuted, marginBottom: Spacing.sm },
+  inputLabel:    { fontSize: 11, fontFamily: "PlusJakartaSans_700Bold", color: "#9BAAC4", letterSpacing: 0.7, marginBottom: Spacing.sm },
   inputRow:      { flexDirection: "row", alignItems: "center", height: 54, borderRadius: Radius.lg, borderWidth: 1.5, paddingHorizontal: Spacing.lg, gap: Spacing.md },
   inputDivider:  { width: 1, height: 18, backgroundColor: Colors.divider },
-  textInput:     { flex: 1, ...T.bodyMD, color: Colors.textPrimary, paddingVertical: 0 },
-  errorText:     { ...T.caption, color: Colors.error, marginTop: 5 },
+  textInput:     { flex: 1, fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#0C1A3A", paddingVertical: 0 },
+  errorText:     { fontSize: 11, fontFamily: "PlusJakartaSans_400Regular", color: Colors.error, marginTop: 5 },
   forgotRow:     { alignItems: "flex-end", marginTop: Spacing.sm, marginBottom: Spacing["2xl"] },
-  forgotText:    { ...T.bodySM, fontFamily: "Urbanist_700Bold", color: Colors.primaryDark },
+  forgotText:    { fontSize: 12.5, fontFamily: "PlusJakartaSans_700Bold", color: "#1565C0" },
   ctaBtn:        { height: 54, borderRadius: Radius.lg, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: Spacing.sm },
-  ctaBtnText:    { fontSize: 16, fontFamily: "Urbanist_800ExtraBold", color: "#fff", letterSpacing: -0.2 },
+  ctaBtnShadow:  { shadowColor: "#1565C0", shadowOpacity: 0.38, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
+  ctaBtnText:    { fontSize: 15, fontFamily: "PlusJakartaSans_800ExtraBold", color: "#fff", letterSpacing: -0.2 },
   dividerRow:    { flexDirection: "row", alignItems: "center", gap: Spacing.md, marginVertical: Spacing.xl },
   dividerLine:   { flex: 1, height: 1, backgroundColor: Colors.divider },
-  dividerText:   { ...T.caption, fontFamily: "Urbanist_600SemiBold", color: Colors.textLight },
+  dividerText:   { fontSize: 11, fontFamily: "PlusJakartaSans_500Medium", color: Colors.textLight },
 
   // Footer
   footer:        { alignItems: "center", marginTop: Spacing["2xl"], paddingHorizontal: Spacing.xl },
   footerRow:     { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
-  footerText:    { ...T.bodyMD, color: Colors.textMuted },
-  footerLink:    { ...T.bodyMD, fontFamily: "Urbanist_700Bold", color: Colors.primaryDark },
-  version:       { ...T.caption, color: Colors.textLight, marginTop: Spacing.md },
+  footerText:    { fontSize: 13, fontFamily: "PlusJakartaSans_500Medium", color: "#5A6A8A" },
+  footerLink:    { fontSize: 13, fontFamily: "PlusJakartaSans_700Bold", color: "#1565C0" },
+  version:       { fontSize: 11, fontFamily: "PlusJakartaSans_400Regular", color: "#9BAAC4", marginTop: Spacing.md },
 });

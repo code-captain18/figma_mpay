@@ -42,9 +42,9 @@ export default function ProfileScreen() {
         {/* Gradient header */}
         <LinearGradient
           colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
-          locations={[0, 0.46, 1]}
+          locations={[0, 0.42, 1]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0.15 }}
+          end={{ x: 1, y: 1 }}
           style={PS.gradHeader}
         >
           <Text
@@ -66,16 +66,16 @@ export default function ProfileScreen() {
             <View style={{ flex: 1, gap: 2 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <Text
-                  style={{ ...T.headingMD, color: "#fff", fontFamily: "Urbanist_800ExtraBold" }}
+                  style={{ fontSize: 18, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "#fff" }}
                 >
                   {user?.name ?? "User"}
                 </Text>
                 <BadgeCheck size={17} color={Colors.orange} />
               </View>
-              <Text style={{ ...T.bodyMD, fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.85)" }}>
+              <Text style={{ fontSize: 12, fontFamily: "Urbanist_400Regular", color: "rgba(255,255,255,0.6)" }}>
                 {user?.phone ?? "+233 00 000 0000"}
               </Text>
-              <Text style={{ ...T.bodySM, color: "rgba(255,255,255,0.65)" }}>
+              <Text style={{ fontSize: 12, fontFamily: "Urbanist_400Regular", color: "rgba(255,255,255,0.5)" }}>
                 {user?.email ?? "user@mpay.com"}
               </Text>
             </View>
@@ -156,7 +156,7 @@ const PS = StyleSheet.create({
   scroll:      { flex: 1 },
   scrollContent: { paddingBottom: Spacing["3xl"] },
   gradHeader:  { overflow: "hidden", paddingBottom: Spacing["3xl"], paddingTop: Spacing.xl },
-  gradTitle:   { ...T.headingMD, color: "#fff", fontFamily: "Urbanist_800ExtraBold", marginBottom: Spacing.xl, paddingHorizontal: Spacing["2xl"] },
+  gradTitle:   { fontSize: 12, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.6)", marginBottom: Spacing.xl, paddingHorizontal: Spacing["2xl"] },
   avatarRow:   { flexDirection: "row", alignItems: "center", gap: Spacing.lg, paddingHorizontal: Spacing["2xl"] },
   avatarWrap:  { position: "relative" },
   avatarCircle: {
@@ -178,21 +178,21 @@ const PS = StyleSheet.create({
   },
   statItem:    { flex: 1, alignItems: "center", paddingVertical: 14 },
   statBorder:  { borderRightWidth: 1, borderRightColor: "rgba(255,255,255,0.1)" },
-  statValue:   { fontSize: 16, fontFamily: "Urbanist_800ExtraBold", color: "#fff" },
-  statLabel:   { fontSize: 10, color: "rgba(255,255,255,0.55)", marginTop: 3, textAlign: "center" },
+  statValue:   { fontSize: 14, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "#fff" },
+  statLabel:   { fontSize: 10, fontWeight: "500", fontFamily: "Urbanist_500Medium", color: "rgba(255,255,255,0.55)", marginTop: 3, textAlign: "center" },
 
   sectionsArea: { marginTop: Spacing.xl, gap: Spacing.xl, paddingHorizontal: Spacing.xl },
-  sectionTitle: { ...T.label, color: Colors.textLight, marginBottom: Spacing.sm },
+  sectionTitle: { fontSize: 10, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textLight, letterSpacing: 1.5, marginBottom: Spacing.sm },
   sectionCard:  {
     borderRadius: Radius.lg, overflow: "hidden",
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
   },
   itemRow:     { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: Spacing.lg, paddingVertical: 14 },
   itemIcon:    { width: 36, height: 36, borderRadius: Radius.md, alignItems: "center", justifyContent: "center" },
-  itemLabel:   { flex: 1, ...T.bodyMD, fontFamily: "Urbanist_600SemiBold", color: Colors.textPrimary },
+  itemLabel:   { flex: 1, fontSize: 14, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: Colors.textPrimary },
   itemDivider: { height: 1, backgroundColor: Colors.divider, marginHorizontal: Spacing.lg },
   badge:       { paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.pill },
-  badgeText:   { ...T.caption, fontFamily: "Urbanist_700Bold" },
+  badgeText:   { fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold" },
 
   signOutBtn:  {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
@@ -200,6 +200,6 @@ const PS = StyleSheet.create({
     borderColor: Colors.errorBg, backgroundColor: Colors.errorBg, paddingVertical: Spacing.lg,
     marginTop: Spacing.xs,
   },
-  signOutText: { ...T.bodyMD, fontFamily: "Urbanist_700Bold", color: Colors.error },
-  versionText: { ...T.caption, color: Colors.textDisabled, textAlign: "center", marginTop: Spacing.xs },
+  signOutText: { fontSize: 14, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.error },
+  versionText: { fontSize: 11, fontFamily: "Urbanist_400Regular", color: Colors.pale, textAlign: "center", marginTop: Spacing.xs },
 });

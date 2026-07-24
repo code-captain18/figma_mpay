@@ -1,47 +1,65 @@
-import { Colors } from "@/theme/colors";
 import { LinearGradient } from "expo-linear-gradient";
-import { Text, TouchableOpacity } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
+import { Colors, Radius, T } from "@/theme";
 
 interface GradientButtonProps {
-    label: string;
-    onPress?: () => void;
-    disabled?: boolean;
+  label: string;
+  onPress?: () => void;
+  disabled?: boolean;
+  loading?: boolean;
 }
 
-export function GradientButton({ label, onPress, disabled }: GradientButtonProps) {
-    return (
+export function GradientButton({ label, onPress, disabled = false, loading = false }: GradientButtonProps) {
+  const isDisabled = disabled || loading;
+
+  return (
+    <Pressable
+      onPress={isDisabled ? undefined : onPress}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled }}
+      style={styles.pressable}
+    >
+      {({ pressed }) => (
         <LinearGradient
-            colors={
-                disabled
-                    ? ["#D8EAF6", "#D8EAF6"]
-                    : [
-                        Colors.buttonGradientStart,
-                        Colors.buttonGradientHighlight,
-                        Colors.buttonGradientMid,
-                        Colors.buttonGradientEnd,
-                    ]
-            }
-            locations={disabled ? [0, 1] : [0, 0.24, 0.58, 1]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="rounded-2xl"
+          colors={
+            isDisabled
+              ? [Colors.textDisabled, Colors.textDisabled]
+              : pressed
+              ? [Colors.primaryPressed, Colors.primaryPressed]
+              : [Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]
+          }
+          locations={isDisabled || pressed ? undefined : [0, 0.42, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.gradient, isDisabled && styles.disabledOpacity]}
         >
-            <TouchableOpacity
-                onPress={disabled ? undefined : onPress}
-                accessibilityRole="button"
-                accessibilityState={{ disabled }}
-                className="py-4 items-center"
-            >
-                <Text
-                    className="text-sm font-extrabold"
-                    style={{
-                        color: disabled ? Colors.pale : "#fff",
-                        fontFamily: "Urbanist_800ExtraBold",
-                    }}
-                >
-                    {label}
-                </Text>
-            </TouchableOpacity>
+          {loading ? (
+            <ActivityIndicator size="small" color={Colors.textOnDark} />
+          ) : (
+            <Text style={[styles.label, isDisabled && styles.labelDisabled]}>{label}</Text>
+          )}
         </LinearGradient>
-    );
+      )}
+    </Pressable>
+  );
 }
+
+const styles = StyleSheet.create({
+  pressable: { width: "100%" },
+  gradient: {
+    borderRadius: Radius.xl,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  disabledOpacity: { opacity: 0.6 },
+  label: {
+    fontSize: 14,
+    fontWeight: "800",
+    fontFamily: "Urbanist_800ExtraBold",
+    color: Colors.textOnDark,
+  },
+  labelDisabled: {
+    color: Colors.textDisabled,
+  },
+});

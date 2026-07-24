@@ -33,12 +33,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: {
-    ...T.headingMD,
+    fontSize: 14,
+    fontFamily: "Urbanist_700Bold",
     color: Colors.textPrimary,
   },
   action: {
-    ...T.bodySM,
-    color: Colors.primary,
+    fontSize: 12,
     fontFamily: "Urbanist_600SemiBold",
+    color: Colors.primary,
   },
 });

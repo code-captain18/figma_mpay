@@ -64,7 +64,7 @@ export default function AirtimeScreen() {
         {step === "form" ? (
           <LinearGradient
             colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
-            locations={[0, 0.45, 1]}
+            locations={[0, 0.42, 1]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             className="px-5 pb-[18px] pt-3.5"
@@ -88,17 +88,10 @@ export default function AirtimeScreen() {
                 <ArrowLeft size={18} color="#fff" />
               </TouchableOpacity>
               <View>
-                <Text className="text-xs font-semibold text-white/70">
+                <Text style={{ fontSize: 12, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.6)" }}>
                   Services
                 </Text>
-                <Text
-                  style={{
-                    fontSize: 33 / 2,
-                    fontWeight: "800",
-                    color: "#fff",
-                    fontFamily: "Urbanist_800ExtraBold",
-                  }}
-                >
+                <Text style={{ fontSize: 16, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "#fff" }}>
                   Airtime Top-Up
                 </Text>
               </View>
@@ -128,7 +121,7 @@ export default function AirtimeScreen() {
                     }}
                   >
                     <NetworkLogo id={n.id} size={26} />
-                    <Text style={{ fontSize: 12, fontWeight: "700", color: active ? Colors.navy : "#D7E7FF" }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: active ? Colors.navy : "rgba(255,255,255,0.8)" }}>
                       {n.id === "airteltigo" ? "AT" : n.label}
                     </Text>
                   </TouchableOpacity>
@@ -139,7 +132,7 @@ export default function AirtimeScreen() {
         ) : (
           <LinearGradient
             colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
-            locations={[0, 0.45, 1]}
+            locations={[0, 0.42, 1]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{
@@ -169,10 +162,10 @@ export default function AirtimeScreen() {
               <ArrowLeft size={16} color="#fff" />
             </TouchableOpacity>
             <View className="flex-1">
-              <Text style={{ fontSize: 16, fontWeight: "800", color: "#fff", fontFamily: "Urbanist_800ExtraBold" }}>
+              <Text style={{ fontSize: 16, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "#fff" }}>
                 Airtime Top-Up
               </Text>
-              <Text className="text-[10px] text-white/75">
+              <Text style={{ ...T.caption, color: "rgba(255,255,255,0.75)" }}>
                 {step === "confirm" ? "Step 2 of 3" : "Done"}
               </Text>
             </View>
@@ -237,13 +230,8 @@ export default function AirtimeScreen() {
                   >
                     {active ? (
                       <LinearGradient
-                        colors={[
-                          Colors.buttonGradientStart,
-                          Colors.buttonGradientHighlight,
-                          Colors.buttonGradientMid,
-                          Colors.buttonGradientEnd,
-                        ]}
-                        locations={[0, 0.24, 0.58, 1]}
+                        colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
+                        locations={[0, 0.42, 1]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={{
@@ -258,9 +246,10 @@ export default function AirtimeScreen() {
                     ) : null}
                     <Text
                       style={{
-                        fontSize: 16 / 1.2,
+                        fontSize: 12,
                         fontWeight: "700",
-                        color: active ? Colors.white : Colors.light,
+                        fontFamily: "Urbanist_700Bold",
+                        color: active ? Colors.white : Colors.textLight,
                       }}
                     >
                       {r === "self" ? "For Myself" : "For Others"}
@@ -271,7 +260,7 @@ export default function AirtimeScreen() {
             </View>
 
             {/* Phone input */}
-            <Text className="mb-3 text-[13.333px] font-bold text-[#1A4A87]">
+            <Text style={{ fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textSecondary, marginBottom: 12 }}>
               Phone Number
             </Text>
             <View
@@ -298,11 +287,11 @@ export default function AirtimeScreen() {
                   borderRightColor: Colors.divider,
                 }}
               >
-                <Text style={{ fontSize: 15, fontWeight: "600", color: Colors.navy }}>GH</Text>
-                <Text style={{ fontSize: 15, fontWeight: "800", color: Colors.navy }}>+233</Text>
+                <Text style={{ fontSize: 14, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textPrimary }}>GH</Text>
+                <Text style={{ fontSize: 14, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textPrimary }}>+233</Text>
               </View>
               <TextInput
-                style={{ flex: 1, paddingHorizontal: 14, fontSize: 31 / 2, color: Colors.navy }}
+                style={{ flex: 1, paddingHorizontal: 14, fontSize: 14, fontFamily: "Urbanist_400Regular", color: Colors.textPrimary }}
                 placeholder="24 000 0000"
                 placeholderTextColor={Colors.pale}
                 keyboardType="phone-pad"
@@ -314,7 +303,7 @@ export default function AirtimeScreen() {
             </View>
 
             {/* Amount */}
-            <Text className="mb-3 text-[13.333px] font-bold text-[#1A4A87]">
+            <Text style={{ fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textSecondary, marginBottom: 12 }}>
               Select Amount (GHS)
             </Text>
             <View className="mb-4 flex-row flex-wrap gap-2.5">
@@ -341,13 +330,8 @@ export default function AirtimeScreen() {
                   >
                     {active ? (
                       <LinearGradient
-                        colors={[
-                          Colors.buttonGradientStart,
-                          Colors.buttonGradientHighlight,
-                          Colors.buttonGradientMid,
-                          Colors.buttonGradientEnd,
-                        ]}
-                        locations={[0, 0.24, 0.58, 1]}
+                        colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
+                        locations={[0, 0.42, 1]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={{
@@ -360,7 +344,7 @@ export default function AirtimeScreen() {
                       />
                     ) : null}
                     <Text
-                      style={{ fontSize: 35 / 2, fontWeight: "700", color: active ? Colors.white : Colors.navy }}
+                      style={{ fontSize: 14, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: active ? Colors.white : Colors.textPrimary }}
                     >
                       {a.toFixed(2)}
                     </Text>
@@ -383,9 +367,9 @@ export default function AirtimeScreen() {
                 ...Shadows.subtle,
               }}
             >
-              <Text style={{ fontSize: 15, fontWeight: "700", color: "#7089AB" }}>GHS</Text>
+              <Text style={{ ...T.bodyLG, fontFamily: "Urbanist_700Bold", color: Colors.textMuted }}>GHS</Text>
               <TextInput
-                style={{ flex: 1, fontSize: 31 / 2, color: Colors.navy }}
+                style={{ flex: 1, fontSize: 14, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textPrimary }}
                 placeholder="Custom amount"
                 placeholderTextColor={Colors.pale}
                 keyboardType="decimal-pad"
@@ -395,7 +379,7 @@ export default function AirtimeScreen() {
               />
             </View>
             {parsed > 0 && (
-              <Text className="mb-5 text-[11px]" style={{ color: Colors.muted }}>
+              <Text style={{ fontSize: 11, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: Colors.primary, marginBottom: 20 }}>
                 Fee: GHS{fee.toFixed(2)} · Total: GHS{total.toFixed(2)}
               </Text>
             )}
@@ -418,7 +402,8 @@ export default function AirtimeScreen() {
           >
             {/* Summary card */}
             <LinearGradient
-              colors={[Colors.gradientStart, Colors.gradientEnd]}
+              colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
+              locations={[0, 0.42, 1]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{ borderRadius: 20, padding: 24, alignItems: "center", marginBottom: 24 }}
@@ -436,13 +421,13 @@ export default function AirtimeScreen() {
               >
                 <PhoneCall size={24} color="#fff" />
               </View>
-              <Text style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", marginBottom: 4 }}>
+              <Text style={{ fontSize: 12, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.65)", marginBottom: 4 }}>
                 You are topping up
               </Text>
-              <Text style={{ fontSize: 32, fontWeight: "800", color: "#fff", fontFamily: "Urbanist_800ExtraBold" }}>
+              <Text style={{ fontSize: 32, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "#fff" }}>
                 GHS{parsed.toFixed(2)}
               </Text>
-              <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 6 }}>
+              <Text style={{ fontSize: 14, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: "rgba(255,255,255,0.85)", marginTop: 6 }}>
                 {network.label} · +233 {phone}
               </Text>
             </LinearGradient>
@@ -470,7 +455,7 @@ export default function AirtimeScreen() {
               accessibilityLabel="Edit details"
               className="mt-3.5 items-center"
             >
-              <Text className="text-[13px] font-semibold" style={{ color: Colors.muted }}>Edit Details</Text>
+              <Text style={{ ...T.bodyMD, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted }}>Edit Details</Text>
             </TouchableOpacity>
           </ScrollView>
         )}
@@ -502,18 +487,10 @@ export default function AirtimeScreen() {
             >
               <Check size={42} color={Colors.green} strokeWidth={2.5} />
             </View>
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: "800",
-                color: Colors.navy,
-                fontFamily: "Urbanist_800ExtraBold",
-                marginBottom: 6,
-              }}
-            >
+            <Text style={{ fontSize: 20, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: Colors.textPrimary, marginBottom: 6 }}>
               Top-Up Successful!
             </Text>
-            <Text style={{ fontSize: 13, color: Colors.muted, marginBottom: 32, textAlign: "center" }}>
+            <Text style={{ fontSize: 14, fontFamily: "Urbanist_400Regular", color: Colors.textMuted, marginBottom: 32, textAlign: "center" }}>
               GHS{parsed.toFixed(2)} airtime sent to {network.label} +233 {phone}
             </Text>
             <View
@@ -549,7 +526,7 @@ export default function AirtimeScreen() {
                   backgroundColor: Colors.white,
                 }}
               >
-                <Text className="text-sm font-bold" style={{ color: Colors.navy }}>Buy Again</Text>
+                <Text style={{ ...T.bodyMD, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary }}>Buy Again</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

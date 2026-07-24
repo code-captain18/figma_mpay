@@ -1,7 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronRight, Eye, EyeOff } from "lucide-react-native";
-import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Banknote, ChevronRight, Eye, EyeOff } from "lucide-react-native";
+import React, { useRef, useState } from "react";
+import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TransactionSheet } from "@/components/feedback/TransactionSheet";
 import { TransactionRow } from "@/components/ui/TransactionRow";
@@ -10,21 +10,24 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { MOCK_TRANSACTIONS } from "@/mocks/transactions";
 import { MOCK_WALLET_CARDS } from "@/mocks/wallets";
 import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
+import type { LucideProps } from "lucide-react-native";
 import type { Transaction } from "@/types";
 
-const WALLET_ACTIONS = [
-  { label: "Add Money", icon: "↓", color: Colors.primary,  bg: Colors.primaryLight },
-  { label: "Send",     icon: "↑", color: Colors.green,   bg: Colors.greenBg },
-  { label: "Withdraw", icon: "⬡", color: Colors.orange,  bg: Colors.orangeBg },
-  { label: "Transfer", icon: "⇄", color: Colors.purple,  bg: Colors.purpleBg },
+const SCREEN_WIDTH = Dimensions.get("window").width;
+
+const WALLET_ACTIONS: { label: string; IconComponent: React.ComponentType<LucideProps>; color: string; bg: string }[] = [
+  { label: "Add Money", IconComponent: ArrowDownToLine, color: Colors.primary, bg: Colors.primaryLight },
+  { label: "Send",      IconComponent: ArrowUpFromLine, color: Colors.green,   bg: Colors.greenBg },
+  { label: "Withdraw",  IconComponent: Banknote,        color: Colors.orange,  bg: Colors.orangeBg },
+  { label: "Transfer",  IconComponent: ArrowLeftRight,  color: Colors.purple,  bg: Colors.purpleBg },
 ];
 
 export default function WalletScreen() {
   const [activeCard, setActiveCard] = useState(0);
   const [hidden, setHidden] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
-  const card = MOCK_WALLET_CARDS[activeCard];
   const totalBalance = MOCK_WALLET_CARDS.reduce((s, w) => s + w.balance, 0);
 
   return (
@@ -76,86 +79,98 @@ export default function WalletScreen() {
         </View>
 
         {/* Card Carousel */}
-        <View style={WS.padSection}>
-          <LinearGradient
-            colors={card.colors}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={WS.walletCard}
-          >
-            <View
-              style={{
-                position: "absolute",
-                top: -32,
-                right: -32,
-                width: 150,
-                height: 150,
-                borderRadius: 75,
-                backgroundColor: "rgba(255,255,255,0.08)",
-              }}
-            />
-            <View style={{ flex: 1, justifyContent: "space-between" }}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                }}
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          onMomentumScrollEnd={(e) => {
+            const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+            setActiveCard(idx);
+          }}
+        >
+          {MOCK_WALLET_CARDS.map((c) => (
+            <View key={c.id} style={{ width: SCREEN_WIDTH, paddingHorizontal: Spacing["2xl"] }}>
+              <LinearGradient
+                colors={c.colors}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={WS.walletCard}
               >
-                <View>
-                  <Text
-                    style={{ fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.65)", marginBottom: 4 }}
-                  >
-                    {card.label}
-                  </Text>
-                  <Text
+                <View
+                  style={{
+                    position: "absolute",
+                    top: -32,
+                    right: -32,
+                    width: 150,
+                    height: 150,
+                    borderRadius: 75,
+                    backgroundColor: "rgba(255,255,255,0.08)",
+                  }}
+                />
+                <View style={{ flex: 1, justifyContent: "space-between" }}>
+                  <View
                     style={{
-                      fontSize: 24,
-                      fontWeight: "800",
-                      color: "#fff",
-                      fontFamily: "Urbanist_800ExtraBold",
+                      flexDirection: "row",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
                     }}
                   >
-                    {hidden ? "••••••" : `GHS ${card.balance.toFixed(2)}`}
-                  </Text>
+                    <View>
+                      <Text
+                        style={{ fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.65)", marginBottom: 4 }}
+                      >
+                        {c.label}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 24,
+                          fontWeight: "800",
+                          color: "#fff",
+                          fontFamily: "Urbanist_800ExtraBold",
+                        }}
+                      >
+                        {hidden ? "••••••" : `GHS ${c.balance.toFixed(2)}`}
+                      </Text>
+                    </View>
+                    <CardChip />
+                  </View>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginTop: 24,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontFamily: "Urbanist_400Regular", letterSpacing: 2, color: "rgba(255,255,255,0.5)" }}>
+                      {c.number}
+                    </Text>
+                    <Text
+                      style={{ fontSize: 14, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "rgba(255,255,255,0.8)" }}
+                    >
+                      M-PAY
+                    </Text>
+                  </View>
                 </View>
-                <CardChip />
-              </View>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginTop: 24,
-                }}
-              >
-                <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", letterSpacing: 2 }}>
-                  {card.number}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "800",
-                    color: "rgba(255,255,255,0.8)",
-                    fontFamily: "Urbanist_800ExtraBold",
-                  }}
-                >
-                  M-PAY
-                </Text>
-              </View>
+              </LinearGradient>
             </View>
-          </LinearGradient>
-          <View style={WS.cardPagination}>
-            {MOCK_WALLET_CARDS.map((_, i) => (
-              <TouchableOpacity
-                key={i}
-                onPress={() => setActiveCard(i)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: activeCard === i }}
-                style={[WS.cardDot, activeCard === i && WS.cardDotActive]}
-              />
-            ))}
-          </View>
+          ))}
+        </ScrollView>
+        <View style={WS.cardPagination}>
+          {MOCK_WALLET_CARDS.map((_, i) => (
+            <TouchableOpacity
+              key={i}
+              onPress={() => {
+                scrollRef.current?.scrollTo({ x: i * SCREEN_WIDTH, animated: true });
+                setActiveCard(i);
+              }}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: activeCard === i }}
+              style={[WS.cardDot, activeCard === i && WS.cardDotActive]}
+            />
+          ))}
         </View>
 
         {/* Actions */}
@@ -168,7 +183,7 @@ export default function WalletScreen() {
                 accessibilityLabel={a.label}
                 style={[WS.actionItem, { backgroundColor: a.bg }]}
               >
-                <Text style={[WS.actionIcon, { color: a.color }]}>{a.icon}</Text>
+                <a.IconComponent size={22} color={a.color} />
                 <Text style={WS.actionLabel}>{a.label}</Text>
               </TouchableOpacity>
             ))}
@@ -188,7 +203,7 @@ export default function WalletScreen() {
                 width: "100%",
                 height: 6,
                 borderRadius: 99,
-                backgroundColor: "#E0EDF8",
+                backgroundColor: Colors.divider,
                 marginBottom: 20,
                 overflow: "hidden",
               }}
@@ -251,15 +266,15 @@ const WS = StyleSheet.create({
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: Spacing["2xl"], paddingTop: Spacing.xl, paddingBottom: Spacing.md,
   },
-  headerSub:  { ...T.caption, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
-  headerTitle: { ...T.headingMD, color: Colors.textPrimary, fontFamily: "Urbanist_800ExtraBold" },
+  headerSub:  { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
+  headerTitle: { fontSize: 18, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: Colors.textPrimary },
   hideToggle: {
     flexDirection: "row", alignItems: "center", gap: 6,
     borderRadius: Radius.pill, paddingHorizontal: 12, paddingVertical: 6,
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
     ...Shadows.subtle,
   },
-  hideToggleText: { ...T.caption, fontFamily: "Urbanist_700Bold", color: Colors.textMuted },
+  hideToggleText: { fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textMuted },
 
   // Total card
   totalCard: {
@@ -267,13 +282,13 @@ const WS = StyleSheet.create({
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
   },
-  totalLabel:  { ...T.caption, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted, marginBottom: 2 },
+  totalLabel:  { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted, marginBottom: 2 },
   totalAmount: { ...T.headingXL, color: Colors.textPrimary, fontFamily: "Urbanist_800ExtraBold" },
   legendLabel: { ...T.caption, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
 
   // Wallet card
-  walletCard:  { borderRadius: Radius["2xl"], padding: Spacing["2xl"], minHeight: 180, overflow: "hidden" },
-  cardPagination: { marginTop: 12, flexDirection: "row", justifyContent: "center", gap: 8 },
+  walletCard:  { borderRadius: 24, padding: Spacing["2xl"], minHeight: 180, overflow: "hidden" },
+  cardPagination: { marginTop: 12, marginBottom: Spacing.xl, flexDirection: "row", justifyContent: "center", gap: 8 },
   cardDot:     { height: 5, width: 6, borderRadius: Radius.pill, backgroundColor: Colors.pale },
   cardDotActive: { width: 24, backgroundColor: Colors.primary },
 
@@ -284,8 +299,7 @@ const WS = StyleSheet.create({
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
   },
   actionItem:  { flex: 1, alignItems: "center", gap: 9, borderRadius: Radius.xl, paddingVertical: 18, paddingHorizontal: 8 },
-  actionIcon:  { fontSize: 20, fontFamily: "Urbanist_700Bold" },
-  actionLabel: { fontSize: 13, fontFamily: "Urbanist_700Bold", color: Colors.textSecondary, textAlign: "center" },
+  actionLabel: { fontSize: 10, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textSecondary, textAlign: "center" },
 
   // This Month
   sectionTitle: { ...T.headingSM, color: Colors.textPrimary, marginBottom: Spacing.md },
@@ -294,8 +308,8 @@ const WS = StyleSheet.create({
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
   },
   spendHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: Spacing.sm },
-  spendLabel:  { ...T.bodySM, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
-  spendValue:  { ...T.bodySM, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary },
+  spendLabel:  { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
+  spendValue:  { fontSize: 12, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary },
   catRow:    { marginBottom: 12 },
   catHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
   catLabel:  { ...T.caption, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },

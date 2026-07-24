@@ -74,7 +74,7 @@ export function TransactionSheet({ transaction: tx, onClose }: TransactionSheetP
             <View style={DS.detailRow}>
               <Text style={DS.detailLabel}>Reference</Text>
               <View style={DS.refRow}>
-                <Text style={[DS.detailValue, { fontSize: 12 }]}>{tx.ref}</Text>
+                <Text style={{ fontSize: 11, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: Colors.textPrimary }}>{tx.ref}</Text>
                 <TouchableOpacity accessibilityRole="button" accessibilityLabel="Copy reference" style={DS.copyBtn}>
                   <Copy size={13} color={Colors.primary} />
                 </TouchableOpacity>
@@ -89,8 +89,8 @@ export function TransactionSheet({ transaction: tx, onClose }: TransactionSheetP
               <Text style={DS.shareBtnText}>Share Receipt</Text>
             </TouchableOpacity>
             <LinearGradient
-              colors={[Colors.buttonGradientStart, Colors.buttonGradientHighlight, Colors.buttonGradientMid, Colors.buttonGradientEnd]}
-              locations={[0, 0.24, 0.58, 1]}
+              colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
+              locations={[0, 0.42, 1]}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
               style={DS.repeatGrad}
             >
@@ -113,27 +113,27 @@ const DS = StyleSheet.create({
   handleWrap:  { alignItems: "center", paddingTop: 12, paddingBottom: 4 },
   handle:      { width: 40, height: 4, borderRadius: Radius.pill, backgroundColor: Colors.divider },
   header:      { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing["2xl"], paddingBottom: Spacing.lg, paddingTop: Spacing.sm },
-  headerTitle: { ...T.headingMD, color: Colors.textPrimary },
+  headerTitle: { fontSize: 14, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textPrimary },
   closeBtn:    { width: 34, height: 34, borderRadius: 17, backgroundColor: Colors.bg, alignItems: "center", justifyContent: "center" },
 
   hero:        { alignItems: "center", paddingBottom: Spacing.xl, borderBottomWidth: 1, borderBottomColor: Colors.divider },
   iconCircle:  { width: 72, height: 72, borderRadius: Radius["2xl"], alignItems: "center", justifyContent: "center", marginBottom: Spacing.md },
-  amount:      { ...T.display, letterSpacing: -0.5 },
-  amountSub:   { ...T.bodyMD, color: Colors.textMuted, marginTop: 4 },
+  amount:      { fontSize: 24, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", letterSpacing: -0.5 },
+  amountSub:   { fontSize: 12, fontFamily: "Urbanist_400Regular", color: Colors.textMuted, marginTop: 4 },
   statusBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: Radius.pill, paddingHorizontal: Spacing.md, paddingVertical: 5, marginTop: Spacing.sm },
-  statusText:  { fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold" },
+  statusText:  { fontSize: 11, fontWeight: "700", fontFamily: "Urbanist_700Bold" },
 
   scroll:      { paddingHorizontal: Spacing["2xl"] },
   detailRow:   { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: Colors.divider },
-  detailLabel: { fontSize: 15, fontFamily: "Urbanist_500Medium", color: Colors.textMuted },
-  detailValue: { fontSize: 15, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary },
+  detailLabel: { fontSize: 12, fontFamily: "Urbanist_500Medium", color: Colors.textMuted },
+  detailValue: { fontSize: 12, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: Colors.textPrimary },
   refRow:      { flexDirection: "row", alignItems: "center", gap: 8 },
   copyBtn:     { width: 32, height: 32, borderRadius: Radius.md, backgroundColor: "rgba(24,120,206,0.08)", alignItems: "center", justifyContent: "center" },
 
   actions:     { flexDirection: "row", gap: Spacing.md, paddingHorizontal: Spacing["2xl"], paddingTop: Spacing.xl },
   shareBtn:    { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 56, borderRadius: Radius.xl, borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.surfaceRaised },
-  shareBtnText:{ fontSize: 16, fontFamily: "Urbanist_700Bold", color: Colors.textSecondary },
+  shareBtnText:{ fontSize: 14, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textSecondary },
   repeatGrad:  { flex: 1, borderRadius: Radius.xl },
   repeatBtn:   { flex: 1, alignItems: "center", justifyContent: "center", height: 56 },
-  repeatBtnText: { fontSize: 16, fontFamily: "Urbanist_700Bold", color: "#fff" },
+  repeatBtnText: { fontSize: 14, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textOnDark },
 });

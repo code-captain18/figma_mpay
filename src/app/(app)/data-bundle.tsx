@@ -66,7 +66,7 @@ export default function DataBundleScreen() {
         {step === "form" ? (
           <LinearGradient
             colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
-            locations={[0, 0.45, 1]}
+            locations={[0, 0.42, 1]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 18 }}
@@ -90,17 +90,10 @@ export default function DataBundleScreen() {
                 <ArrowLeft size={18} color="#fff" />
               </TouchableOpacity>
               <View>
-                <Text style={{ fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.7)" }}>
+                <Text style={{ fontSize: 12, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.6)" }}>
                   Services
                 </Text>
-                <Text
-                  style={{
-                    fontSize: 33 / 2,
-                    fontWeight: "800",
-                    color: "#fff",
-                    fontFamily: "Urbanist_800ExtraBold",
-                  }}
-                >
+                <Text style={{ fontSize: 16, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "#fff" }}>
                   Data Bundle
                 </Text>
               </View>
@@ -133,7 +126,7 @@ export default function DataBundleScreen() {
                     }}
                   >
                     <NetworkLogo id={n.id} size={26} />
-                    <Text style={{ fontSize: 12, fontWeight: "700", color: active ? Colors.navy : "#D7E7FF" }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: active ? Colors.navy : "rgba(255,255,255,0.8)" }}>
                       {n.label}
                     </Text>
                   </TouchableOpacity>
@@ -144,7 +137,7 @@ export default function DataBundleScreen() {
         ) : (
           <LinearGradient
             colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
-            locations={[0, 0.45, 1]}
+            locations={[0, 0.42, 1]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{
@@ -174,10 +167,10 @@ export default function DataBundleScreen() {
               <ArrowLeft size={16} color="#fff" />
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: "800", color: "#fff", fontFamily: "Urbanist_800ExtraBold" }}>
+              <Text style={{ fontSize: 16, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "#fff" }}>
                 Data Bundle
               </Text>
-              <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.75)" }}>
+              <Text style={{ ...T.caption, color: "rgba(255,255,255,0.75)" }}>
                 {step === "confirm" ? "Step 2 of 3" : "Done"}
               </Text>
             </View>
@@ -242,7 +235,8 @@ export default function DataBundleScreen() {
                   >
                     {active ? (
                       <LinearGradient
-                        colors={[Colors.gradientStart, Colors.gradientEnd]}
+                        colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
+                        locations={[0, 0.42, 1]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={{
@@ -257,9 +251,10 @@ export default function DataBundleScreen() {
                     ) : null}
                     <Text
                       style={{
-                        fontSize: 16 / 1.2,
+                        fontSize: 12,
                         fontWeight: "700",
-                        color: active ? Colors.white : Colors.light,
+                        fontFamily: "Urbanist_700Bold",
+                        color: active ? Colors.white : Colors.textLight,
                       }}
                     >
                       {r === "self" ? "For Myself" : "For Others"}
@@ -270,7 +265,7 @@ export default function DataBundleScreen() {
             </View>
 
             {/* Phone */}
-            <Text style={{ fontSize: 16 / 1.2, fontWeight: "700", color: "#1A4A87", marginBottom: 12 }}>
+            <Text style={{ fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textSecondary, marginBottom: 12 }}>
               Phone Number
             </Text>
             <View
@@ -297,11 +292,11 @@ export default function DataBundleScreen() {
                   borderRightColor: Colors.divider,
                 }}
               >
-                <Text style={{ fontSize: 15, fontWeight: "600", color: Colors.navy }}>GH</Text>
-                <Text style={{ fontSize: 15, fontWeight: "800", color: Colors.navy }}>+233</Text>
+                <Text style={{ fontSize: 14, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textPrimary }}>GH</Text>
+                <Text style={{ fontSize: 14, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textPrimary }}>+233</Text>
               </View>
               <TextInput
-                style={{ flex: 1, paddingHorizontal: 14, fontSize: 31 / 2, color: Colors.navy }}
+                style={{ flex: 1, paddingHorizontal: 14, fontSize: 14, fontFamily: "Urbanist_400Regular", color: Colors.textPrimary }}
                 placeholder="24 000 0000"
                 placeholderTextColor={Colors.pale}
                 keyboardType="phone-pad"
@@ -313,7 +308,7 @@ export default function DataBundleScreen() {
             </View>
 
             {/* Duration tabs */}
-            <Text style={{ fontSize: 16 / 1.2, fontWeight: "700", color: "#1A4A87", marginBottom: 12 }}>
+            <Text style={{ fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textSecondary, marginBottom: 12 }}>
               Validity
             </Text>
             <View style={{ flexDirection: "row", gap: 8, marginBottom: 20 }}>
@@ -342,7 +337,8 @@ export default function DataBundleScreen() {
                   >
                     {active ? (
                       <LinearGradient
-                        colors={[Colors.gradientStart, Colors.gradientEnd]}
+                        colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
+                        locations={[0, 0.42, 1]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={{
@@ -356,11 +352,7 @@ export default function DataBundleScreen() {
                       />
                     ) : null}
                     <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "700",
-                        color: active ? Colors.white : Colors.muted,
-                      }}
+                      style={{ ...T.bodySM, fontFamily: "Urbanist_700Bold", color: active ? Colors.white : Colors.textMuted }}
                     >
                       {d}
                     </Text>
@@ -370,7 +362,7 @@ export default function DataBundleScreen() {
             </View>
 
             {/* Bundle grid */}
-            <Text style={{ fontSize: 16 / 1.2, fontWeight: "700", color: "#1A4A87", marginBottom: 10 }}>
+            <Text style={{ fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textSecondary, marginBottom: 10 }}>
               Choose Bundle
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 22 }}>
@@ -425,26 +417,14 @@ export default function DataBundleScreen() {
                       <Wifi size={16} color={Colors.green} />
                     </View>
                     <Text
-                      style={{
-                        fontSize: 33 / 2,
-                        fontWeight: "800",
-                        color: active ? Colors.blue : Colors.navy,
-                        fontFamily: "Urbanist_800ExtraBold",
-                      }}
+                      style={{ fontSize: 16, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: active ? "#fff" : Colors.textPrimary }}
                     >
                       {b.size}
                     </Text>
-                    <Text style={{ fontSize: 12, color: Colors.muted, marginTop: 3 }}>
+                    <Text style={{ fontSize: 10, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: active ? "rgba(255,255,255,0.65)" : Colors.textLight, marginTop: 3 }}>
                       {b.validity}
                     </Text>
-                    <Text
-                      style={{
-                        fontSize: 30 / 2,
-                        fontWeight: "700",
-                        color: Colors.blue,
-                        marginTop: 8,
-                      }}
-                    >
+                    <Text style={{ fontSize: 14, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: active ? "#fff" : Colors.blue, marginTop: 8 }}>
                       GHS{b.price.toFixed(2)}
                     </Text>
                   </TouchableOpacity>
@@ -469,7 +449,8 @@ export default function DataBundleScreen() {
             showsVerticalScrollIndicator={false}
           >
             <LinearGradient
-              colors={[Colors.gradientStart, Colors.gradientEnd]}
+              colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
+              locations={[0, 0.42, 1]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{ borderRadius: 20, padding: 24, alignItems: "center", marginBottom: 24 }}
@@ -487,13 +468,13 @@ export default function DataBundleScreen() {
               >
                 <Wifi size={26} color="#fff" />
               </View>
-              <Text style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", marginBottom: 4 }}>
+              <Text style={{ fontSize: 12, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.65)", marginBottom: 4 }}>
                 Activating bundle
               </Text>
-              <Text style={{ fontSize: 32, fontWeight: "800", color: "#fff", fontFamily: "Urbanist_800ExtraBold" }}>
+              <Text style={{ fontSize: 32, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "#fff" }}>
                 {selected.size}
               </Text>
-              <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 6 }}>
+              <Text style={{ fontSize: 14, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: "rgba(255,255,255,0.85)", marginTop: 6 }}>
                 {network.label} · +233 {phone} · {selected.validity}
               </Text>
             </LinearGradient>
@@ -521,7 +502,7 @@ export default function DataBundleScreen() {
               accessibilityLabel="Edit details"
               style={{ alignItems: "center", marginTop: 14 }}
             >
-              <Text style={{ fontSize: 13, fontWeight: "600", color: Colors.muted }}>Edit Details</Text>
+              <Text style={{ ...T.bodyMD, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted }}>Edit Details</Text>
             </TouchableOpacity>
           </ScrollView>
         )}
@@ -552,18 +533,10 @@ export default function DataBundleScreen() {
             >
               <Check size={42} color={Colors.green} strokeWidth={2.5} />
             </View>
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: "800",
-                color: Colors.navy,
-                fontFamily: "Urbanist_800ExtraBold",
-                marginBottom: 6,
-              }}
-            >
+            <Text style={{ fontSize: 20, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: Colors.textPrimary, marginBottom: 6 }}>
               Bundle Activated!
             </Text>
-            <Text style={{ fontSize: 13, color: Colors.muted, marginBottom: 32, textAlign: "center" }}>
+            <Text style={{ fontSize: 14, fontFamily: "Urbanist_400Regular", color: Colors.textMuted, marginBottom: 32, textAlign: "center" }}>
               {selected.size} data activated on {network.label} +233 {phone}
             </Text>
             <View
@@ -599,7 +572,7 @@ export default function DataBundleScreen() {
                   backgroundColor: Colors.white,
                 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: "700", color: Colors.navy }}>
+                <Text style={{ ...T.bodyMD, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary }}>
                   Buy Another Bundle
                 </Text>
               </TouchableOpacity>
