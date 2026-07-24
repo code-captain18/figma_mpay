@@ -1,25 +1,25 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Banknote, ChevronRight, Eye, EyeOff } from "lucide-react-native";
-import React, { useRef, useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { TransactionSheet } from "@/components/feedback/TransactionSheet";
-import { TransactionRow } from "@/components/ui/TransactionRow";
 import { CardChip } from "@/components/svg/CardChip";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { TransactionRow } from "@/components/ui/TransactionRow";
 import { MOCK_TRANSACTIONS } from "@/mocks/transactions";
 import { MOCK_WALLET_CARDS } from "@/mocks/wallets";
 import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
-import type { LucideProps } from "lucide-react-native";
 import type { Transaction } from "@/types";
+import { LinearGradient } from "expo-linear-gradient";
+import type { LucideProps } from "lucide-react-native";
+import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Banknote, Eye, EyeOff } from "lucide-react-native";
+import React, { useRef, useState } from "react";
+import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
 const WALLET_ACTIONS: { label: string; IconComponent: React.ComponentType<LucideProps>; color: string; bg: string }[] = [
   { label: "Add Money", IconComponent: ArrowDownToLine, color: Colors.primary, bg: Colors.primaryLight },
-  { label: "Send",      IconComponent: ArrowUpFromLine, color: Colors.green,   bg: Colors.greenBg },
-  { label: "Withdraw",  IconComponent: Banknote,        color: Colors.orange,  bg: Colors.orangeBg },
-  { label: "Transfer",  IconComponent: ArrowLeftRight,  color: Colors.purple,  bg: Colors.purpleBg },
+  { label: "Send", IconComponent: ArrowUpFromLine, color: Colors.green, bg: Colors.greenBg },
+  { label: "Withdraw", IconComponent: Banknote, color: Colors.orange, bg: Colors.orangeBg },
+  { label: "Transfer", IconComponent: ArrowLeftRight, color: Colors.purple, bg: Colors.purpleBg },
 ];
 
 export default function WalletScreen() {
@@ -53,13 +53,13 @@ export default function WalletScreen() {
         {/* Total Balance */}
         <View style={WS.padSection}>
           <View style={[WS.totalCard, Shadows.subtle, {
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              backgroundColor: Colors.surface,
-              borderWidth: 1,
-              borderColor: Colors.border,
-            }]}
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            backgroundColor: Colors.surface,
+            borderWidth: 1,
+            borderColor: Colors.border,
+          }]}
           >
             <View>
               <Text style={WS.totalLabel}>Total Balance</Text>
@@ -216,8 +216,8 @@ export default function WalletScreen() {
               />
             </View>
             {[{ label: "Airtime", pct: 56, amount: "GHS12.00", color: Colors.primary },
-              { label: "Data Bundle", pct: 79, amount: "GHS30.00", color: Colors.green },
-              { label: "Mobile Money", pct: 26, amount: "GHS20.00", color: Colors.orange },
+            { label: "Data Bundle", pct: 79, amount: "GHS30.00", color: Colors.green },
+            { label: "Mobile Money", pct: 26, amount: "GHS20.00", color: Colors.orange },
             ].map((cat) => (
               <View key={cat.label} style={WS.catRow}>
                 <View style={WS.catHeader}>
@@ -256,7 +256,7 @@ export default function WalletScreen() {
 }
 
 const WS = StyleSheet.create({
-  root:  { flex: 1, backgroundColor: Colors.bg },
+  root: { flex: 1, backgroundColor: Colors.bg },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: Spacing["3xl"] },
   padSection: { paddingHorizontal: Spacing["2xl"], marginBottom: Spacing.xl },
@@ -266,7 +266,7 @@ const WS = StyleSheet.create({
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: Spacing["2xl"], paddingTop: Spacing.xl, paddingBottom: Spacing.md,
   },
-  headerSub:  { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
+  headerSub: { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
   headerTitle: { fontSize: 18, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: Colors.textPrimary },
   hideToggle: {
     flexDirection: "row", alignItems: "center", gap: 6,
@@ -282,14 +282,14 @@ const WS = StyleSheet.create({
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
   },
-  totalLabel:  { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted, marginBottom: 2 },
+  totalLabel: { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted, marginBottom: 2 },
   totalAmount: { ...T.headingXL, color: Colors.textPrimary, fontFamily: "Urbanist_800ExtraBold" },
   legendLabel: { ...T.caption, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
 
   // Wallet card
-  walletCard:  { borderRadius: 24, padding: Spacing["2xl"], minHeight: 180, overflow: "hidden" },
+  walletCard: { borderRadius: 24, padding: Spacing["2xl"], minHeight: 180, overflow: "hidden" },
   cardPagination: { marginTop: 12, marginBottom: Spacing.xl, flexDirection: "row", justifyContent: "center", gap: 8 },
-  cardDot:     { height: 5, width: 6, borderRadius: Radius.pill, backgroundColor: Colors.pale },
+  cardDot: { height: 5, width: 6, borderRadius: Radius.pill, backgroundColor: Colors.pale },
   cardDotActive: { width: 24, backgroundColor: Colors.primary },
 
   // Actions
@@ -298,7 +298,7 @@ const WS = StyleSheet.create({
     flexDirection: "row", gap: Spacing.sm,
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
   },
-  actionItem:  { flex: 1, alignItems: "center", gap: 9, borderRadius: Radius.xl, paddingVertical: 18, paddingHorizontal: 8 },
+  actionItem: { flex: 1, alignItems: "center", gap: 9, borderRadius: Radius.xl, paddingVertical: 18, paddingHorizontal: 8 },
   actionLabel: { fontSize: 10, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textSecondary, textAlign: "center" },
 
   // This Month
@@ -308,16 +308,16 @@ const WS = StyleSheet.create({
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
   },
   spendHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: Spacing.sm },
-  spendLabel:  { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
-  spendValue:  { fontSize: 12, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary },
-  catRow:    { marginBottom: 12 },
+  spendLabel: { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
+  spendValue: { fontSize: 12, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary },
+  catRow: { marginBottom: 12 },
   catHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
-  catLabel:  { ...T.caption, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
+  catLabel: { ...T.caption, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
   catAmount: { ...T.caption, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary },
-  catBarBg:  { width: "100%", height: 5, borderRadius: Radius.pill, backgroundColor: Colors.divider, overflow: "hidden" },
+  catBarBg: { width: "100%", height: 5, borderRadius: Radius.pill, backgroundColor: Colors.divider, overflow: "hidden" },
   catBarFill: { height: "100%", borderRadius: Radius.pill },
 
   // Transactions
-  txCard:    { borderRadius: Radius.xl, overflow: "hidden", backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+  txCard: { borderRadius: Radius.xl, overflow: "hidden", backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
   txDivider: { height: 1, backgroundColor: Colors.divider, marginHorizontal: Spacing.lg },
 });
