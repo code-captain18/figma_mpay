@@ -1,9 +1,9 @@
 /**
  * SectionHeader — Title + optional "View all" link used throughout dashboard.
  */
-import React from "react";
+import { Colors, SCREEN_PADDING } from "@/theme";
+import { ChevronRight } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Colors, SCREEN_PADDING, T } from "@/theme";
 
 interface SectionHeaderProps {
   title: string;
@@ -16,8 +16,9 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
     <View style={styles.row}>
       <Text style={styles.title}>{title}</Text>
       {actionLabel && (
-        <TouchableOpacity onPress={onAction} hitSlop={8}>
-          <Text style={styles.action}>{actionLabel} ›</Text>
+        <TouchableOpacity onPress={onAction} hitSlop={8} style={styles.actionRow}>
+          <Text style={styles.action}>{actionLabel}</Text>
+          <ChevronRight size={13} color={Colors.primary} />
         </TouchableOpacity>
       )}
     </View>
@@ -41,5 +42,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Urbanist_600SemiBold",
     color: Colors.primary,
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 1,
   },
 });

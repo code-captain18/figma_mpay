@@ -49,7 +49,7 @@ export default function HomeScreen() {
           <View style={S.headerRight}>
             {/* Bell */}
             <TouchableOpacity style={S.bellBtn} accessibilityRole="button" accessibilityLabel="Notifications">
-              <Bell size={19} color={Colors.textMuted} />
+              <Bell size={17} color={Colors.textMuted} />
               <View style={S.bellDot} />
             </TouchableOpacity>
             {/* Avatar */}
@@ -89,7 +89,7 @@ export default function HomeScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={balanceHidden ? "Show balance" : "Hide balance"}
                     style={S.hideBtn}>
-                    {balanceHidden ? <EyeOff size={14} color="rgba(255,255,255,0.7)" /> : <Eye size={14} color="rgba(255,255,255,0.7)" />}
+                    {balanceHidden ? <EyeOff size={13} color="rgba(255,255,255,0.7)" /> : <Eye size={13} color="rgba(255,255,255,0.7)" />}
                     <Text style={S.hideText}>{balanceHidden ? "Show" : "Hide"}</Text>
                   </TouchableOpacity>
                 </View>
@@ -132,7 +132,7 @@ export default function HomeScreen() {
                   accessibilityLabel={action.label}
                   style={[S.actionItem, { backgroundColor: action.bg }]}
                 >
-                  <Icon name={action.iconName} size={22} color={action.color} />
+                  <Icon name={action.iconName} size={20} color={action.color} />
                   <Text style={S.actionLabel}>{action.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -147,7 +147,7 @@ export default function HomeScreen() {
             {MOCK_SALES_CARDS.map((card) => (
               <View key={card.label} style={[S.salesCard, Shadows.subtle]}>
                 <View style={[S.salesIcon, { backgroundColor: card.bg }]}>
-                  <Icon name={card.iconName} size={22} color={card.color} />
+                  <Icon name={card.iconName} size={17} color={card.color} />
                 </View>
                 <Text style={S.salesCardLabel}>{card.label}</Text>
                 <Text style={S.salesAmount}>{card.amount}</Text>
