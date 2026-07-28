@@ -2,11 +2,18 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Banknote,
+  Bell,
   BellRing,
+  CheckCircle2,
+  ChevronRight,
+  Code2,
   Droplets,
+  Eye,
+  EyeOff,
   FileText,
   Globe,
   HelpCircle,
+  Layers,
   Lock,
   MessageSquare,
   MoreHorizontal,
@@ -18,14 +25,18 @@ import {
   ShieldCheck,
   Smartphone,
   Star,
+  TrendingDown,
+  TrendingUp,
   Tv,
   Wifi,
+  XCircle,
   Zap,
 } from "lucide-react-native";
 import React from "react";
 import type { LucideProps } from "lucide-react-native";
 
 const ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
+  // PascalCase (existing)
   Phone,
   Wifi,
   Smartphone,
@@ -48,6 +59,23 @@ const ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
   Star,
   FileText,
   ScrollText,
+  // kebab-case
+  "bell": Bell,
+  "eye": Eye,
+  "eye-off": EyeOff,
+  "check-circle-2": CheckCircle2,
+  "x-circle": XCircle,
+  "arrow-down-left": ArrowDownLeft,
+  "arrow-up-right": ArrowUpRight,
+  "trending-up": TrendingUp,
+  "trending-down": TrendingDown,
+  "globe": Globe,
+  "code-2": Code2,
+  "layers": Layers,
+  "chevron-right": ChevronRight,
+  "phone": Phone,
+  "wifi": Wifi,
+  "smartphone": Smartphone,
 };
 
 interface IconProps {

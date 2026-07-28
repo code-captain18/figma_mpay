@@ -1,30 +1,40 @@
-import { TransactionSheet } from "@/components/feedback/TransactionSheet";
-import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
-import { SectionHeader } from "@/components/ui/SectionHeader";
-import { TransactionRow } from "@/components/ui/TransactionRow";
-import { MOCK_QUICK_ACTIONS, MOCK_SALES_CARDS } from "@/mocks/services";
-import { MOCK_TRANSACTIONS } from "@/mocks/transactions";
-import { MOCK_WALLET_CARDS, MOCK_WALLETS } from "@/mocks/wallets";
 import { useAuth } from "@/store/auth.store";
-import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
-import type { Transaction } from "@/types";
+import { Colors, shadowStyle } from "@/theme";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { Bell, Eye, EyeOff } from "lucide-react-native";
-import { useRef, useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const SCREEN_WIDTH = Dimensions.get("window").width;
+const C = Colors;
+const sd = (radius: number, _color: string, opacity: number) =>
+  shadowStyle(opacity, radius, 1);
+
+const DASH = {
+  databundleSales: 9.3,
+  airtimeSales: 23,
+  mobileMoneyTransfers: 0,
+  databundleLastMonth: 4,
+  airtimeLastMonth: 7,
+  mobileMoneyLastMonth: 0,
+  databundleTrend: 5.3,
+  airtimeTrend: 16,
+  mobileMoneyTrend: 0,
+  webSales: 19.5,
+  apiSales: 12.8,
+  mobileAppSales: 0,
+  todayTransactions: {
+    airtime:           { successful: 23, failed: 3 },
+    data:              { successful: 11, failed: 0 },
+    mobileMoneyCredit: { successful: 0,  failed: 0 },
+    mobileMoneyDebit:  { successful: 2,  failed: 1 },
+  },
+};
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const router = useRouter();
-  const [balanceHidden, setBalanceHidden] = useState(false);
-  const [activeWallet, setActiveWallet] = useState(0);
-  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-  const cardScrollRef = useRef<ScrollView>(null);
+  const [hidden, setHidden] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const displayName = user?.name.split(" ")[0] ?? "there";
   const initials = displayName[0]?.toUpperCase() ?? "U";
@@ -36,263 +46,273 @@ export default function HomeScreen() {
     return "Good evening,";
   };
 
+  const totalSales =
+    DASH.databundleSales + DASH.airtimeSales + DASH.mobileMoneyTransfers;
+  const totalSuccess =
+    DASH.todayTransactions.airtime.successful +
+    DASH.todayTransactions.data.successful +
+    DASH.todayTransactions.mobileMoneyCredit.successful +
+    DASH.todayTransactions.mobileMoneyDebit.successful;
+  const totalFailed =
+    DASH.todayTransactions.airtime.failed +
+    DASH.todayTransactions.data.failed +
+    DASH.todayTransactions.mobileMoneyCredit.failed +
+    DASH.todayTransactions.mobileMoneyDebit.failed;
+
+  const salesMax = Math.max(
+    DASH.databundleSales, DASH.airtimeSales, DASH.mobileMoneyTransfers, 1
+  );
+  const channelTotal = DASH.webSales + DASH.apiSales + DASH.mobileAppSales;
+
   return (
-    <SafeAreaView style={S.root} edges={["top"]}>
-      <ScrollView style={S.scroll} contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false}>
-
-        {/* Header */}
-        <View style={S.header}>
-          <View>
-            <Text style={S.greeting}>{getGreeting()}</Text>
-            <Text style={S.name}>{displayName} 👋</Text>
-          </View>
-          <View style={S.headerRight}>
-            {/* Bell */}
-            <TouchableOpacity style={S.bellBtn} accessibilityRole="button" accessibilityLabel="Notifications">
-              <Bell size={17} color={Colors.textMuted} />
-              <View style={S.bellDot} />
-            </TouchableOpacity>
-            {/* Avatar */}
-            <Avatar initials={initials} size={44} />
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      style={{ flex: 1, backgroundColor: C.bg }}
+      contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 24 }}
+    >
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, marginBottom: 18 }}>
+        <View>
+          <Text style={{ fontSize: 12, color: C.muted, fontFamily: "Urbanist_500Medium" }}>
+            {getGreeting()}
+          </Text>
+          <Text style={{ fontSize: 17, color: C.navy, fontFamily: "Urbanist_800ExtraBold" }}>
+            {displayName} 👋
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+            style={{
+              width: 36, height: 36, borderRadius: 18,
+              backgroundColor: C.white, borderWidth: 1, borderColor: C.border,
+              alignItems: "center", justifyContent: "center",
+              ...sd(4, C.navy, 0.06),
+            }}
+          >
+            <Icon name="bell" size={16} color={C.muted} />
+            <View style={{
+              position: "absolute", top: 7, right: 7,
+              width: 7, height: 7, borderRadius: 4,
+              backgroundColor: C.orange,
+              borderWidth: 1.5, borderColor: C.bg,
+            }} />
+          </TouchableOpacity>
+          <View style={{
+            width: 36, height: 36, borderRadius: 18,
+            alignItems: "center", justifyContent: "center",
+            backgroundColor: C.blue,
+          }}>
+            <Text style={{ fontSize: 13, fontFamily: "Urbanist_700Bold", color: "#fff" }}>{initials}</Text>
           </View>
         </View>
+      </View>
 
-        {/* Wallet Card Carousel */}
-        <ScrollView
-          ref={cardScrollRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          decelerationRate="fast"
-          style={{ marginBottom: Spacing["2xl"] }}
-          onMomentumScrollEnd={(e) => {
-            const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-            setActiveWallet(idx);
-          }}
+      {/* ── Balance hero card ───────────────────────────────────── */}
+      <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+        <LinearGradient
+          colors={[C.sky, C.blue, C.deep]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={{ borderRadius: 24, padding: 20, overflow: "hidden" }}
         >
-          {MOCK_WALLETS.map((wallet, i) => (
-            <View key={wallet.id} style={{ width: SCREEN_WIDTH, paddingHorizontal: Spacing["2xl"] }}>
-              <LinearGradient
-                colors={MOCK_WALLET_CARDS[i].colors}
-                locations={[0, 0.42, 1]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={S.walletCard}
-              >
-                {/* Decorative rings */}
-                <View style={S.ring1} />
-                <View style={S.ring2} />
+          <View style={{ position: "absolute", top: -32, right: -32, width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(255,255,255,0.08)" }} />
+          <View style={{ position: "absolute", bottom: -24, left: -16, width: 100, height: 100, borderRadius: 50, backgroundColor: "rgba(233,145,10,0.10)" }} />
 
-                <View style={S.walletTop}>
-                  <Text style={S.walletLabel}>{wallet.label}</Text>
-                  <TouchableOpacity onPress={() => setBalanceHidden((v) => !v)}
-                    accessibilityRole="button"
-                    accessibilityLabel={balanceHidden ? "Show balance" : "Hide balance"}
-                    style={S.hideBtn}>
-                    {balanceHidden ? <EyeOff size={13} color="rgba(255,255,255,0.7)" /> : <Eye size={13} color="rgba(255,255,255,0.7)" />}
-                    <Text style={S.hideText}>{balanceHidden ? "Show" : "Hide"}</Text>
-                  </TouchableOpacity>
-                </View>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+            <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontFamily: "Urbanist_600SemiBold" }}>
+              {"Today's Total Sales"}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setHidden(!hidden)}
+              accessibilityRole="button"
+              accessibilityLabel={hidden ? "Show balance" : "Hide balance"}
+              style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 99, paddingVertical: 4, paddingHorizontal: 10 }}
+            >
+              <Icon name={hidden ? "eye-off" : "eye"} size={12} color="rgba(255,255,255,0.7)" />
+              <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontFamily: "Urbanist_600SemiBold" }}>
+                {hidden ? "Show" : "Hide"}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-                <Text style={S.balanceAmount}>
-                  {balanceHidden ? "••••••" : wallet.amount}
+          <Text style={{ fontSize: 32, color: "#fff", fontFamily: "Urbanist_800ExtraBold", letterSpacing: -0.5, marginBottom: 2 }}>
+            {hidden ? "••••••" : `GH₵${totalSales.toFixed(2)}`}
+          </Text>
+          <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 20, fontFamily: "Urbanist_500Medium" }}>
+            Airtime · Data Bundle · Mobile Money
+          </Text>
+
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 99, paddingVertical: 5, paddingHorizontal: 10 }}>
+              <Icon name="check-circle-2" size={11} color={C.green} />
+              <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", fontFamily: "Urbanist_700Bold" }}>
+                {totalSuccess} successful
+              </Text>
+            </View>
+            {totalFailed > 0 && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(232,51,74,0.18)", borderRadius: 99, paddingVertical: 5, paddingHorizontal: 10 }}>
+                <Icon name="x-circle" size={11} color="#FF7A8A" />
+                <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", fontFamily: "Urbanist_700Bold" }}>
+                  {totalFailed} failed
                 </Text>
-                <Text style={S.balanceSub}>{wallet.sub}</Text>
+              </View>
+            )}
+          </View>
+        </LinearGradient>
+      </View>
 
-                {/* Pagination */}
-                <View style={S.pagination}>
-                  {MOCK_WALLETS.map((_, j) => (
-                    <TouchableOpacity key={j}
-                      onPress={() => {
-                        cardScrollRef.current?.scrollTo({ x: j * SCREEN_WIDTH, animated: true });
-                        setActiveWallet(j);
-                      }}
-                      accessibilityRole="radio" accessibilityState={{ selected: activeWallet === j }}
-                      style={[S.pageDot, activeWallet === j && S.pageDotActive]} />
-                  ))}
-                  <Text style={S.pageCount}>{activeWallet + 1}/{MOCK_WALLETS.length}</Text>
+      {/* ── Sales breakdown cards ──────────────────────────────── */}
+      <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <Text style={{ fontSize: 13, color: C.navy, fontFamily: "Urbanist_700Bold" }}>Sales Breakdown</Text>
+          <Text style={{ fontSize: 11, color: C.blue, fontFamily: "Urbanist_600SemiBold" }}>Today</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 10, paddingRight: 4 }}
+        >
+          {[
+            { label: "Airtime", icon: "phone",      color: C.blue,   bg: "rgba(24,120,206,0.1)",  amount: DASH.airtimeSales,         last: DASH.airtimeLastMonth,      trend: DASH.airtimeTrend },
+            { label: "Data",    icon: "wifi",        color: C.green,  bg: "rgba(13,168,112,0.1)",  amount: DASH.databundleSales,      last: DASH.databundleLastMonth,   trend: DASH.databundleTrend },
+            { label: "MoMo",    icon: "smartphone",  color: C.orange, bg: "rgba(233,145,10,0.1)",  amount: DASH.mobileMoneyTransfers, last: DASH.mobileMoneyLastMonth,  trend: DASH.mobileMoneyTrend },
+          ].map((s) => {
+            const hasData = s.amount > 0;
+            const pct = salesMax > 0 ? (s.amount / salesMax) * 100 : 0;
+            return (
+              <View key={s.label} style={{
+                width: 140, borderRadius: 20, padding: 16,
+                backgroundColor: C.white, borderWidth: 1, borderColor: C.border,
+                ...sd(4, C.navy, 0.05),
+              }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                  <View style={{ width: 34, height: 34, borderRadius: 11, backgroundColor: s.bg, alignItems: "center", justifyContent: "center" }}>
+                    <Icon name={s.icon} size={16} color={s.color} />
+                  </View>
+                  {hasData ? (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 3, borderRadius: 99, paddingVertical: 3, paddingHorizontal: 7, backgroundColor: s.trend > 0 ? "rgba(13,168,112,0.1)" : "rgba(232,51,74,0.1)" }}>
+                      <Icon name={s.trend > 0 ? "trending-up" : "trending-down"} size={9} color={s.trend > 0 ? C.green : C.red} />
+                      <Text style={{ fontSize: 9, fontFamily: "Urbanist_700Bold", color: s.trend > 0 ? C.green : C.red }}>+{s.trend}</Text>
+                    </View>
+                  ) : (
+                    <View style={{ borderRadius: 99, paddingVertical: 3, paddingHorizontal: 7, backgroundColor: "rgba(24,120,206,0.07)" }}>
+                      <Text style={{ fontSize: 9, fontFamily: "Urbanist_700Bold", color: C.muted }}>—</Text>
+                    </View>
+                  )}
                 </View>
-              </LinearGradient>
-            </View>
-          ))}
+                <Text style={{ fontSize: 18, fontFamily: "Urbanist_800ExtraBold", color: hasData ? C.navy : C.pale, marginBottom: 2 }}>
+                  {hasData ? `GH₵${s.amount}` : "GH₵0"}
+                </Text>
+                <Text style={{ fontSize: 9, fontFamily: "Urbanist_600SemiBold", color: C.muted, marginBottom: 10 }}>{s.label}</Text>
+                <View style={{ height: 4, borderRadius: 99, backgroundColor: "rgba(24,120,206,0.08)", overflow: "hidden" }}>
+                  <View style={{ width: `${pct}%`, height: 4, borderRadius: 99, backgroundColor: s.color }} />
+                </View>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 5 }}>
+                  <Text style={{ fontSize: 8, color: C.pale, fontFamily: "Urbanist_500Medium" }}>Last month</Text>
+                  <Text style={{ fontSize: 8, fontFamily: "Urbanist_700Bold", color: C.light }}>GH₵{s.last}</Text>
+                </View>
+              </View>
+            );
+          })}
         </ScrollView>
+      </View>
 
-        {/* Quick Actions */}
-        <View style={S.cardWrap}>
-          <View style={[S.actionsCard, Shadows.subtle]}>
-            <View style={S.actionsRow}>
-              {MOCK_QUICK_ACTIONS.map((action) => (
-                <TouchableOpacity
-                  key={action.label}
-                  onPress={() => {
-                    if (action.label === "Airtime") router.push("/(app)/airtime");
-                    else if (action.label === "Data Bundle") router.push("/(app)/data-bundle");
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={action.label}
-                  style={[S.actionItem, { backgroundColor: action.bg }]}
-                >
-                  <Icon name={action.iconName} size={20} color={action.color} />
-                  <Text style={S.actionLabel}>{action.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+      {/* ── Today's transactions ───────────────────────────────── */}
+      <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <Text style={{ fontSize: 13, color: C.navy, fontFamily: "Urbanist_700Bold" }}>{"Today's Transactions"}</Text>
+          <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
+            accessibilityRole="button" accessibilityLabel="View all transactions">
+            <Text style={{ fontSize: 11, color: C.blue, fontFamily: "Urbanist_600SemiBold" }}>View all</Text>
+            <Icon name="chevron-right" size={13} color={C.blue} />
+          </TouchableOpacity>
         </View>
-
-        {/* Today's Sales */}
-        <View style={S.section}>
-          <SectionHeader title="Today's Sales" actionLabel="View all" />
-          <View style={S.salesRow}>
-            {MOCK_SALES_CARDS.map((card) => (
-              <View key={card.label} style={[S.salesCard, Shadows.subtle]}>
-                <View style={[S.salesIcon, { backgroundColor: card.bg }]}>
-                  <Icon name={card.iconName} size={17} color={card.color} />
+        <View style={{ borderRadius: 20, overflow: "hidden", backgroundColor: C.white, borderWidth: 1, borderColor: C.border, ...sd(6, C.navy, 0.05) }}>
+          {[
+            { label: "Airtime",     icon: "phone",          color: C.blue,   bg: "rgba(24,120,206,0.1)",  tx: DASH.todayTransactions.airtime },
+            { label: "Data Bundle", icon: "wifi",            color: C.green,  bg: "rgba(13,168,112,0.1)",  tx: DASH.todayTransactions.data },
+            { label: "MoMo Credit", icon: "arrow-down-left", color: C.green,  bg: "rgba(13,168,112,0.1)",  tx: DASH.todayTransactions.mobileMoneyCredit },
+            { label: "MoMo Debit",  icon: "arrow-up-right",  color: C.orange, bg: "rgba(233,145,10,0.1)",  tx: DASH.todayTransactions.mobileMoneyDebit },
+          ].map((row, i, arr) => {
+            const total = row.tx.successful + row.tx.failed;
+            const hasActivity = total > 0;
+            return (
+              <View key={row.label}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14 }}>
+                  <View style={{ width: 34, height: 34, borderRadius: 11, backgroundColor: row.bg, alignItems: "center", justifyContent: "center" }}>
+                    <Icon name={row.icon} size={15} color={row.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: C.navy, marginBottom: hasActivity ? 5 : 0 }}>{row.label}</Text>
+                    {hasActivity ? (
+                      <View style={{ height: 4, borderRadius: 99, backgroundColor: "rgba(24,120,206,0.08)", overflow: "hidden" }}>
+                        <View style={{ width: `${(row.tx.successful / total) * 100}%`, height: 4, borderRadius: 99, backgroundColor: C.green }} />
+                      </View>
+                    ) : (
+                      <Text style={{ fontSize: 10, color: C.pale, fontFamily: "Urbanist_500Medium" }}>No transactions today</Text>
+                    )}
+                  </View>
+                  {hasActivity ? (
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Icon name="check-circle-2" size={10} color={C.green} />
+                        <Text style={{ fontSize: 11, fontFamily: "Urbanist_700Bold", color: C.green }}>{row.tx.successful}</Text>
+                      </View>
+                      {row.tx.failed > 0 && (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                          <Icon name="x-circle" size={10} color={C.red} />
+                          <Text style={{ fontSize: 11, fontFamily: "Urbanist_700Bold", color: C.red }}>{row.tx.failed}</Text>
+                        </View>
+                      )}
+                    </View>
+                  ) : (
+                    <Text style={{ fontSize: 11, fontFamily: "Urbanist_600SemiBold", color: C.pale }}>—</Text>
+                  )}
                 </View>
-                <Text style={S.salesCardLabel}>{card.label}</Text>
-                <Text style={S.salesAmount}>{card.amount}</Text>
+                {i < arr.length - 1 && <View style={{ marginLeft: 16, height: 1, backgroundColor: C.divider }} />}
               </View>
-            ))}
-          </View>
+            );
+          })}
         </View>
+      </View>
 
-        {/* Recent Transactions */}
-        <View style={S.section}>
-          <SectionHeader title="Recent Transactions" actionLabel="See all" />
-          <View style={[S.txCard, Shadows.subtle]}>
-            {MOCK_TRANSACTIONS.slice(0, 4).map((tx, i, arr) => (
-              <View key={tx.id}>
-                <TransactionRow transaction={tx} onPress={() => setSelectedTx(tx)} showRelativeTime />
-                {i < arr.length - 1 && <View style={S.txDivider} />}
+      {/* ── Sales by channel ───────────────────────────────────── */}
+      <View style={{ paddingHorizontal: 20 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <Text style={{ fontSize: 13, color: C.navy, fontFamily: "Urbanist_700Bold" }}>Sales by Channel</Text>
+          <Text style={{ fontSize: 11, color: C.muted, fontFamily: "Urbanist_600SemiBold" }}>
+            GH₵{channelTotal.toFixed(1)} total
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          {[
+            { label: "Web",        icon: "globe",  color: C.blue,   bg: "rgba(24,120,206,0.1)",  amount: DASH.webSales },
+            { label: "API",        icon: "code-2", color: C.purple, bg: "rgba(124,92,252,0.1)",  amount: DASH.apiSales },
+            { label: "Mobile App", icon: "layers", color: C.orange, bg: "rgba(233,145,10,0.1)",  amount: DASH.mobileAppSales },
+          ].map((ch) => {
+            const pct = channelTotal > 0 ? Math.round((ch.amount / channelTotal) * 100) : 0;
+            return (
+              <View key={ch.label} style={{ flex: 1, borderRadius: 16, padding: 14, backgroundColor: C.white, borderWidth: 1, borderColor: C.border }}>
+                <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: ch.bg, alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+                  <Icon name={ch.icon} size={15} color={ch.color} />
+                </View>
+                <Text style={{ fontSize: 14, fontFamily: "Urbanist_800ExtraBold", color: ch.amount > 0 ? C.navy : C.pale, marginBottom: 1 }}>
+                  {ch.amount > 0 ? `GH₵${ch.amount}` : "—"}
+                </Text>
+                <Text style={{ fontSize: 9, fontFamily: "Urbanist_600SemiBold", color: C.muted, marginBottom: 8 }}>{ch.label}</Text>
+                <View style={{ height: 3, borderRadius: 99, backgroundColor: C.divider, overflow: "hidden" }}>
+                  <View style={{ width: `${pct}%`, height: 3, borderRadius: 99, backgroundColor: ch.color }} />
+                </View>
+                <Text style={{ fontSize: 8, fontFamily: "Urbanist_700Bold", color: C.light, marginTop: 4 }}>
+                  {pct}% of total
+                </Text>
               </View>
-            ))}
-          </View>
+            );
+          })}
         </View>
-
-      </ScrollView>
-
-      {selectedTx && (
-        <TransactionSheet transaction={selectedTx} onClose={() => setSelectedTx(null)} />
-      )}
-    </SafeAreaView>
+      </View>
+    </ScrollView>
   );
 }
 
-const S = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: Spacing["3xl"] },
-
-  // Header
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing["2xl"],
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.lg,
-  },
-  greeting: { fontSize: 12, fontFamily: "Urbanist_500Medium", color: Colors.textMuted },
-  name: { fontSize: 16, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary },
-  headerRight: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  bellBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    alignItems: "center", justifyContent: "center",
-    ...Shadows.subtle,
-  },
-  bellDot: {
-    position: "absolute", top: 10, right: 10,
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: Colors.orange, borderWidth: 1.5, borderColor: Colors.bg,
-  },
-
-  // Wallet Card
-  cardWrap: { paddingHorizontal: Spacing["2xl"], marginBottom: Spacing["2xl"] },
-  walletCard: {
-    borderRadius: Radius["3xl"],
-    paddingHorizontal: Spacing["2xl"],
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.lg,
-    overflow: "hidden",
-    minHeight: 188,
-  },
-  ring1: {
-    position: "absolute", top: 30, right: 14,
-    width: 96, height: 34, borderRadius: 34,
-    borderWidth: 3, borderColor: "rgba(255,255,255,0.15)",
-    transform: [{ rotate: "-20deg" }], backgroundColor: "transparent",
-  },
-  ring2: {
-    position: "absolute", top: 20, right: 30,
-    width: 34, height: 18, borderRadius: 17,
-    borderWidth: 2, borderColor: "rgba(255,255,255,0.14)",
-    transform: [{ rotate: "-20deg" }], backgroundColor: "transparent",
-  },
-  walletTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.xs },
-  walletLabel: { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.75)" },
-  hideBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
-  hideText: { ...T.caption, fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.7)" },
-  balanceAmount: { fontSize: 30, fontFamily: "Urbanist_800ExtraBold", color: "#fff", marginBottom: Spacing.xs },
-  balanceSub: { fontSize: 12, fontFamily: "Urbanist_400Regular", color: "rgba(255,255,255,0.5)", marginBottom: Spacing["2xl"] },
-  pagination: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  pageDot: { height: 8, width: 8, borderRadius: Radius.pill, backgroundColor: "rgba(255,255,255,0.3)" },
-  pageDotActive: { width: 28, backgroundColor: "#fff" },
-  pageCount: { marginLeft: "auto", fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.5)" },
-
-  // Quick Actions
-  actionsCard: {
-    borderRadius: Radius["2xl"],
-    padding: Spacing.lg,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  actionsRow: { flexDirection: "row", gap: Spacing.sm },
-  actionItem: {
-    flex: 1,
-    alignItems: "center",
-    gap: 9,
-    borderRadius: Radius.xl,
-    paddingVertical: 18,
-    paddingHorizontal: 8,
-  },
-  actionLabel: { fontSize: 10, fontFamily: "Urbanist_600SemiBold", color: Colors.textSecondary, textAlign: "center" },
-
-  // Sales
-  section: { marginBottom: Spacing["2xl"] },
-  salesRow: { flexDirection: "row", gap: Spacing.md, paddingHorizontal: Spacing["2xl"] },
-  salesCard: {
-    flex: 1,
-    borderRadius: Radius.xl,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xl,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  salesIcon: {
-    width: 46, height: 46, borderRadius: 23,
-    alignItems: "center", justifyContent: "center",
-    marginBottom: 12,
-  },
-  salesCardLabel: { fontSize: 10, fontFamily: "Urbanist_500Medium", color: Colors.textMuted },
-  salesAmount: { fontSize: 14, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary, marginTop: 4 },
-
-  // Transactions
-  txCard: {
-    borderRadius: Radius.xl,
-    overflow: "hidden",
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginHorizontal: Spacing["2xl"],
-  },
-  txDivider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginLeft: 74,
-    marginRight: Spacing.lg,
-  },
-});
