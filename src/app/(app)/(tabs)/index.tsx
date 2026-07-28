@@ -24,10 +24,10 @@ const DASH = {
   apiSales: 12.8,
   mobileAppSales: 0,
   todayTransactions: {
-    airtime:           { successful: 23, failed: 3 },
-    data:              { successful: 11, failed: 0 },
-    mobileMoneyCredit: { successful: 0,  failed: 0 },
-    mobileMoneyDebit:  { successful: 2,  failed: 1 },
+    airtime: { successful: 23, failed: 3 },
+    data: { successful: 11, failed: 0 },
+    mobileMoneyCredit: { successful: 0, failed: 0 },
+    mobileMoneyDebit: { successful: 2, failed: 1 },
   },
 };
 
@@ -174,9 +174,9 @@ export default function HomeScreen() {
           contentContainerStyle={{ gap: 10, paddingRight: 4 }}
         >
           {[
-            { label: "Airtime", icon: "phone",      color: C.blue,   bg: "rgba(24,120,206,0.1)",  amount: DASH.airtimeSales,         last: DASH.airtimeLastMonth,      trend: DASH.airtimeTrend },
-            { label: "Data",    icon: "wifi",        color: C.green,  bg: "rgba(13,168,112,0.1)",  amount: DASH.databundleSales,      last: DASH.databundleLastMonth,   trend: DASH.databundleTrend },
-            { label: "MoMo",    icon: "smartphone",  color: C.orange, bg: "rgba(233,145,10,0.1)",  amount: DASH.mobileMoneyTransfers, last: DASH.mobileMoneyLastMonth,  trend: DASH.mobileMoneyTrend },
+            { label: "Airtime", icon: "phone", color: C.blue, bg: "rgba(24,120,206,0.1)", amount: DASH.airtimeSales, last: DASH.airtimeLastMonth, trend: DASH.airtimeTrend },
+            { label: "Data", icon: "wifi", color: C.green, bg: "rgba(13,168,112,0.1)", amount: DASH.databundleSales, last: DASH.databundleLastMonth, trend: DASH.databundleTrend },
+            { label: "MoMo", icon: "smartphone", color: C.orange, bg: "rgba(233,145,10,0.1)", amount: DASH.mobileMoneyTransfers, last: DASH.mobileMoneyLastMonth, trend: DASH.mobileMoneyTrend },
           ].map((s) => {
             const hasData = s.amount > 0;
             const pct = salesMax > 0 ? (s.amount / salesMax) * 100 : 0;
@@ -230,10 +230,10 @@ export default function HomeScreen() {
         </View>
         <View style={{ borderRadius: 20, overflow: "hidden", backgroundColor: C.white, borderWidth: 1, borderColor: C.border, ...sd(6, C.navy, 0.05) }}>
           {[
-            { label: "Airtime",     icon: "phone",          color: C.blue,   bg: "rgba(24,120,206,0.1)",  tx: DASH.todayTransactions.airtime },
-            { label: "Data Bundle", icon: "wifi",            color: C.green,  bg: "rgba(13,168,112,0.1)",  tx: DASH.todayTransactions.data },
-            { label: "MoMo Credit", icon: "arrow-down-left", color: C.green,  bg: "rgba(13,168,112,0.1)",  tx: DASH.todayTransactions.mobileMoneyCredit },
-            { label: "MoMo Debit",  icon: "arrow-up-right",  color: C.orange, bg: "rgba(233,145,10,0.1)",  tx: DASH.todayTransactions.mobileMoneyDebit },
+            { label: "Airtime", icon: "phone", color: C.blue, bg: "rgba(24,120,206,0.1)", tx: DASH.todayTransactions.airtime },
+            { label: "Data Bundle", icon: "wifi", color: C.green, bg: "rgba(13,168,112,0.1)", tx: DASH.todayTransactions.data },
+            { label: "MoMo Credit", icon: "arrow-down-left", color: C.green, bg: "rgba(13,168,112,0.1)", tx: DASH.todayTransactions.mobileMoneyCredit },
+            { label: "MoMo Debit", icon: "arrow-up-right", color: C.orange, bg: "rgba(233,145,10,0.1)", tx: DASH.todayTransactions.mobileMoneyDebit },
           ].map((row, i, arr) => {
             const total = row.tx.successful + row.tx.failed;
             const hasActivity = total > 0;
@@ -287,9 +287,9 @@ export default function HomeScreen() {
         </View>
         <View style={{ flexDirection: "row", gap: 10 }}>
           {[
-            { label: "Web",        icon: "globe",  color: C.blue,   bg: "rgba(24,120,206,0.1)",  amount: DASH.webSales },
-            { label: "API",        icon: "code-2", color: C.purple, bg: "rgba(124,92,252,0.1)",  amount: DASH.apiSales },
-            { label: "Mobile App", icon: "layers", color: C.orange, bg: "rgba(233,145,10,0.1)",  amount: DASH.mobileAppSales },
+            { label: "Web", icon: "globe", color: C.blue, bg: "rgba(24,120,206,0.1)", amount: DASH.webSales },
+            { label: "API", icon: "code-2", color: C.purple, bg: "rgba(124,92,252,0.1)", amount: DASH.apiSales },
+            { label: "Mobile App", icon: "layers", color: C.orange, bg: "rgba(233,145,10,0.1)", amount: DASH.mobileAppSales },
           ].map((ch) => {
             const pct = channelTotal > 0 ? Math.round((ch.amount / channelTotal) * 100) : 0;
             return (

@@ -1,3 +1,4 @@
+import type { LucideProps } from "lucide-react-native";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -33,7 +34,6 @@ import {
   Zap,
 } from "lucide-react-native";
 import React from "react";
-import type { LucideProps } from "lucide-react-native";
 
 const ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
   // PascalCase (existing)
