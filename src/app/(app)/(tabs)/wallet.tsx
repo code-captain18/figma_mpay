@@ -1,323 +1,1153 @@
-import { TransactionSheet } from "@/components/feedback/TransactionSheet";
-import { CardChip } from "@/components/svg/CardChip";
-import { SectionHeader } from "@/components/ui/SectionHeader";
-import { TransactionRow } from "@/components/ui/TransactionRow";
-import { MOCK_TRANSACTIONS } from "@/mocks/transactions";
-import { MOCK_WALLET_CARDS } from "@/mocks/wallets";
-import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
-import type { Transaction } from "@/types";
-import { LinearGradient } from "expo-linear-gradient";
-import type { LucideProps } from "lucide-react-native";
-import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Banknote, Eye, EyeOff } from "lucide-react-native";
-import React, { useRef, useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from 'expo-linear-gradient';
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft, ChevronRight,
+  CreditCard,
+  Hash, Phone,
+  RefreshCw,
+  Smartphone,
+  User
+} from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const SCREEN_WIDTH = Dimensions.get("window").width;
+/* ─── Colors ─────────────────────────────────────────────────────────────────── */
+const C = {
+  bg: '#EFF5FC',
+  navy: '#071830',
+  blue: '#1878CE',
+  sky: '#4BAEE8',
+  deep: '#052D6E',
+  mid: '#2B5080',
+  muted: '#5C7A9E',
+  light: '#7A9ABE',
+  pale: '#A0BEDC',
+  green: '#0DA870',
+  orange: '#E9910A',
+  red: '#E8334A',
+  border: 'rgba(24,120,206,0.12)',
+  divider: '#E0EDF8',
+  white: '#FFFFFF',
+};
 
-const WALLET_ACTIONS: { label: string; IconComponent: React.ComponentType<LucideProps>; color: string; bg: string }[] = [
-  { label: "Add Money", IconComponent: ArrowDownToLine, color: Colors.primary, bg: Colors.primaryLight },
-  { label: "Send", IconComponent: ArrowUpFromLine, color: Colors.green, bg: Colors.greenBg },
-  { label: "Withdraw", IconComponent: Banknote, color: Colors.orange, bg: Colors.orangeBg },
-  { label: "Transfer", IconComponent: ArrowLeftRight, color: Colors.purple, bg: Colors.purpleBg },
-];
+/* ─── Shadow helper ──────────────────────────────────────────────────────────── */
+const sd = (size: number, color: string, opacity: number) =>
+  Platform.select({
+    ios: {
+      shadowColor: color,
+      shadowOffset: { width: 0, height: size / 2 },
+      shadowOpacity: opacity,
+      shadowRadius: size,
+    },
+    android: { elevation: Math.round(size * 0.8) },
+  }) ?? {};
 
-export default function WalletScreen() {
-  const [activeCard, setActiveCard] = useState(0);
-  const [hidden, setHidden] = useState(false);
-  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-  const scrollRef = useRef<ScrollView>(null);
+/* ─── Mock user data — replace with API/context ──────────────────────────────── */
+const USER = {
+  accountId: 'ACC-20240031-GH',
+  hasETopup: true,
+  hasMoMo: true,
+  eTopupBalance: 480.5,
+  momoBalance: 1250.0,
+};
 
-  const totalBalance = MOCK_WALLET_CARDS.reduce((s, w) => s + w.balance, 0);
+/* ─── Types ──────────────────────────────────────────────────────────────────── */
+type WalletView = 'home' | 'etopup-form' | 'momo-form' | 'confirm' | 'success';
 
+interface WFState {
+  product: string;
+  accountId: string;
+  amount: string;
+  phoneNumber: string;
+  referenceId: string;
+}
+
+/* ─── Helpers ────────────────────────────────────────────────────────────────── */
+function genRef(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  const r = Math.random().toString(36).slice(2, 8).toUpperCase();
   return (
-    <SafeAreaView style={WS.root} edges={["top"]}>
-      <ScrollView style={WS.scroll} contentContainerStyle={WS.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={WS.header}>
-          <View>
-            <Text style={WS.headerSub}>My Wallets</Text>
-            <Text style={WS.headerTitle}>M-PAY Wallet</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => setHidden((v) => !v)}
-            accessibilityRole="button"
-            accessibilityLabel={hidden ? "Show balance" : "Hide balance"}
-            style={WS.hideToggle}
-          >
-            {hidden ? <EyeOff size={13} color={Colors.textMuted} /> : <Eye size={13} color={Colors.textMuted} />}
-            <Text style={WS.hideToggleText}>{hidden ? "Show" : "Hide"}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Total Balance */}
-        <View style={WS.padSection}>
-          <View style={[WS.totalCard, Shadows.subtle, {
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            backgroundColor: Colors.surface,
-            borderWidth: 1,
-            borderColor: Colors.border,
-          }]}
-          >
-            <View>
-              <Text style={WS.totalLabel}>Total Balance</Text>
-              <Text style={WS.totalAmount}>
-                {hidden ? "GHS ••••••" : `GHS ${totalBalance.toFixed(2)}`}
-              </Text>
-            </View>
-            <View style={{ alignItems: "flex-end", gap: 4 }}>
-              {[{ color: Colors.primary, label: "eTop-Up" }, { color: Colors.navy, label: "MoMo" }].map((item) => (
-                <View key={item.label} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.color }} />
-                  <Text style={WS.legendLabel}>{item.label}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        {/* Card Carousel */}
-        <ScrollView
-          ref={scrollRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          decelerationRate="fast"
-          onMomentumScrollEnd={(e) => {
-            const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-            setActiveCard(idx);
-          }}
-        >
-          {MOCK_WALLET_CARDS.map((c) => (
-            <View key={c.id} style={{ width: SCREEN_WIDTH, paddingHorizontal: Spacing["2xl"] }}>
-              <LinearGradient
-                colors={c.colors}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={WS.walletCard}
-              >
-                <View
-                  style={{
-                    position: "absolute",
-                    top: -32,
-                    right: -32,
-                    width: 150,
-                    height: 150,
-                    borderRadius: 75,
-                    backgroundColor: "rgba(255,255,255,0.08)",
-                  }}
-                />
-                <View style={{ flex: 1, justifyContent: "space-between" }}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <View>
-                      <Text
-                        style={{ fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.65)", marginBottom: 4 }}
-                      >
-                        {c.label}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 24,
-                          fontWeight: "800",
-                          color: "#fff",
-                          fontFamily: "Urbanist_800ExtraBold",
-                        }}
-                      >
-                        {hidden ? "••••••" : `GHS ${c.balance.toFixed(2)}`}
-                      </Text>
-                    </View>
-                    <CardChip />
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      marginTop: 24,
-                    }}
-                  >
-                    <Text style={{ fontSize: 12, fontFamily: "Urbanist_400Regular", letterSpacing: 2, color: "rgba(255,255,255,0.5)" }}>
-                      {c.number}
-                    </Text>
-                    <Text
-                      style={{ fontSize: 14, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "rgba(255,255,255,0.8)" }}
-                    >
-                      M-PAY
-                    </Text>
-                  </View>
-                </View>
-              </LinearGradient>
-            </View>
-          ))}
-        </ScrollView>
-        <View style={WS.cardPagination}>
-          {MOCK_WALLET_CARDS.map((_, i) => (
-            <TouchableOpacity
-              key={i}
-              onPress={() => {
-                scrollRef.current?.scrollTo({ x: i * SCREEN_WIDTH, animated: true });
-                setActiveCard(i);
-              }}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: activeCard === i }}
-              style={[WS.cardDot, activeCard === i && WS.cardDotActive]}
-            />
-          ))}
-        </View>
-
-        {/* Actions */}
-        <View style={WS.padSection}>
-          <View style={[WS.actionsCard, Shadows.subtle]}>
-            {WALLET_ACTIONS.map((a) => (
-              <TouchableOpacity
-                key={a.label}
-                accessibilityRole="button"
-                accessibilityLabel={a.label}
-                style={[WS.actionItem, { backgroundColor: a.bg }]}
-              >
-                <a.IconComponent size={22} color={a.color} />
-                <Text style={WS.actionLabel}>{a.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* This Month Spending */}
-        <View style={WS.padSection}>
-          <Text style={WS.sectionTitle}>This Month</Text>
-          <View style={[WS.spendCard, Shadows.subtle]}>
-            <View style={WS.spendHeader}>
-              <Text style={WS.spendLabel}>Spent</Text>
-              <Text style={WS.spendValue}>GHS62.00 / GHS150.00</Text>
-            </View>
-            <View
-              style={{
-                width: "100%",
-                height: 6,
-                borderRadius: 99,
-                backgroundColor: Colors.divider,
-                marginBottom: 20,
-                overflow: "hidden",
-              }}
-            >
-              <LinearGradient
-                colors={[Colors.gradientStart, Colors.gradientEnd]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{ width: "41%", height: "100%", borderRadius: 99 }}
-              />
-            </View>
-            {[{ label: "Airtime", pct: 56, amount: "GHS12.00", color: Colors.primary },
-            { label: "Data Bundle", pct: 79, amount: "GHS30.00", color: Colors.green },
-            { label: "Mobile Money", pct: 26, amount: "GHS20.00", color: Colors.orange },
-            ].map((cat) => (
-              <View key={cat.label} style={WS.catRow}>
-                <View style={WS.catHeader}>
-                  <Text style={WS.catLabel}>{cat.label}</Text>
-                  <Text style={WS.catAmount}>{cat.amount}</Text>
-                </View>
-                <View style={WS.catBarBg}>
-                  <View style={[WS.catBarFill, { width: `${cat.pct}%` as any, backgroundColor: cat.color }]} />
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Recent Activity */}
-        <View style={WS.padSection}>
-          <SectionHeader title="Recent Activity" actionLabel="See all" />
-          <View style={[WS.txCard, Shadows.subtle]}>
-            {MOCK_TRANSACTIONS.slice(0, 4).map((tx, i, arr) => (
-              <View key={tx.id}>
-                <TransactionRow transaction={tx} onPress={() => setSelectedTx(tx)} />
-                {i < arr.length - 1 && (
-                  <View style={WS.txDivider} />
-                )}
-              </View>
-            ))}
-          </View>
-        </View>
-      </ScrollView>
-
-      {selectedTx && (
-        <TransactionSheet transaction={selectedTx} onClose={() => setSelectedTx(null)} />
-      )}
-    </SafeAreaView>
+    `REF-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}` +
+    `-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}-${r}`
   );
 }
 
-const WS = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: Spacing["3xl"] },
-  padSection: { paddingHorizontal: Spacing["2xl"], marginBottom: Spacing.xl },
+/* ══════════════════════════════════════════════════════════════════════════════
+   SHARED UI COMPONENTS
+══════════════════════════════════════════════════════════════════════════════ */
 
-  // Header
-  header: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: Spacing["2xl"], paddingTop: Spacing.xl, paddingBottom: Spacing.md,
-  },
-  headerSub: { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
-  headerTitle: { fontSize: 18, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: Colors.textPrimary },
-  hideToggle: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    borderRadius: Radius.pill, paddingHorizontal: 12, paddingVertical: 6,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    ...Shadows.subtle,
-  },
-  hideToggleText: { fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textMuted },
+/* Field label wrapper */
+function Field({
+  label, required, error, children,
+}: {
+  label: string;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={{ marginBottom: 16 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+        <Text style={{
+          fontSize: 10, fontWeight: '700', color: C.mid,
+          textTransform: 'uppercase', letterSpacing: 0.8,
+          fontFamily: 'Urbanist_700Bold',
+        }}>
+          {label}
+        </Text>
+        {required && (
+          <Text style={{ fontSize: 10, color: C.red, fontWeight: '700' }}>*</Text>
+        )}
+      </View>
+      {children}
+      {!!error && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 }}>
+          <AlertCircle size={10} color={C.red} />
+          <Text style={{
+            fontSize: 10, color: C.red, fontWeight: '600',
+            fontFamily: 'Urbanist_600SemiBold',
+          }}>
+            {error}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
-  // Total card
-  totalCard: {
-    borderRadius: Radius.lg, paddingHorizontal: Spacing.xl, paddingVertical: Spacing.lg,
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-  },
-  totalLabel: { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted, marginBottom: 2 },
-  totalAmount: { ...T.headingXL, color: Colors.textPrimary, fontFamily: "Urbanist_800ExtraBold" },
-  legendLabel: { ...T.caption, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
+/* Styled TextInput */
+function SInput({
+  icon, disabled, error, rightEl, style: _style, ...props
+}: {
+  icon?: React.ReactNode;
+  disabled?: boolean;
+  error?: boolean;
+  rightEl?: React.ReactNode;
+} & React.ComponentProps<typeof TextInput>) {
+  const [focused, setFocused] = useState(false);
+  const borderColor = error
+    ? C.red
+    : disabled
+      ? C.divider
+      : focused
+        ? C.blue
+        : C.border;
 
-  // Wallet card
-  walletCard: { borderRadius: 24, padding: Spacing["2xl"], minHeight: 180, overflow: "hidden" },
-  cardPagination: { marginTop: 12, marginBottom: Spacing.xl, flexDirection: "row", justifyContent: "center", gap: 8 },
-  cardDot: { height: 5, width: 6, borderRadius: Radius.pill, backgroundColor: Colors.pale },
-  cardDotActive: { width: 24, backgroundColor: Colors.primary },
+  return (
+    <View style={{
+      flexDirection: 'row', alignItems: 'center',
+      borderRadius: 12, borderWidth: 1.5, borderColor,
+      backgroundColor: disabled ? 'rgba(24,120,206,0.04)' : C.white,
+      paddingHorizontal: 12,
+    }}>
+      {icon && <View style={{ marginRight: 8 }}>{icon}</View>}
+      <TextInput
+        {...props}
+        editable={!disabled}
+        placeholderTextColor={C.pale}
+        onFocus={e => { setFocused(true); props.onFocus?.(e); }}
+        onBlur={e => { setFocused(false); props.onBlur?.(e); }}
+        style={{
+          flex: 1, fontSize: 13, fontWeight: '600',
+          color: disabled ? C.muted : C.navy,
+          fontFamily: 'Urbanist_600SemiBold',
+          paddingVertical: 11,
+          padding: 0, margin: 0,
+        }}
+      />
+      {rightEl && <View style={{ marginLeft: 8 }}>{rightEl}</View>}
+    </View>
+  );
+}
 
-  // Actions
-  actionsCard: {
-    borderRadius: Radius["2xl"], padding: Spacing.lg,
-    flexDirection: "row", gap: Spacing.sm,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-  },
-  actionItem: { flex: 1, alignItems: "center", gap: 9, borderRadius: Radius.xl, paddingVertical: 18, paddingHorizontal: 8 },
-  actionLabel: { fontSize: 10, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textSecondary, textAlign: "center" },
+/* Product select — bottom-sheet modal */
+function SelectSheet({
+  value, onChange, options, placeholder, error,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+  error?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find(o => o.value === value);
 
-  // This Month
-  sectionTitle: { ...T.headingSM, color: Colors.textPrimary, marginBottom: Spacing.md },
-  spendCard: {
-    borderRadius: Radius.lg, padding: Spacing.xl,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-  },
-  spendHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: Spacing.sm },
-  spendLabel: { fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
-  spendValue: { fontSize: 12, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary },
-  catRow: { marginBottom: 12 },
-  catHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
-  catLabel: { ...T.caption, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted },
-  catAmount: { ...T.caption, fontFamily: "Urbanist_700Bold", color: Colors.textPrimary },
-  catBarBg: { width: "100%", height: 5, borderRadius: Radius.pill, backgroundColor: Colors.divider, overflow: "hidden" },
-  catBarFill: { height: "100%", borderRadius: Radius.pill },
+  return (
+    <>
+      <TouchableOpacity
+        onPress={() => setOpen(true)}
+        activeOpacity={0.8}
+        style={{
+          flexDirection: 'row', alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 12, paddingVertical: 12,
+          borderRadius: 12, borderWidth: 1.5,
+          borderColor: error ? C.red : open ? C.blue : C.border,
+          backgroundColor: C.white,
+        }}
+      >
+        <Text style={{
+          fontSize: 13, fontWeight: '600',
+          color: selected ? C.navy : C.pale,
+          fontFamily: selected ? 'Urbanist_600SemiBold' : 'Urbanist_500Medium',
+        }}>
+          {selected ? selected.label : (placeholder ?? 'Select\u2026')}
+        </Text>
+        <ChevronDown size={14} color={C.muted} />
+      </TouchableOpacity>
 
-  // Transactions
-  txCard: { borderRadius: Radius.xl, overflow: "hidden", backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
-  txDivider: { height: 1, backgroundColor: Colors.divider, marginHorizontal: Spacing.lg },
-});
+      <Modal
+        visible={open}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setOpen(false)}
+      >
+        <Pressable
+          style={{
+            flex: 1, backgroundColor: 'rgba(7,24,48,0.5)',
+            justifyContent: 'flex-end',
+          }}
+          onPress={() => setOpen(false)}
+        >
+          <Pressable onPress={e => e.stopPropagation()}>
+            <View style={{
+              backgroundColor: C.white,
+              borderTopLeftRadius: 24, borderTopRightRadius: 24,
+              paddingBottom: 40,
+            }}>
+              <View style={{
+                width: 40, height: 4, borderRadius: 2,
+                backgroundColor: C.pale, alignSelf: 'center',
+                marginTop: 12, marginBottom: 20,
+              }} />
+              <Text style={{
+                fontSize: 14, fontWeight: '700', color: C.navy,
+                paddingHorizontal: 20, marginBottom: 10,
+                fontFamily: 'Urbanist_700Bold',
+              }}>
+                Select Product
+              </Text>
+              {options.map((opt, i) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  onPress={() => { onChange(opt.value); setOpen(false); }}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 14,
+                    paddingVertical: 15, paddingHorizontal: 20,
+                    backgroundColor:
+                      opt.value === value ? 'rgba(24,120,206,0.05)' : 'transparent',
+                    borderBottomWidth: i < options.length - 1 ? 1 : 0,
+                    borderBottomColor: C.divider,
+                  }}
+                >
+                  {opt.value === value ? (
+                    <CheckCircle2 size={17} color={C.blue} />
+                  ) : (
+                    <View style={{
+                      width: 17, height: 17, borderRadius: 9,
+                      borderWidth: 1.5, borderColor: C.border,
+                    }} />
+                  )}
+                  <Text style={{
+                    fontSize: 14,
+                    fontWeight: opt.value === value ? '700' : '500',
+                    color: opt.value === value ? C.blue : C.navy,
+                    fontFamily: opt.value === value
+                      ? 'Urbanist_700Bold'
+                      : 'Urbanist_500Medium',
+                  }}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
+/* Gradient header */
+function GradHdr({
+  title, onBack, colors,
+}: {
+  title: string;
+  onBack?: () => void;
+  colors?: readonly [string, string, string];
+}) {
+  return (
+    <LinearGradient
+      colors={colors ?? [C.sky, C.blue, C.deep]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{
+        paddingHorizontal: 20, paddingTop: 14, paddingBottom: 18,
+        borderBottomLeftRadius: 22, borderBottomRightRadius: 22,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        {onBack && (
+          <TouchableOpacity
+            onPress={onBack}
+            activeOpacity={0.8}
+            style={{
+              width: 32, height: 32, borderRadius: 16,
+              backgroundColor: 'rgba(255,255,255,0.15)',
+              alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <ChevronLeft size={18} color="#fff" />
+          </TouchableOpacity>
+        )}
+        <Text style={{
+          fontSize: 16, fontWeight: '800', color: '#fff',
+          fontFamily: 'Urbanist_800ExtraBold',
+        }}>
+          {title}
+        </Text>
+      </View>
+    </LinearGradient>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   WALLET HOME
+══════════════════════════════════════════════════════════════════════════════ */
+function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
+  const [hidden, setHidden] = useState(false);
+  const both = USER.hasETopup && USER.hasMoMo;
+
+  return (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ padding: 20, paddingBottom: 32 }}
+    >
+      <View style={{
+        flexDirection: 'row', justifyContent: 'space-between',
+        alignItems: 'center', marginBottom: 12,
+      }}>
+        <Text style={{
+          fontSize: 13, fontWeight: '700', color: C.navy,
+          fontFamily: 'Urbanist_700Bold',
+        }}>
+          My Wallets
+        </Text>
+        <TouchableOpacity
+          onPress={() => setHidden(!hidden)}
+          style={{
+            backgroundColor: 'rgba(24,120,206,0.07)',
+            borderRadius: 99, paddingVertical: 4, paddingHorizontal: 10,
+          }}
+        >
+          <Text style={{
+            fontSize: 11, fontWeight: '600', color: C.muted,
+            fontFamily: 'Urbanist_600SemiBold',
+          }}>
+            {hidden ? 'Show balances' : 'Hide balances'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={{
+        flexDirection: both ? 'row' : 'column',
+        gap: 10, marginBottom: 24,
+      }}>
+        {USER.hasETopup && (
+          <LinearGradient
+            colors={[C.sky, C.blue, C.deep]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ flex: 1, borderRadius: 20, padding: 16, overflow: 'hidden' }}
+          >
+            <View style={{
+              position: 'absolute', top: -26, right: -18,
+              width: 90, height: 90, borderRadius: 45,
+              backgroundColor: 'rgba(255,255,255,0.08)',
+            }} />
+            <View style={{
+              flexDirection: 'row', alignItems: 'center',
+              gap: 6, marginBottom: 10,
+            }}>
+              <View style={{
+                width: 24, height: 24, borderRadius: 7,
+                backgroundColor: 'rgba(255,255,255,0.18)',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <CreditCard size={12} color="#fff" />
+              </View>
+              <Text style={{
+                fontSize: 9, fontWeight: '700',
+                color: 'rgba(255,255,255,0.75)', letterSpacing: 0.5,
+                fontFamily: 'Urbanist_700Bold',
+              }}>
+                {both ? 'e Top-Up' : 'e Top-Up Wallet'}
+              </Text>
+            </View>
+            <Text style={{
+              fontSize: both ? 19 : 26, fontWeight: '800',
+              color: '#fff', letterSpacing: -0.5, marginBottom: 2,
+              fontFamily: 'Urbanist_800ExtraBold',
+            }}>
+              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GH\u20B5${USER.eTopupBalance.toFixed(2)}`}
+            </Text>
+            <Text style={{
+              fontSize: 9, color: 'rgba(255,255,255,0.4)',
+              fontFamily: 'Urbanist_400Regular',
+            }}>
+              {USER.accountId}
+            </Text>
+          </LinearGradient>
+        )}
+
+        {USER.hasMoMo && (
+          <LinearGradient
+            colors={['#12C47E', '#0A9260', '#065C3D']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ flex: 1, borderRadius: 20, padding: 16, overflow: 'hidden' }}
+          >
+            <View style={{
+              position: 'absolute', top: -26, right: -18,
+              width: 90, height: 90, borderRadius: 45,
+              backgroundColor: 'rgba(255,255,255,0.08)',
+            }} />
+            <View style={{
+              flexDirection: 'row', alignItems: 'center',
+              gap: 6, marginBottom: 10,
+            }}>
+              <View style={{
+                width: 24, height: 24, borderRadius: 7,
+                backgroundColor: 'rgba(255,255,255,0.18)',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Smartphone size={12} color="#fff" />
+              </View>
+              <Text style={{
+                fontSize: 9, fontWeight: '700',
+                color: 'rgba(255,255,255,0.75)', letterSpacing: 0.5,
+                fontFamily: 'Urbanist_700Bold',
+              }}>
+                {both ? 'Mobile Money' : 'Mobile Money Wallet'}
+              </Text>
+            </View>
+            <Text style={{
+              fontSize: both ? 19 : 26, fontWeight: '800',
+              color: '#fff', letterSpacing: -0.5, marginBottom: 2,
+              fontFamily: 'Urbanist_800ExtraBold',
+            }}>
+              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GH\u20B5${USER.momoBalance.toFixed(2)}`}
+            </Text>
+            <Text style={{
+              fontSize: 9, color: 'rgba(255,255,255,0.4)',
+              fontFamily: 'Urbanist_400Regular',
+            }}>
+              {USER.accountId}
+            </Text>
+          </LinearGradient>
+        )}
+      </View>
+
+      <Text style={{
+        fontSize: 13, fontWeight: '700', color: C.navy,
+        marginBottom: 12, fontFamily: 'Urbanist_700Bold',
+      }}>
+        Load Wallet
+      </Text>
+
+      <View style={{ gap: 10 }}>
+        {USER.hasMoMo && (
+          <TouchableOpacity
+            onPress={() => onSelect('momo-form')}
+            activeOpacity={0.8}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 14,
+              borderRadius: 18, padding: 16,
+              backgroundColor: C.white,
+              borderWidth: 1.5, borderColor: C.border,
+              ...sd(6, C.navy, 0.05),
+            }}
+          >
+            <View style={{
+              width: 44, height: 44, borderRadius: 14,
+              backgroundColor: 'rgba(13,168,112,0.1)',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Smartphone size={20} color={C.green} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{
+                fontSize: 13, fontWeight: '700', color: C.navy,
+                marginBottom: 2, fontFamily: 'Urbanist_700Bold',
+              }}>
+                Load Mobile Money Wallet
+              </Text>
+              <Text style={{
+                fontSize: 11, color: C.muted,
+                fontFamily: 'Urbanist_500Medium',
+              }}>
+                {hidden ? 'Balance hidden' : `Balance: GH\u20B5${USER.momoBalance.toFixed(2)}`}
+              </Text>
+            </View>
+            <ChevronRight size={15} color={C.pale} />
+          </TouchableOpacity>
+        )}
+
+        {USER.hasETopup && (
+          <TouchableOpacity
+            onPress={() => onSelect('etopup-form')}
+            activeOpacity={0.8}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 14,
+              borderRadius: 18, padding: 16,
+              backgroundColor: C.white,
+              borderWidth: 1.5, borderColor: C.border,
+              ...sd(6, C.navy, 0.05),
+            }}
+          >
+            <View style={{
+              width: 44, height: 44, borderRadius: 14,
+              backgroundColor: 'rgba(24,120,206,0.1)',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <CreditCard size={20} color={C.blue} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{
+                fontSize: 13, fontWeight: '700', color: C.navy,
+                marginBottom: 2, fontFamily: 'Urbanist_700Bold',
+              }}>
+                Load e Top-Up Wallet
+              </Text>
+              <Text style={{
+                fontSize: 11, color: C.muted,
+                fontFamily: 'Urbanist_500Medium',
+              }}>
+                {hidden ? 'Balance hidden' : `Balance: GH\u20B5${USER.eTopupBalance.toFixed(2)}`}
+              </Text>
+            </View>
+            <ChevronRight size={15} color={C.pale} />
+          </TouchableOpacity>
+        )}
+
+        {!USER.hasMoMo && !USER.hasETopup && (
+          <View style={{
+            borderRadius: 18, padding: 24,
+            backgroundColor: C.white,
+            borderWidth: 1.5, borderColor: C.border,
+            alignItems: 'center',
+          }}>
+            <AlertCircle size={32} color={C.pale} />
+            <Text style={{
+              fontSize: 13, fontWeight: '600', color: C.muted,
+              marginTop: 8, fontFamily: 'Urbanist_600SemiBold',
+            }}>
+              No wallet products assigned
+            </Text>
+            <Text style={{
+              fontSize: 11, color: C.pale, marginTop: 4,
+              fontFamily: 'Urbanist_400Regular',
+            }}>
+              Contact support to enable wallet top-up
+            </Text>
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   WALLET FORM  (shared — isMoMo flag switches layout)
+══════════════════════════════════════════════════════════════════════════════ */
+function WalletForm({
+  isMoMo, onBack, onSubmit,
+}: {
+  isMoMo: boolean;
+  onBack: () => void;
+  onSubmit: (d: WFState) => void;
+}) {
+  const [form, setForm] = useState<WFState>({
+    product: isMoMo ? 'mtn-momo' : '',
+    accountId: USER.accountId,
+    amount: '',
+    phoneNumber: '',
+    referenceId: genRef(),
+  });
+  const [errs, setErrs] = useState<Record<string, string>>({});
+  const [touched, setTouch] = useState<Record<string, boolean>>({});
+
+  const showPhone = form.product === 'mtn-momo' || isMoMo;
+
+  const set = (k: keyof WFState, v: string) => {
+    setForm(p => ({ ...p, [k]: v }));
+    if (touched[k]) setErrs(p => ({ ...p, [k]: '' }));
+  };
+
+  const validate = (): Record<string, string> => {
+    const e: Record<string, string> = {};
+    if (!isMoMo && !form.product)
+      e.product = 'Select a product';
+    if (!form.amount || isNaN(+form.amount) || +form.amount <= 0)
+      e.amount = 'Enter a valid amount';
+    if (showPhone && !form.phoneNumber.trim())
+      e.phoneNumber = 'Phone number is required';
+    if (showPhone && form.phoneNumber &&
+      !/^(0[0-9]{9})$/.test(form.phoneNumber.replace(/\s/g, '')))
+      e.phoneNumber = 'Enter a valid Ghana number (0XXXXXXXXX)';
+    return e;
+  };
+
+  const submit = () => {
+    setTouch({ product: true, amount: true, phoneNumber: true });
+    const ev = validate();
+    setErrs(ev);
+    if (!Object.keys(ev).length) onSubmit(form);
+  };
+
+  const btnGrad: readonly [string, string] = isMoMo
+    ? ['#12C47E', '#0A9260']
+    : [C.sky, C.blue];
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+      >
+        {/* ── Info banner ──────────────────────────────────────────────────────── */}
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: 10,
+          padding: 14,
+          borderRadius: 14,
+          marginBottom: 18,
+          backgroundColor: 'rgba(24,120,206,0.06)',
+          borderWidth: 1.5,
+          borderColor: 'rgba(24,120,206,0.15)',
+        }}>
+          <View style={{
+            width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+            backgroundColor: 'rgba(24,120,206,0.12)',
+            alignItems: 'center', justifyContent: 'center',
+            marginTop: 1,
+          }}>
+            <AlertCircle size={14} color={C.blue} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{
+              fontSize: 11, fontWeight: '700', color: C.blue,
+              marginBottom: 3, fontFamily: 'Urbanist_700Bold',
+            }}>
+              Load Wallet
+            </Text>
+            <Text style={{
+              fontSize: 11, color: C.mid, lineHeight: 17,
+              fontWeight: '500', fontFamily: 'Urbanist_500Medium',
+            }}>
+              Load Wallet allows you to add funds to your account.
+              The funds you load here will be used for airtime and data bundle.
+            </Text>
+          </View>
+        </View>
+
+        {isMoMo && (
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', gap: 10,
+            padding: 12, borderRadius: 14, marginBottom: 18,
+            backgroundColor: 'rgba(233,145,10,0.07)',
+            borderWidth: 1.5, borderColor: 'rgba(233,145,10,0.2)',
+          }}>
+            <View style={{
+              width: 32, height: 32, borderRadius: 9,
+              backgroundColor: C.orange,
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Text style={{
+                fontSize: 9, fontWeight: '900', color: '#fff',
+                fontFamily: 'Urbanist_900Black',
+              }}>
+                MTN
+              </Text>
+            </View>
+            <View>
+              <Text style={{
+                fontSize: 13, fontWeight: '700', color: C.navy,
+                fontFamily: 'Urbanist_700Bold',
+              }}>
+                MTN Mobile Money (MoMo)
+              </Text>
+              <Text style={{
+                fontSize: 10, color: C.muted,
+                fontFamily: 'Urbanist_400Regular',
+              }}>
+                Ghana
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {!isMoMo && (
+          <Field
+            label="Product"
+            required
+            error={touched.product ? errs.product : ''}
+          >
+            <SelectSheet
+              value={form.product}
+              onChange={v => {
+                set('product', v);
+                setTouch(p => ({ ...p, product: true }));
+                if (v !== 'mtn-momo') set('phoneNumber', '');
+              }}
+              options={[
+                { value: 'momo-wallet', label: 'Mobile Money Wallet' },
+                { value: 'mtn-momo', label: 'MTN Mobile Money (MoMo)' },
+              ]}
+              placeholder="Select product\u2026"
+              error={!!(touched.product && errs.product)}
+            />
+          </Field>
+        )}
+
+        <Field label="Account ID">
+          <SInput
+            value={form.accountId}
+            disabled
+            icon={<User size={14} color={C.pale} />}
+          />
+        </Field>
+
+        <Field
+          label="Amount"
+          required
+          error={touched.amount ? errs.amount : ''}
+        >
+          <View style={{
+            flexDirection: 'row', alignItems: 'center',
+            borderRadius: 12, borderWidth: 1.5,
+            borderColor: touched.amount && errs.amount ? C.red : C.border,
+            backgroundColor: C.white,
+            paddingHorizontal: 12,
+          }}>
+            <Text style={{
+              fontSize: 13, fontWeight: '700', color: C.muted,
+              fontFamily: 'Urbanist_700Bold', marginRight: 4,
+            }}>
+              GH\u20B5
+            </Text>
+            <TextInput
+              value={form.amount}
+              onChangeText={v => set('amount', v)}
+              onBlur={() => setTouch(p => ({ ...p, amount: true }))}
+              keyboardType="decimal-pad"
+              placeholder="0.00"
+              placeholderTextColor={C.pale}
+              style={{
+                flex: 1, fontSize: 13, fontWeight: '600',
+                color: C.navy, fontFamily: 'Urbanist_600SemiBold',
+                paddingVertical: 11, padding: 0,
+              }}
+            />
+          </View>
+        </Field>
+
+        {showPhone && (
+          <Field
+            label="Phone Number"
+            required
+            error={touched.phoneNumber ? errs.phoneNumber : ''}
+          >
+            <SInput
+              value={form.phoneNumber}
+              onChangeText={v => set('phoneNumber', v)}
+              onBlur={() => setTouch(p => ({ ...p, phoneNumber: true }))}
+              keyboardType="phone-pad"
+              placeholder="e.g. 0244123456"
+              icon={
+                <Phone
+                  size={14}
+                  color={touched.phoneNumber && errs.phoneNumber ? C.red : C.pale}
+                />
+              }
+              error={!!(touched.phoneNumber && errs.phoneNumber)}
+            />
+          </Field>
+        )}
+
+        <Field label="Reference ID">
+          <SInput
+            value={form.referenceId}
+            disabled
+            icon={<Hash size={14} color={C.pale} />}
+            rightEl={
+              <TouchableOpacity
+                onPress={() => set('referenceId', genRef())}
+                style={{
+                  backgroundColor: 'rgba(24,120,206,0.07)',
+                  borderRadius: 7, padding: 5,
+                }}
+              >
+                <RefreshCw size={12} color={C.blue} />
+              </TouchableOpacity>
+            }
+          />
+          <Text style={{
+            fontSize: 9, color: C.pale, marginTop: 3,
+            fontFamily: 'Urbanist_400Regular',
+          }}>
+            {form.referenceId.length}/255 chars
+          </Text>
+        </Field>
+
+        <TouchableOpacity
+          onPress={submit}
+          activeOpacity={0.85}
+          style={{ marginTop: 8 }}
+        >
+          <LinearGradient
+            colors={btnGrad}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              borderRadius: 14, paddingVertical: 14,
+              alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Text style={{
+              fontSize: 15, fontWeight: '800', color: '#fff',
+              fontFamily: 'Urbanist_800ExtraBold',
+            }}>
+              Load
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   CONFIRM SCREEN
+══════════════════════════════════════════════════════════════════════════════ */
+function WalletConfirm({
+  formData, walletType, onConfirm, onCancel, loading,
+}: {
+  formData: WFState;
+  walletType: WalletView;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}) {
+  const productLabel =
+    formData.product === 'mtn-momo' ? 'MTN Mobile Money (MoMo)' :
+      formData.product === 'momo-wallet' ? 'Mobile Money Wallet' : '\u2014';
+
+  const rows: { label: string; value: string; mono?: boolean }[] = [
+    { label: 'Wallet', value: walletType === 'etopup-form' ? 'e Top-Up Wallet' : 'Mobile Money Wallet' },
+    { label: 'Product', value: productLabel },
+    { label: 'Account ID', value: formData.accountId },
+    { label: 'Amount', value: `GH\u20B5${Number(formData.amount).toFixed(2)}` },
+    ...(formData.phoneNumber ? [{ label: 'Phone', value: formData.phoneNumber }] : []),
+    { label: 'Reference', value: formData.referenceId, mono: true },
+  ];
+
+  return (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+    >
+      <View style={{
+        borderRadius: 18, overflow: 'hidden',
+        backgroundColor: C.white,
+        borderWidth: 1, borderColor: C.border,
+        marginBottom: 16, ...sd(6, C.navy, 0.04),
+      }}>
+        <View style={{
+          padding: 14,
+          borderBottomWidth: 1, borderBottomColor: C.divider,
+        }}>
+          <Text style={{
+            fontSize: 10, fontWeight: '700', color: C.muted,
+            textTransform: 'uppercase', letterSpacing: 0.8,
+            fontFamily: 'Urbanist_700Bold',
+          }}>
+            Transaction Summary
+          </Text>
+        </View>
+        {rows.map((r, i) => (
+          <View
+            key={r.label}
+            style={{
+              flexDirection: 'row', justifyContent: 'space-between',
+              alignItems: 'flex-start', padding: 12,
+              borderBottomWidth: i < rows.length - 1 ? 1 : 0,
+              borderBottomColor: C.divider,
+            }}
+          >
+            <Text style={{ fontSize: 11, color: C.muted, fontFamily: 'Urbanist_500Medium' }}>
+              {r.label}
+            </Text>
+            <Text style={{
+              fontSize: r.mono ? 10 : 11, fontWeight: '700', color: C.navy,
+              fontFamily: r.mono ? undefined : 'Urbanist_700Bold',
+              maxWidth: '58%', textAlign: 'right',
+            }}>
+              {r.value}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={{
+        borderRadius: 16, padding: 16, marginBottom: 24,
+        backgroundColor: 'rgba(24,120,206,0.06)',
+        borderWidth: 1.5, borderColor: 'rgba(24,120,206,0.14)',
+        alignItems: 'center',
+      }}>
+        <Text style={{ fontSize: 11, color: C.muted, marginBottom: 4, fontFamily: 'Urbanist_500Medium' }}>
+          You are loading
+        </Text>
+        <Text style={{ fontSize: 28, fontWeight: '800', color: C.blue, fontFamily: 'Urbanist_800ExtraBold' }}>
+          GH\u20B5{Number(formData.amount).toFixed(2)}
+        </Text>
+        <Text style={{ fontSize: 11, color: C.muted, marginTop: 2, fontFamily: 'Urbanist_500Medium' }}>
+          into your wallet
+        </Text>
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <TouchableOpacity
+          onPress={onCancel}
+          disabled={loading}
+          activeOpacity={0.8}
+          style={{
+            flex: 1, paddingVertical: 13, borderRadius: 14,
+            borderWidth: 2, borderColor: C.border,
+            alignItems: 'center', justifyContent: 'center',
+            opacity: loading ? 0.5 : 1,
+          }}
+        >
+          <Text style={{ fontSize: 14, fontWeight: '700', color: C.mid, fontFamily: 'Urbanist_700Bold' }}>
+            Cancel
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={onConfirm}
+          disabled={loading}
+          activeOpacity={0.85}
+          style={{ flex: 2 }}
+        >
+          <LinearGradient
+            colors={loading ? [C.pale, C.pale] : [C.sky, C.blue]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              borderRadius: 14, paddingVertical: 13,
+              alignItems: 'center', justifyContent: 'center',
+              flexDirection: 'row', gap: 8,
+            }}
+          >
+            {loading && <ActivityIndicator size="small" color="#fff" />}
+            <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff', fontFamily: 'Urbanist_800ExtraBold' }}>
+              {loading ? 'Processing\u2026' : 'Confirm'}
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SUCCESS SCREEN
+══════════════════════════════════════════════════════════════════════════════ */
+function WalletSuccess({
+  amount, reference, onDone,
+}: {
+  amount: string;
+  reference: string;
+  onDone: () => void;
+}) {
+  const scale = useRef(new Animated.Value(0)).current;
+  const fade = useRef(new Animated.Value(0)).current;
+  const slideY = useRef(new Animated.Value(16)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scale, { toValue: 1, tension: 50, friction: 6, useNativeDriver: true }),
+      Animated.timing(fade, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.timing(slideY, { toValue: 0, duration: 380, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 }}>
+      <Animated.View style={{ transform: [{ scale }], opacity: fade, marginBottom: 20 }}>
+        <View style={{
+          width: 90, height: 90, borderRadius: 45,
+          backgroundColor: 'rgba(13,168,112,0.1)',
+          borderWidth: 3, borderColor: C.green,
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <CheckCircle2 size={44} color={C.green} />
+        </View>
+      </Animated.View>
+
+      <Animated.Text style={{
+        fontSize: 20, fontWeight: '800', color: C.navy,
+        marginBottom: 6, fontFamily: 'Urbanist_800ExtraBold',
+        opacity: fade, transform: [{ translateY: slideY }],
+      }}>
+        Wallet Loaded!
+      </Animated.Text>
+
+      <Animated.Text style={{
+        fontSize: 25, fontWeight: '800', color: C.green,
+        marginBottom: 6, fontFamily: 'Urbanist_800ExtraBold',
+        opacity: fade,
+      }}>
+        {amount}
+      </Animated.Text>
+
+      <Animated.Text style={{
+        fontSize: 13, color: C.muted, marginBottom: 28,
+        textAlign: 'center', lineHeight: 20,
+        fontFamily: 'Urbanist_500Medium',
+        opacity: fade, transform: [{ translateY: slideY }],
+      }}>
+        Transaction completed successfully.
+      </Animated.Text>
+
+      <Animated.View style={{
+        borderRadius: 12, paddingVertical: 10, paddingHorizontal: 18,
+        backgroundColor: 'rgba(13,168,112,0.07)',
+        borderWidth: 1, borderColor: 'rgba(13,168,112,0.2)',
+        marginBottom: 32, opacity: fade,
+      }}>
+        <Text style={{ fontSize: 9, color: C.muted, marginBottom: 2, fontFamily: 'Urbanist_500Medium' }}>
+          Reference
+        </Text>
+        <Text style={{ fontSize: 10, fontWeight: '700', color: C.navy }}>
+          {reference}
+        </Text>
+      </Animated.View>
+
+      <Animated.View style={{ width: '100%', opacity: fade, transform: [{ translateY: slideY }] }}>
+        <TouchableOpacity onPress={onDone} activeOpacity={0.85}>
+          <LinearGradient
+            colors={[C.sky, C.blue]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{ borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
+          >
+            <Text style={{ fontSize: 15, fontWeight: '800', color: '#fff', fontFamily: 'Urbanist_800ExtraBold' }}>
+              Done
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   WALLET SCREEN  (main export — manages sub-navigation)
+══════════════════════════════════════════════════════════════════════════════ */
+export default function WalletScreen() {
+  const insets = useSafeAreaInsets();
+  const [view, setView] = useState<WalletView>('home');
+  const [from, setFrom] = useState<WalletView>('etopup-form');
+  const [formData, setFormData] = useState<WFState | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const titles: Record<WalletView, string> = {
+    home: 'Wallet',
+    'etopup-form': 'Load e Top-Up Wallet',
+    'momo-form': 'Load Mobile Money',
+    confirm: 'Confirm Transaction',
+    success: 'Success',
+  };
+  const backTo: Record<WalletView, WalletView> = {
+    home: 'home', 'etopup-form': 'home',
+    'momo-form': 'home', confirm: from, success: 'home',
+  };
+  const headerColors: Record<WalletView, readonly [string, string, string]> = {
+    home: [C.sky, C.blue, C.deep],
+    'etopup-form': [C.sky, C.blue, C.deep],
+    'momo-form': ['#12C47E', '#0A9260', '#065C3D'],
+    confirm: [C.sky, C.blue, C.deep],
+    success: [C.sky, C.blue, C.deep],
+  };
+
+  const handleConfirm = () => {
+    setLoading(true);
+    setTimeout(() => { setLoading(false); setView('success'); }, 1800);
+  };
+  const reset = () => { setView('home'); setFormData(null); };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
+      {view !== 'success' && (
+        <GradHdr
+          title={titles[view]}
+          onBack={view !== 'home' ? () => setView(backTo[view]) : undefined}
+          colors={headerColors[view]}
+        />
+      )}
+
+      {view === 'home' && <WalletHome onSelect={setView} />}
+
+      {(view === 'etopup-form' || view === 'momo-form') && (
+        <WalletForm
+          key={view}
+          isMoMo={view === 'momo-form'}
+          onBack={() => setView('home')}
+          onSubmit={d => { setFormData(d); setFrom(view); setView('confirm'); }}
+        />
+      )}
+
+      {view === 'confirm' && formData && (
+        <WalletConfirm
+          formData={formData}
+          walletType={from}
+          onConfirm={handleConfirm}
+          onCancel={() => setView(from)}
+          loading={loading}
+        />
+      )}
+
+      {view === 'success' && formData && (
+        <WalletSuccess
+          amount={`GH\u20B5${Number(formData.amount).toFixed(2)}`}
+          reference={formData.referenceId}
+          onDone={reset}
+        />
+      )}
+    </View>
+  );
+}
