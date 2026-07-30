@@ -178,36 +178,34 @@ export default function HomeScreen() {
             <Icon name="arrow-right" size={11} color={C.blue} />
           </TouchableOpacity>
         </View>
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <View style={{ flexDirection: "row", gap: 8 }}>
           {([
-            { id: "airtime", label: "Airtime", sub: "All networks", icon: "smartphone", colors: [C.sky, C.blue, C.deep] as [string, string, string] },
-            { id: "data", label: "Data Bundle", sub: "6 plans", icon: "wifi", colors: ["#0DA870", "#0A7A52", "#064A30"] as [string, string, string] },
-            { id: "momo", label: "Mobile Money", sub: "Send · Cash", icon: "zap", colors: [C.orange, "#C47800", "#7A4B00"] as [string, string, string] },
-            { id: "more", label: "More", sub: "All services", icon: "more-horizontal", colors: [C.purple, "#5B3ECC", "#3D2090"] as [string, string, string] },
+            { id: "airtime", label: "Airtime", icon: "smartphone", iconColor: C.blue, iconBg: "rgba(24,120,206,0.10)" },
+            { id: "data", label: "Data Bundle", icon: "wifi", iconColor: C.green, iconBg: "rgba(13,168,112,0.10)" },
+            { id: "momo", label: "Mobile Money", icon: "banknote", iconColor: C.orange, iconBg: "rgba(233,145,10,0.10)" },
+            { id: "more", label: "More", icon: "layers", iconColor: C.blue, iconBg: "rgba(24,120,206,0.07)" },
           ] as const).map(link => (
             <TouchableOpacity
               key={link.id}
               activeOpacity={0.82}
               accessibilityRole="button"
               accessibilityLabel={link.label}
-              style={{ flex: 1, alignItems: "center", gap: 7 }}
+              style={{
+                flex: 1, alignItems: "center", gap: 8,
+                backgroundColor: C.white,
+                borderRadius: 16,
+                paddingVertical: 14,
+                paddingHorizontal: 6,
+                borderWidth: 1,
+                borderColor: C.border,
+                ...sd(6, C.navy, 0.04),
+              }}
             >
-              <View style={{ shadowColor: "#071830", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.14, shadowRadius: 8, elevation: 4 }}>
-                <LinearGradient
-                  colors={link.colors}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{ width: 54, height: 54, borderRadius: 18, alignItems: "center", justifyContent: "center", overflow: "hidden" }}
-                >
-                  <View style={{ position: "absolute", top: -8, right: -8, width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.18)" }} />
-                  <Icon name={link.icon} size={20} color="#fff" />
-                </LinearGradient>
+              <View style={{ width: 44, height: 44, borderRadius: 13, backgroundColor: link.iconBg, alignItems: "center", justifyContent: "center" }}>
+                <Icon name={link.icon} size={20} color={link.iconColor} />
               </View>
-              <Text style={{ fontSize: 11, fontFamily: "Urbanist_700Bold", color: C.navy, textAlign: "center" }} numberOfLines={1}>
+              <Text style={{ fontSize: 11, fontFamily: "Urbanist_800ExtraBold", color: C.navy, textAlign: "center" }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                 {link.label}
-              </Text>
-              <Text style={{ fontSize: 9, fontFamily: "Urbanist_500Medium", color: C.muted, textAlign: "center", lineHeight: 12 }} numberOfLines={1}>
-                {link.sub}
               </Text>
             </TouchableOpacity>
           ))}
