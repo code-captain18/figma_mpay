@@ -1,6 +1,7 @@
 import type { LucideProps } from "lucide-react-native";
 import {
   ArrowDownLeft,
+  ArrowRight,
   ArrowUpRight,
   Banknote,
   Bell,
@@ -76,6 +77,9 @@ const ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
   "phone": Phone,
   "wifi": Wifi,
   "smartphone": Smartphone,
+  "zap": Zap,
+  "more-horizontal": MoreHorizontal,
+  "arrow-right": ArrowRight,
 };
 
 interface IconProps {

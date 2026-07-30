@@ -162,6 +162,58 @@ export default function HomeScreen() {
         </LinearGradient>
       </View>
 
+      {/* ── Buy: Quick actions ──────────────────────────────────── */}
+      <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 13 }}>
+          <View>
+            <Text style={{ fontSize: 15, color: C.navy, fontFamily: "Urbanist_800ExtraBold" }}>Buy</Text>
+            <Text style={{ fontSize: 10, color: C.muted, fontFamily: "Urbanist_500Medium", marginTop: 1 }}>Quick top-up &amp; transfers</Text>
+          </View>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="See all services"
+            style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(24,120,206,0.08)", borderRadius: 8, paddingVertical: 5, paddingHorizontal: 10, borderWidth: 1, borderColor: "rgba(24,120,206,0.14)" }}
+          >
+            <Text style={{ fontSize: 11, fontFamily: "Urbanist_600SemiBold", color: C.blue }}>See all</Text>
+            <Icon name="arrow-right" size={11} color={C.blue} />
+          </TouchableOpacity>
+        </View>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          {([
+            { id: "airtime", label: "Airtime", sub: "All networks", icon: "smartphone", colors: [C.sky, C.blue, C.deep] as [string, string, string] },
+            { id: "data", label: "Data Bundle", sub: "6 plans", icon: "wifi", colors: ["#0DA870", "#0A7A52", "#064A30"] as [string, string, string] },
+            { id: "momo", label: "Mobile Money", sub: "Send · Cash", icon: "zap", colors: [C.orange, "#C47800", "#7A4B00"] as [string, string, string] },
+            { id: "more", label: "More", sub: "All services", icon: "more-horizontal", colors: [C.purple, "#5B3ECC", "#3D2090"] as [string, string, string] },
+          ] as const).map(link => (
+            <TouchableOpacity
+              key={link.id}
+              activeOpacity={0.82}
+              accessibilityRole="button"
+              accessibilityLabel={link.label}
+              style={{ flex: 1, alignItems: "center", gap: 7 }}
+            >
+              <View style={{ shadowColor: "#071830", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.14, shadowRadius: 8, elevation: 4 }}>
+                <LinearGradient
+                  colors={link.colors}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ width: 54, height: 54, borderRadius: 18, alignItems: "center", justifyContent: "center", overflow: "hidden" }}
+                >
+                  <View style={{ position: "absolute", top: -8, right: -8, width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.18)" }} />
+                  <Icon name={link.icon} size={20} color="#fff" />
+                </LinearGradient>
+              </View>
+              <Text style={{ fontSize: 11, fontFamily: "Urbanist_700Bold", color: C.navy, textAlign: "center" }} numberOfLines={1}>
+                {link.label}
+              </Text>
+              <Text style={{ fontSize: 9, fontFamily: "Urbanist_500Medium", color: C.muted, textAlign: "center", lineHeight: 12 }} numberOfLines={1}>
+                {link.sub}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
       {/* ── Sales breakdown cards ──────────────────────────────── */}
       <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
