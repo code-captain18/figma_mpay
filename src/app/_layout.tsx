@@ -1,3 +1,11 @@
+import SplashScreenView from "@/components/SplashScreenView";
+import { AuthProvider, useAuth } from "@/store/auth.store";
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from "@expo-google-fonts/plus-jakarta-sans";
 import {
   Urbanist_400Regular,
   Urbanist_500Medium,
@@ -6,19 +14,11 @@ import {
   Urbanist_800ExtraBold,
   useFonts,
 } from "@expo-google-fonts/urbanist";
-import {
-  PlusJakartaSans_400Regular,
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_700Bold,
-  PlusJakartaSans_800ExtraBold,
-} from "@expo-google-fonts/plus-jakarta-sans";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { AuthProvider, useAuth } from "@/store/auth.store";
-import { Colors } from "@/theme";
 import "../../global.css";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -67,6 +67,7 @@ export default function RootLayout() {
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
   });
+  const [splashDone, setSplashDone] = useState(false);
 
   if (!fontsLoaded) {
     return <View className="flex-1 bg-mpay-bg" />;
@@ -77,6 +78,9 @@ export default function RootLayout() {
       <AuthProvider>
         <RootLayoutContent />
       </AuthProvider>
+      {!splashDone && (
+        <SplashScreenView onDone={() => setSplashDone(true)} />
+      )}
     </SafeAreaProvider>
   );
 }
