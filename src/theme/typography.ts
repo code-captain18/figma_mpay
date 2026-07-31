@@ -1,12 +1,12 @@
 import type { TextStyle } from "react-native";
 
 const FONT_FAMILY = {
-  regular:   "Urbanist_400Regular",
-  medium:    "Urbanist_500Medium",
-  semibold:  "Urbanist_600SemiBold",
-  bold:      "Urbanist_700Bold",
+  regular: "Urbanist_400Regular",
+  medium: "Urbanist_500Medium",
+  semibold: "Urbanist_600SemiBold",
+  bold: "Urbanist_700Bold",
   extrabold: "Urbanist_800ExtraBold",
-  black:     "Urbanist_800ExtraBold",
+  black: "Urbanist_800ExtraBold",
 } as const;
 
 /** Canonical type scale */

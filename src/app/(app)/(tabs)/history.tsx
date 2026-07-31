@@ -1,37 +1,59 @@
-import React, { useState, useMemo } from 'react';
-import {
-  View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, Modal, Alert,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import {
-  Search, SlidersHorizontal, Download, Copy, ChevronLeft,
-  X, CheckCircle2, Clock, XCircle,
-  Wifi, Phone, Globe, Users, Smartphone, Calendar,
-} from 'lucide-react-native';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 import { GradHdr } from '@/components/services/GradHdr';
-import { C, F, G } from '@/theme';
 import {
-  TXNS, NETWORKS, groupByDate, fmtDateTime, fmtAgo,
-  CSV_HEADER, buildCsvRow, USER,
+  CSV_HEADER,
+  NETWORKS,
+  TXNS,
+  USER,
+  buildCsvRow,
+  fmtAgo,
+  fmtDateTime,
+  groupByDate,
 } from '@/data';
-import type { TxRecord, FilterState, SvcType } from '@/types';
+import { C, F, G } from '@/theme';
+import type { FilterState, SvcType, TxRecord } from '@/types';
+import * as FileSystem from 'expo-file-system';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Sharing from 'expo-sharing';
+import {
+  Calendar,
+  CheckCircle2,
+  ChevronLeft,
+  Clock,
+  Copy,
+  Download,
+  Globe,
+  Phone,
+  Search, SlidersHorizontal,
+  Smartphone,
+  Users,
+  Wifi,
+  X,
+  XCircle,
+} from 'lucide-react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 const EMPTY_FILTER: FilterState = {
-  status:   '',
-  svcType:  '',
-  phone:    '',
-  ref:      '',
+  status: '',
+  svcType: '',
+  phone: '',
+  ref: '',
   dateFrom: '',
-  dateTo:   '',
-  amtMin:   '',
-  amtMax:   '',
+  dateTo: '',
+  amtMin: '',
+  amtMax: '',
 };
 
 const PAGE_SIZE = 4;
@@ -39,39 +61,39 @@ const PAGE_SIZE = 4;
 const STATUS_COLORS: Record<string, string> = {
   success: C.green,
   pending: C.orange,
-  failed:  C.red,
+  failed: C.red,
 };
 
 const SVC_LABELS: Record<string, string> = {
   airtime: 'Airtime',
-  data:    'Data Bundle',
-  fibre:   'Fibre',
-  bulk:    'Bulk',
-  momo:    'MoMo',
+  data: 'Data Bundle',
+  fibre: 'Fibre',
+  bulk: 'Bulk',
+  momo: 'MoMo',
 };
 
 const SVC_ICON: Record<string, React.ComponentType<any>> = {
-  data:    Wifi,
+  data: Wifi,
   airtime: Phone,
-  fibre:   Globe,
-  bulk:    Users,
-  momo:    Smartphone,
+  fibre: Globe,
+  bulk: Users,
+  momo: Smartphone,
 };
 
 const SVC_ICON_COLOR: Record<string, string> = {
-  data:    '#1878CE',
+  data: '#1878CE',
   airtime: '#4BAEE8',
-  fibre:   '#7C5CFC',
-  bulk:    '#E9910A',
-  momo:    '#0DA870',
+  fibre: '#7C5CFC',
+  bulk: '#E9910A',
+  momo: '#0DA870',
 };
 
 const SVC_ICON_BG: Record<string, string> = {
-  data:    'rgba(24,120,206,0.13)',
+  data: 'rgba(24,120,206,0.13)',
   airtime: 'rgba(75,174,232,0.13)',
-  fibre:   'rgba(124,92,252,0.13)',
-  bulk:    'rgba(233,145,10,0.13)',
-  momo:    'rgba(13,168,112,0.13)',
+  fibre: 'rgba(124,92,252,0.13)',
+  bulk: 'rgba(233,145,10,0.13)',
+  momo: 'rgba(13,168,112,0.13)',
 };
 
 function getTxTitle(tx: TxRecord): string {
@@ -96,16 +118,16 @@ function getTxTag(tx: TxRecord): string | null {
 // TxDetail — full transaction detail view
 // ─────────────────────────────────────────────────────────────────────────────
 function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
-  const net        = NETWORKS.find(n => n.id === tx.network);
-  const statusColor= STATUS_COLORS[tx.status] ?? C.mid;
-  const isSuccess  = tx.status === 'success';
-  const isPending  = tx.status === 'pending';
+  const net = NETWORKS.find(n => n.id === tx.network);
+  const statusColor = STATUS_COLORS[tx.status] ?? C.mid;
+  const isSuccess = tx.status === 'success';
+  const isPending = tx.status === 'pending';
 
   const StatusIcon = isSuccess
     ? () => <CheckCircle2 size={34} color={statusColor} strokeWidth={1.8} />
     : isPending
-    ? () => <Clock        size={34} color={statusColor} strokeWidth={1.8} />
-    : () => <XCircle      size={34} color={statusColor} strokeWidth={1.8} />;
+      ? () => <Clock size={34} color={statusColor} strokeWidth={1.8} />
+      : () => <XCircle size={34} color={statusColor} strokeWidth={1.8} />;
 
   function DetailRow({
     label, value, mono = false,
@@ -139,34 +161,34 @@ function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
     {
       title: 'Transaction',
       rows: [
-        { label: 'Reference',  value: tx.ref,                    mono: true  },
-        { label: 'Date & Time',value: fmtDateTime(tx.createdAt), mono: false },
-        { label: 'Status',     value: tx.status,                 mono: false },
+        { label: 'Reference', value: tx.ref, mono: true },
+        { label: 'Date & Time', value: fmtDateTime(tx.createdAt), mono: false },
+        { label: 'Status', value: tx.status, mono: false },
       ],
     },
     {
       title: 'Product',
       rows: [
-        { label: 'Service Type',value: SVC_LABELS[tx.type] ?? tx.type, mono: false },
-        ...(tx.bundle   ? [{ label: 'Bundle',    value: tx.bundle,   mono: false }] : []),
+        { label: 'Service Type', value: SVC_LABELS[tx.type] ?? tx.type, mono: false },
+        ...(tx.bundle ? [{ label: 'Bundle', value: tx.bundle, mono: false }] : []),
         ...(tx.momoType ? [{ label: 'MoMo Type', value: tx.momoType, mono: false }] : []),
-        { label: 'Network',    value: tx.network,  mono: false },
+        { label: 'Network', value: tx.network, mono: false },
       ],
     },
     {
       title: 'Financial',
       rows: [
-        { label: 'Amount',     value: `GH₵ ${tx.amount.toFixed(2)}`,         mono: false },
-        { label: 'Fee',        value: `GH₵ ${tx.fee.toFixed(2)}`,            mono: false },
+        { label: 'Amount', value: `GH₵ ${tx.amount.toFixed(2)}`, mono: false },
+        { label: 'Fee', value: `GH₵ ${tx.fee.toFixed(2)}`, mono: false },
         { label: 'Net Amount', value: `GH₵ ${(tx.amount - tx.fee).toFixed(2)}`, mono: false },
       ],
     },
     {
       title: 'Account',
       rows: [
-        { label: 'Phone',       value: tx.phone,          mono: false },
-        ...(tx.accountId ? [{ label: 'Account ID', value: tx.accountId, mono: true  }] : []),
-        { label: 'Agent ID',    value: USER.accountId,    mono: true  },
+        { label: 'Phone', value: tx.phone, mono: false },
+        ...(tx.accountId ? [{ label: 'Account ID', value: tx.accountId, mono: true }] : []),
+        { label: 'Agent ID', value: USER.accountId, mono: true },
       ],
     },
   ];
@@ -195,7 +217,7 @@ function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
         <View style={[
           det.statusHero,
           {
-            borderColor:     statusColor + '44',
+            borderColor: statusColor + '44',
             backgroundColor: statusColor + '0D',
           },
         ]}>
@@ -214,7 +236,7 @@ function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
               det.netBadge,
               {
                 backgroundColor: net.color + '22',
-                borderColor:     net.color + '66',
+                borderColor: net.color + '66',
               },
             ]}>
               <View style={[det.netDotLarge, { backgroundColor: net.color }]} />
@@ -261,31 +283,31 @@ function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
 }
 
 const det = StyleSheet.create({
-  hdr:           { flexDirection: 'row', alignItems: 'center', paddingTop: 56, paddingBottom: 16, paddingHorizontal: 20 },
-  backBtn:       { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
-  hdrTitle:      { flex: 1, fontSize: 15, fontFamily: F.extrabold, color: '#fff', textAlign: 'center' },
-  content:       { padding: 20, paddingBottom: 40 },
-  statusHero:    { borderRadius: 20, borderWidth: 1.5, padding: 24, alignItems: 'center', marginBottom: 16, gap: 4 },
-  statusLabel:   { fontSize: 13, fontFamily: F.bold, textTransform: 'capitalize', marginTop: 6 },
-  statusAmount:  { fontSize: 26, fontFamily: F.black },
-  statusTime:    { fontSize: 10, color: C.muted, marginTop: 2 },
-  netBadge:      { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 99, paddingVertical: 5, paddingHorizontal: 12, borderWidth: 1.5, marginTop: 10 },
-  netDotLarge:   { width: 7, height: 7, borderRadius: 4 },
-  netBadgeText:  { fontSize: 11, fontFamily: F.bold },
-  section:       { backgroundColor: C.white, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden', marginBottom: 12 },
+  hdr: { flexDirection: 'row', alignItems: 'center', paddingTop: 56, paddingBottom: 16, paddingHorizontal: 20 },
+  backBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
+  hdrTitle: { flex: 1, fontSize: 15, fontFamily: F.extrabold, color: '#fff', textAlign: 'center' },
+  content: { padding: 20, paddingBottom: 40 },
+  statusHero: { borderRadius: 20, borderWidth: 1.5, padding: 24, alignItems: 'center', marginBottom: 16, gap: 4 },
+  statusLabel: { fontSize: 13, fontFamily: F.bold, textTransform: 'capitalize', marginTop: 6 },
+  statusAmount: { fontSize: 26, fontFamily: F.black },
+  statusTime: { fontSize: 10, color: C.muted, marginTop: 2 },
+  netBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 99, paddingVertical: 5, paddingHorizontal: 12, borderWidth: 1.5, marginTop: 10 },
+  netDotLarge: { width: 7, height: 7, borderRadius: 4 },
+  netBadgeText: { fontSize: 11, fontFamily: F.bold },
+  section: { backgroundColor: C.white, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden', marginBottom: 12 },
   sectionHeader: { backgroundColor: C.bg, paddingHorizontal: 14, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: C.divider },
-  sectionTitle:  { fontSize: 9, fontFamily: F.extrabold, color: C.navy, letterSpacing: 1.2 },
-  row:           { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11 },
-  rowLabel:      { fontSize: 11, color: C.muted, fontFamily: F.medium },
-  rowValue:      { fontSize: 12, color: C.navy, fontFamily: F.semibold, textAlign: 'right' },
-  rowValueMono:  { fontFamily: F.black, letterSpacing: 0.5, fontSize: 11 },
-  rowDivider:    { marginLeft: 14, height: 1, backgroundColor: C.divider },
-  copyBtn:       { width: 22, height: 22, borderRadius: 7, backgroundColor: 'rgba(24,120,206,0.1)', alignItems: 'center', justifyContent: 'center' },
-  refCard:       { backgroundColor: C.white, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 16, alignItems: 'center', gap: 4 },
-  refCardLabel:  { fontSize: 9, fontFamily: F.extrabold, color: C.muted, letterSpacing: 1 },
-  refCardValue:  { fontSize: 14, fontFamily: F.black, color: C.navy, letterSpacing: 1.5 },
-  refCopyBtn:    { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: 'rgba(24,120,206,0.07)', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 14, borderWidth: 1, borderColor: 'rgba(24,120,206,0.15)' },
-  refCopyText:   { fontSize: 11, fontFamily: F.semibold, color: C.blue },
+  sectionTitle: { fontSize: 9, fontFamily: F.extrabold, color: C.navy, letterSpacing: 1.2 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11 },
+  rowLabel: { fontSize: 11, color: C.muted, fontFamily: F.medium },
+  rowValue: { fontSize: 12, color: C.navy, fontFamily: F.semibold, textAlign: 'right' },
+  rowValueMono: { fontFamily: F.black, letterSpacing: 0.5, fontSize: 11 },
+  rowDivider: { marginLeft: 14, height: 1, backgroundColor: C.divider },
+  copyBtn: { width: 22, height: 22, borderRadius: 7, backgroundColor: 'rgba(24,120,206,0.1)', alignItems: 'center', justifyContent: 'center' },
+  refCard: { backgroundColor: C.white, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 16, alignItems: 'center', gap: 4 },
+  refCardLabel: { fontSize: 9, fontFamily: F.extrabold, color: C.muted, letterSpacing: 1 },
+  refCardValue: { fontSize: 14, fontFamily: F.black, color: C.navy, letterSpacing: 1.5 },
+  refCopyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: 'rgba(24,120,206,0.07)', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 14, borderWidth: 1, borderColor: 'rgba(24,120,206,0.15)' },
+  refCopyText: { fontSize: 11, fontFamily: F.semibold, color: C.blue },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -297,10 +319,10 @@ function FilterSheet({
   onApply,
   onClose,
 }: {
-  filter:    FilterState;
+  filter: FilterState;
   setFilter: (f: FilterState) => void;
-  onApply:   () => void;
-  onClose:   () => void;
+  onApply: () => void;
+  onClose: () => void;
 }) {
   const [local, setLocal] = useState<FilterState>(filter);
 
@@ -323,18 +345,18 @@ function FilterSheet({
   };
 
   const fullFields = [
-    { label: 'PHONE NUMBER', field: 'phone' as keyof FilterState, kbd: 'phone-pad',   ph: 'e.g. 233244123456'        },
-    { label: 'REFERENCE ID', field: 'ref'   as keyof FilterState, kbd: 'default',     ph: 'e.g. WB17220912234567890' },
+    { label: 'PHONE NUMBER', field: 'phone' as keyof FilterState, kbd: 'phone-pad', ph: 'e.g. 233244123456' },
+    { label: 'REFERENCE ID', field: 'ref' as keyof FilterState, kbd: 'default', ph: 'e.g. WB17220912234567890' },
   ];
 
   const pairedFields = [
     [
-      { label: 'DATE FROM',  field: 'dateFrom' as keyof FilterState, kbd: 'default',     ph: 'mm/dd/yyyy', icon: true },
-      { label: 'DATE TO',    field: 'dateTo'   as keyof FilterState, kbd: 'default',     ph: 'mm/dd/yyyy', icon: true },
+      { label: 'DATE FROM', field: 'dateFrom' as keyof FilterState, kbd: 'default', ph: 'mm/dd/yyyy', icon: true },
+      { label: 'DATE TO', field: 'dateTo' as keyof FilterState, kbd: 'default', ph: 'mm/dd/yyyy', icon: true },
     ],
     [
-      { label: 'MIN AMOUNT', field: 'amtMin'   as keyof FilterState, kbd: 'decimal-pad', ph: '0.00' },
-      { label: 'MAX AMOUNT', field: 'amtMax'   as keyof FilterState, kbd: 'decimal-pad', ph: '0.00' },
+      { label: 'MIN AMOUNT', field: 'amtMin' as keyof FilterState, kbd: 'decimal-pad', ph: '0.00' },
+      { label: 'MAX AMOUNT', field: 'amtMax' as keyof FilterState, kbd: 'decimal-pad', ph: '0.00' },
     ],
   ];
 
@@ -364,7 +386,7 @@ function FilterSheet({
           <View style={fs.chips}>
             {[
               { label: 'Success', value: 'success' },
-              { label: 'Failed',  value: 'failed'  },
+              { label: 'Failed', value: 'failed' },
             ].map(({ label, value }) => (
               <Chip key={value} label={label} field="status" value={value} />
             ))}
@@ -458,54 +480,54 @@ function FilterSheet({
 }
 
 const fs = StyleSheet.create({
-  sheet:        { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 101, backgroundColor: C.white, borderTopLeftRadius: 26, borderTopRightRadius: 26, maxHeight: '82%' },
-  sheetHeader:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.divider },
-  sheetTitle:   { fontSize: 15, fontFamily: F.extrabold, color: C.navy },
-  closeBtn:     { width: 30, height: 30, borderRadius: 10, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
+  sheet: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 101, backgroundColor: C.white, borderTopLeftRadius: 26, borderTopRightRadius: 26, maxHeight: '82%' },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.divider },
+  sheetTitle: { fontSize: 15, fontFamily: F.extrabold, color: C.navy },
+  closeBtn: { width: 30, height: 30, borderRadius: 10, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
   sheetContent: { padding: 20, paddingTop: 14, paddingBottom: 8 },
-  groupLabel:   { fontSize: 9, fontFamily: F.extrabold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 7, marginTop: 2 },
-  chips:        { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 16 },
-  chip:         { paddingVertical: 7, paddingHorizontal: 13, borderRadius: 9, borderWidth: 1.5, borderColor: C.border, backgroundColor: C.white },
-  chipActive:   { borderColor: C.blue, backgroundColor: 'rgba(24,120,206,0.08)' },
-  chipText:     { fontSize: 11, fontFamily: F.medium, color: C.muted, textTransform: 'capitalize' },
-  chipTextActive:{ color: C.blue, fontFamily: F.bold },
-  input:        { borderWidth: 1.5, borderColor: C.border, borderRadius: 11, paddingHorizontal: 11, paddingVertical: 10, fontSize: 12, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
-  inputRow:     { borderWidth: 1.5, borderColor: C.border, borderRadius: 11, paddingHorizontal: 11, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.bg },
-  inputInner:   { flex: 1, fontSize: 12, fontFamily: F.medium, color: C.navy, padding: 0 },
-  dragHandle:   { width: 40, height: 4, borderRadius: 2, backgroundColor: C.divider, alignSelf: 'center', marginTop: 10, marginBottom: 2 },
-  footer:       { flexDirection: 'row', gap: 10, padding: 16, paddingTop: 8, borderTopWidth: 1, borderTopColor: C.divider },
-  clearBtn:     { flex: 1, paddingVertical: 13, borderRadius: 13, borderWidth: 2, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
-  clearText:    { fontSize: 13, fontFamily: F.bold, color: C.muted },
-  applyBtn:     { flex: 2, borderRadius: 13, overflow: 'hidden' },
-  applyGrad:    { paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
-  applyText:    { fontSize: 13, fontFamily: F.extrabold, color: '#fff' },
+  groupLabel: { fontSize: 9, fontFamily: F.extrabold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 7, marginTop: 2 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 16 },
+  chip: { paddingVertical: 7, paddingHorizontal: 13, borderRadius: 9, borderWidth: 1.5, borderColor: C.border, backgroundColor: C.white },
+  chipActive: { borderColor: C.blue, backgroundColor: 'rgba(24,120,206,0.08)' },
+  chipText: { fontSize: 11, fontFamily: F.medium, color: C.muted, textTransform: 'capitalize' },
+  chipTextActive: { color: C.blue, fontFamily: F.bold },
+  input: { borderWidth: 1.5, borderColor: C.border, borderRadius: 11, paddingHorizontal: 11, paddingVertical: 10, fontSize: 12, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
+  inputRow: { borderWidth: 1.5, borderColor: C.border, borderRadius: 11, paddingHorizontal: 11, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.bg },
+  inputInner: { flex: 1, fontSize: 12, fontFamily: F.medium, color: C.navy, padding: 0 },
+  dragHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: C.divider, alignSelf: 'center', marginTop: 10, marginBottom: 2 },
+  footer: { flexDirection: 'row', gap: 10, padding: 16, paddingTop: 8, borderTopWidth: 1, borderTopColor: C.divider },
+  clearBtn: { flex: 1, paddingVertical: 13, borderRadius: 13, borderWidth: 2, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+  clearText: { fontSize: 13, fontFamily: F.bold, color: C.muted },
+  applyBtn: { flex: 2, borderRadius: 13, overflow: 'hidden' },
+  applyGrad: { paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
+  applyText: { fontSize: 13, fontFamily: F.extrabold, color: '#fff' },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main HistoryScreen
 // ─────────────────────────────────────────────────────────────────────────────
 export default function HistoryScreen() {
-  const [selected,    setSelected]    = useState<TxRecord | null>(null);
-  const [query,       setQuery]       = useState('');
-  const [filter,      setFilter]      = useState<FilterState>(EMPTY_FILTER);
-  const [filterOpen,  setFilterOpen]  = useState(false);
-  const [page,        setPage]        = useState(1);
+  const [selected, setSelected] = useState<TxRecord | null>(null);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<FilterState>(EMPTY_FILTER);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     return TXNS.filter(tx => {
-      if (filter.status  && tx.status  !== filter.status)      return false;
-      if (filter.svcType && tx.type    !== filter.svcType)     return false;
-      if (filter.phone   && !tx.phone.includes(filter.phone))  return false;
-      if (filter.ref     && !tx.ref.toLowerCase().includes(filter.ref.toLowerCase())) return false;
-      if (filter.amtMin  && tx.amount < parseFloat(filter.amtMin)) return false;
-      if (filter.amtMax  && tx.amount > parseFloat(filter.amtMax)) return false;
+      if (filter.status && tx.status !== filter.status) return false;
+      if (filter.svcType && tx.type !== filter.svcType) return false;
+      if (filter.phone && !tx.phone.includes(filter.phone)) return false;
+      if (filter.ref && !tx.ref.toLowerCase().includes(filter.ref.toLowerCase())) return false;
+      if (filter.amtMin && tx.amount < parseFloat(filter.amtMin)) return false;
+      if (filter.amtMax && tx.amount > parseFloat(filter.amtMax)) return false;
       if (query) {
         const q = query.toLowerCase();
         const hit =
-          tx.phone.includes(q)             ||
+          tx.phone.includes(q) ||
           tx.ref.toLowerCase().includes(q) ||
-          tx.type.includes(q)              ||
-          tx.network.includes(q)           ||
+          tx.type.includes(q) ||
+          tx.network.includes(q) ||
           tx.status.includes(q);
         if (!hit) return false;
       }
@@ -514,27 +536,27 @@ export default function HistoryScreen() {
   }, [filter, query]);
 
   const activeFilterCount = Object.values(filter).filter(Boolean).length;
-  const paged  = filtered.slice(0, page * PAGE_SIZE);
+  const paged = filtered.slice(0, page * PAGE_SIZE);
   const groups = groupByDate(paged);
 
   const stats = useMemo(() => ({
-    total:   filtered.length,
+    total: filtered.length,
     success: filtered.filter(t => t.status === 'success').length,
-    failed:  filtered.filter(t => t.status === 'failed').length,
-    amount:  filtered.reduce((s, t) => s + t.amount, 0),
+    failed: filtered.filter(t => t.status === 'failed').length,
+    amount: filtered.reduce((s, t) => s + t.amount, 0),
   }), [filtered]);
 
   const exportCsv = async () => {
     try {
-      const csv  = [CSV_HEADER, ...filtered.map(tx => buildCsvRow(tx, USER))].join('\n');
+      const csv = [CSV_HEADER, ...filtered.map(tx => buildCsvRow(tx, USER))].join('\n');
       const path = FileSystem.cacheDirectory + `mpay_txns_${Date.now()}.csv`;
       await FileSystem.writeAsStringAsync(path, csv, {
         encoding: FileSystem.EncodingType.UTF8,
       });
       await Sharing.shareAsync(path, {
-        mimeType:    'text/csv',
+        mimeType: 'text/csv',
         dialogTitle: 'Export Transactions',
-        UTI:         'public.comma-separated-values-text',
+        UTI: 'public.comma-separated-values-text',
       });
     } catch {
       Alert.alert('Export Failed', 'Could not export transactions. Please try again.');
@@ -556,10 +578,10 @@ export default function HistoryScreen() {
         {/* ── Stats strip ── */}
         <View style={hs.statsStrip}>
           {[
-            { label: 'Total',   value: `${stats.total}`,               color: C.blue   },
-            { label: 'Success', value: `${stats.success}`,             color: C.green  },
-            { label: 'Failed',  value: `${stats.failed}`,              color: C.red    },
-            { label: 'Amount',  value: `GH\u20B5${stats.amount.toFixed(0)}`, color: C.purple },
+            { label: 'Total', value: `${stats.total}`, color: C.blue },
+            { label: 'Success', value: `${stats.success}`, color: C.green },
+            { label: 'Failed', value: `${stats.failed}`, color: C.red },
+            { label: 'Amount', value: `GH\u20B5${stats.amount.toFixed(0)}`, color: C.purple },
           ].map(s => (
             <View key={s.label} style={hs.statCard}>
               <Text style={[hs.statValue, { color: s.color }]}>{s.value}</Text>
@@ -675,18 +697,18 @@ export default function HistoryScreen() {
 
                 <View style={hs.txCard}>
                   {group.items.map((tx, i) => {
-                    const net             = NETWORKS.find(n => n.id === tx.network);
-                    const statusColor     = STATUS_COLORS[tx.status] ?? C.mid;
-                    const isLast          = i === group.items.length - 1;
-                    const IconComp        = SVC_ICON[tx.type] ?? Phone;
-                    const iconColor       = SVC_ICON_COLOR[tx.type] ?? C.blue;
-                    const iconBg          = SVC_ICON_BG[tx.type] ?? 'rgba(24,120,206,0.13)';
-                    const title           = getTxTitle(tx);
-                    const tag             = getTxTag(tx);
+                    const net = NETWORKS.find(n => n.id === tx.network);
+                    const statusColor = STATUS_COLORS[tx.status] ?? C.mid;
+                    const isLast = i === group.items.length - 1;
+                    const IconComp = SVC_ICON[tx.type] ?? Phone;
+                    const iconColor = SVC_ICON_COLOR[tx.type] ?? C.blue;
+                    const iconBg = SVC_ICON_BG[tx.type] ?? 'rgba(24,120,206,0.13)';
+                    const title = getTxTitle(tx);
+                    const tag = getTxTag(tx);
                     const StatusBadgeIcon = tx.status === 'failed' ? XCircle : CheckCircle2;
-                    const statusLabel     = tx.status === 'success' ? 'Success'
-                                         : tx.status === 'failed'  ? 'Failed'
-                                         : 'Pending';
+                    const statusLabel = tx.status === 'success' ? 'Success'
+                      : tx.status === 'failed' ? 'Failed'
+                        : 'Pending';
 
                     return (
                       <TouchableOpacity
@@ -768,62 +790,62 @@ export default function HistoryScreen() {
 // Styles
 // ─────────────────────────────────────────────────────────────────────────────
 const hs = StyleSheet.create({
-  statsStrip:      { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
-  statCard:        { flex: 1, backgroundColor: C.white, borderRadius: 13, borderWidth: 1, borderColor: C.border, paddingVertical: 11, alignItems: 'center' },
-  statValue:       { fontSize: 13, fontFamily: F.extrabold, marginBottom: 1 },
-  statLabel:       { fontSize: 8,  fontFamily: F.medium, color: C.muted },
+  statsStrip: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  statCard: { flex: 1, backgroundColor: C.white, borderRadius: 13, borderWidth: 1, borderColor: C.border, paddingVertical: 11, alignItems: 'center' },
+  statValue: { fontSize: 13, fontFamily: F.extrabold, marginBottom: 1 },
+  statLabel: { fontSize: 8, fontFamily: F.medium, color: C.muted },
 
-  searchRow:       { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 10 },
-  searchBox:       { flex: 1, height: 44, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.white, borderRadius: 12, borderWidth: 1.5, borderColor: C.border, paddingHorizontal: 12 },
-  searchInput:     { flex: 1, fontSize: 12, fontFamily: F.medium, color: C.navy },
-  filterBtn:       { width: 44, height: 44, borderRadius: 12, backgroundColor: C.white, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  searchRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 10 },
+  searchBox: { flex: 1, height: 44, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.white, borderRadius: 12, borderWidth: 1.5, borderColor: C.border, paddingHorizontal: 12 },
+  searchInput: { flex: 1, fontSize: 12, fontFamily: F.medium, color: C.navy },
+  filterBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.white, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center', position: 'relative' },
   filterBtnActive: { borderColor: C.blue, backgroundColor: 'rgba(24,120,206,0.06)' },
-  filterBadge:     { position: 'absolute', top: 6, right: 6, width: 15, height: 15, borderRadius: 8, backgroundColor: C.blue, alignItems: 'center', justifyContent: 'center' },
+  filterBadge: { position: 'absolute', top: 6, right: 6, width: 15, height: 15, borderRadius: 8, backgroundColor: C.blue, alignItems: 'center', justifyContent: 'center' },
   filterBadgeText: { fontSize: 8, fontFamily: F.extrabold, color: '#fff' },
-  csvBtn:          { flexDirection: 'row', alignItems: 'center', gap: 4, height: 44, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.white, borderWidth: 1.5, borderColor: C.border },
-  csvText:         { fontSize: 11, fontFamily: F.bold, color: C.mid },
+  csvBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 44, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.white, borderWidth: 1.5, borderColor: C.border },
+  csvText: { fontSize: 11, fontFamily: F.bold, color: C.mid },
 
-  activeChipsRow:   { paddingHorizontal: 16, paddingBottom: 8, gap: 6, flexDirection: 'row' },
-  activeChip:       { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(24,120,206,0.08)', borderRadius: 8, paddingVertical: 5, paddingHorizontal: 10, borderWidth: 1, borderColor: 'rgba(24,120,206,0.18)' },
-  activeChipText:   { fontSize: 10, fontFamily: F.semibold, color: C.blue, textTransform: 'capitalize' },
-  clearAllChip:     { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 8, backgroundColor: 'rgba(232,51,74,0.07)', borderWidth: 1, borderColor: 'rgba(232,51,74,0.18)' },
+  activeChipsRow: { paddingHorizontal: 16, paddingBottom: 8, gap: 6, flexDirection: 'row' },
+  activeChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(24,120,206,0.08)', borderRadius: 8, paddingVertical: 5, paddingHorizontal: 10, borderWidth: 1, borderColor: 'rgba(24,120,206,0.18)' },
+  activeChipText: { fontSize: 10, fontFamily: F.semibold, color: C.blue, textTransform: 'capitalize' },
+  clearAllChip: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 8, backgroundColor: 'rgba(232,51,74,0.07)', borderWidth: 1, borderColor: 'rgba(232,51,74,0.18)' },
   clearAllChipText: { fontSize: 10, fontFamily: F.semibold, color: C.red },
 
-  resultsRow:      { paddingHorizontal: 16, paddingBottom: 6 },
-  resultsText:     { fontSize: 10, color: C.muted, fontFamily: F.medium },
+  resultsRow: { paddingHorizontal: 16, paddingBottom: 6 },
+  resultsText: { fontSize: 10, color: C.muted, fontFamily: F.medium },
 
-  listContent:     { paddingHorizontal: 16 },
+  listContent: { paddingHorizontal: 16 },
 
-  dateLabelRow:    { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  dateLabel:       { fontSize: 10, fontFamily: F.semibold, color: C.muted },
-  dateLabelLine:   { flex: 1, height: 1, backgroundColor: C.divider },
-  dateCount:       { fontSize: 9, fontFamily: F.medium, color: C.pale },
+  dateLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  dateLabel: { fontSize: 10, fontFamily: F.semibold, color: C.muted },
+  dateLabelLine: { flex: 1, height: 1, backgroundColor: C.divider },
+  dateCount: { fontSize: 9, fontFamily: F.medium, color: C.pale },
 
-  txCard:          { backgroundColor: C.white, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden', shadowColor: '#071830', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  txRow:           { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 14 },
-  txRowBorder:     { borderBottomWidth: 1, borderBottomColor: C.divider },
+  txCard: { backgroundColor: C.white, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden', shadowColor: '#071830', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  txRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 14 },
+  txRowBorder: { borderBottomWidth: 1, borderBottomColor: C.divider },
 
-  iconWrap:        { position: 'relative', width: 44, height: 44, flexShrink: 0 },
-  iconCircle:      { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  netDot:          { position: 'absolute', bottom: 0, left: 0, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: C.white },
-  netDotLetter:    { fontSize: 7, fontFamily: F.extrabold, color: '#fff' },
+  iconWrap: { position: 'relative', width: 44, height: 44, flexShrink: 0 },
+  iconCircle: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  netDot: { position: 'absolute', bottom: 0, left: 0, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: C.white },
+  netDotLetter: { fontSize: 7, fontFamily: F.extrabold, color: '#fff' },
 
-  txTitle:         { fontSize: 12, fontFamily: F.bold, color: C.navy },
-  txPhone:         { fontSize: 10, color: C.muted, fontFamily: F.medium },
-  tagPill:         { alignSelf: 'flex-start', backgroundColor: 'rgba(24,120,206,0.07)', borderRadius: 6, paddingVertical: 2, paddingHorizontal: 7, marginTop: 2 },
-  tagText:         { fontSize: 9, fontFamily: F.semibold, color: C.blue },
+  txTitle: { fontSize: 12, fontFamily: F.bold, color: C.navy },
+  txPhone: { fontSize: 10, color: C.muted, fontFamily: F.medium },
+  tagPill: { alignSelf: 'flex-start', backgroundColor: 'rgba(24,120,206,0.07)', borderRadius: 6, paddingVertical: 2, paddingHorizontal: 7, marginTop: 2 },
+  tagText: { fontSize: 9, fontFamily: F.semibold, color: C.blue },
 
-  txAmount:        { fontSize: 13, fontFamily: F.extrabold, color: C.navy },
-  statusBadge:     { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 6, paddingVertical: 3, paddingHorizontal: 7 },
-  statusText:      { fontSize: 9, fontFamily: F.bold },
+  txAmount: { fontSize: 13, fontFamily: F.extrabold, color: C.navy },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 6, paddingVertical: 3, paddingHorizontal: 7 },
+  statusText: { fontSize: 9, fontFamily: F.bold },
 
-  empty:           { alignItems: 'center', paddingVertical: 52 },
-  emptyIconWrap:   { width: 60, height: 60, borderRadius: 20, backgroundColor: 'rgba(24,120,206,0.06)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  emptyTitle:      { fontSize: 14, fontFamily: F.bold, color: C.navy, marginBottom: 5 },
-  emptySub:        { fontSize: 11, color: C.muted, textAlign: 'center', lineHeight: 17, paddingHorizontal: 24, marginBottom: 18 },
-  emptyResetBtn:   { paddingVertical: 9, paddingHorizontal: 22, borderRadius: 10, borderWidth: 1.5, borderColor: C.border },
-  emptyResetText:  { fontSize: 12, fontFamily: F.semibold, color: C.mid },
+  empty: { alignItems: 'center', paddingVertical: 52 },
+  emptyIconWrap: { width: 60, height: 60, borderRadius: 20, backgroundColor: 'rgba(24,120,206,0.06)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  emptyTitle: { fontSize: 14, fontFamily: F.bold, color: C.navy, marginBottom: 5 },
+  emptySub: { fontSize: 11, color: C.muted, textAlign: 'center', lineHeight: 17, paddingHorizontal: 24, marginBottom: 18 },
+  emptyResetBtn: { paddingVertical: 9, paddingHorizontal: 22, borderRadius: 10, borderWidth: 1.5, borderColor: C.border },
+  emptyResetText: { fontSize: 12, fontFamily: F.semibold, color: C.mid },
 
-  loadMoreBtn:     { paddingVertical: 13, borderRadius: 13, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', marginBottom: 8 },
-  loadMoreText:    { fontSize: 12, fontFamily: F.semibold, color: C.mid },
+  loadMoreBtn: { paddingVertical: 13, borderRadius: 13, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', marginBottom: 8 },
+  loadMoreText: { fontSize: 12, fontFamily: F.semibold, color: C.mid },
 });
