@@ -13,10 +13,11 @@ const DEFAULT_GRAD: GradientDef = {
 interface GradHdrProps {
   title: string;
   onBack?: () => void;
+  right?: React.ReactNode;
   gradient?: GradientDef;
 }
 
-export function GradHdr({ title, onBack, gradient = DEFAULT_GRAD }: GradHdrProps) {
+export function GradHdr({ title, onBack, right, gradient = DEFAULT_GRAD }: GradHdrProps) {
   return (
     <LinearGradient
       colors={gradient.colors}
@@ -25,18 +26,23 @@ export function GradHdr({ title, onBack, gradient = DEFAULT_GRAD }: GradHdrProps
       style={styles.wrap}
     >
       <View style={styles.decoCircle} />
-      {onBack && (
-        <TouchableOpacity
-          onPress={onBack}
-          activeOpacity={0.85}
-          style={styles.back}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <ArrowLeft size={18} color="#fff" strokeWidth={2.5} />
-        </TouchableOpacity>
-      )}
-      <Text style={styles.title}>{title}</Text>
+      <View style={styles.row}>
+        {onBack ? (
+          <TouchableOpacity
+            onPress={onBack}
+            activeOpacity={0.85}
+            style={styles.back}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <ArrowLeft size={18} color="#fff" strokeWidth={2.5} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.backPlaceholder} />
+        )}
+        <Text style={styles.title}>{title}</Text>
+        {right ? right : <View style={styles.backPlaceholder} />}
+      </View>
     </LinearGradient>
   );
 }
@@ -57,6 +63,11 @@ const styles = StyleSheet.create({
     right: -20,
     backgroundColor: 'rgba(255,255,255,0.09)',
   },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   back: {
     width: 40,
     height: 40,
@@ -64,12 +75,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+  },
+  backPlaceholder: {
+    width: 40,
+    height: 40,
   },
   title: {
+    flex: 1,
     fontSize: 20,
     fontFamily: 'Urbanist_800ExtraBold',
     color: '#fff',
     letterSpacing: -0.5,
+    marginHorizontal: 10,
   },
 });

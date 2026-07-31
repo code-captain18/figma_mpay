@@ -126,3 +126,19 @@ export interface BulkItem {
   network: string;
   amount: string;
 }
+
+// ── Profile screen ─────────────────────────────────────────────────────────────
+export type PermKey = 'view' | 'create' | 'approve' | 'export' | 'delete';
+export type PermMap = Record<string, Record<PermKey, boolean>>;
+export type ProfileView = 'home' | 'edit' | 'password' | 'assistants' | 'add-asst' | 'edit-asst';
+
+export interface Assistant {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  email: string;
+  status: 'active' | 'inactive';
+  permissions: PermMap;
+  createdAt: string;
+}

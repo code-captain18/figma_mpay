@@ -1,205 +1,982 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { BadgeCheck, ChevronRight, LogOut, Pencil } from "lucide-react-native";
-import React from "react";
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Icon } from "@/components/ui/Icon";
-import { MOCK_PROFILE_SECTIONS } from "@/mocks/services";
-import { useAuth } from "@/store/auth.store";
-import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
+import React, { useState } from 'react';
+import {
+  View, Text, TouchableOpacity, ScrollView, StyleSheet,
+  TextInput, ActivityIndicator, Modal,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import {
+  Pencil, Key, Users, UserPlus, Trash2, ChevronRight,
+  Bell, HelpCircle, FileText, LogOut, Eye, EyeOff,
+  CheckCircle2, Shield, ShieldCheck,
+} from 'lucide-react-native';
+import { GradHdr } from '@/components/services/GradHdr';
+import { PermMatrix } from '@/components/services/PermMatrix';
+import { C, F, G } from '@/theme';
+import { USER, DASH, INIT_ASSISTANTS, makeEmptyPerms, PERM_SECTIONS } from '@/data';
+import type { ProfileView, Assistant, PermMap, PermKey } from '@/types';
+import { useAuth } from '@/store/auth.store';
 
-export default function ProfileScreen() {
-  const { user, logout } = useAuth();
-  const router = useRouter();
+// ─────────────────────────────────────────────────────────────────────────────
+// Main ProfileScreen — state machine
+// ─────────────────────────────────────────────────────────────────────────────
+function ProfileScreen({ onLogout }: { onLogout: () => void }) {
+  const [view,          setView]          = useState<ProfileView>('home');
+  const [assistants,    setAssistants]    = useState<Assistant[]>(INIT_ASSISTANTS);
+  const [editingAsst,   setEditingAsst]   = useState<Assistant | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const handleLogout = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: async () => {
-          await logout();
-          router.replace("/(auth)/login");
-        },
-      },
-    ]);
+  const totalSales =
+    DASH.airtimeSales + DASH.databundleSales + DASH.mobileMoneyTransfers;
+
+  // ── Edit Profile state ─────────────────────────────────────────────────────
+  const [editForm, setEditForm] = useState({
+    accountName:     "John's Business",
+    companyName:     'JM Enterprises Ltd',
+    firstName:       'John',
+    lastName:        'Mensah',
+    phoneNumber:     USER.phone,
+    email:           USER.email,
+    address:         '123 Independence Ave, Accra',
+    ghanaCardNumber: 'GHA-123456789-0',
+    taxId:           'TIN987654321',
+  });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editDone,   setEditDone]   = useState(false);
+
+  // ── Change Password state ──────────────────────────────────────────────────
+  const [oldPwd,         setOldPwd]         = useState('');
+  const [oldPwdVerified, setOldPwdVerified] = useState(false);
+  const [verifying,      setVerifying]      = useState(false);
+  const [oldPwdError,    setOldPwdError]    = useState('');
+  const [newPwd,         setNewPwd]         = useState('');
+  const [confirmPwd,     setConfirmPwd]     = useState('');
+  const [showOld,        setShowOld]        = useState(false);
+  const [showNew,        setShowNew]        = useState(false);
+  const [showConf,       setShowConf]       = useState(false);
+  const [pwdSaving,      setPwdSaving]      = useState(false);
+  const [pwdDone,        setPwdDone]        = useState(false);
+
+  // ── Assistant form state ───────────────────────────────────────────────────
+  const [asstForm,   setAsstForm]   = useState({ firstName: '', lastName: '', phoneNumber: '', email: '' });
+  const [asstPerms,  setAsstPerms]  = useState<PermMap>(makeEmptyPerms());
+  const [asstSaving, setAsstSaving] = useState(false);
+
+  const resetPwd = () => {
+    setOldPwd(''); setOldPwdVerified(false); setOldPwdError('');
+    setNewPwd(''); setConfirmPwd(''); setPwdDone(false);
+    setShowOld(false); setShowNew(false); setShowConf(false);
   };
 
-  const initials = user?.name
-    ? user.name
-        .split(" ")
-        .map((n: string) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "U";
+  // ── HOME VIEW ──────────────────────────────────────────────────────────────
+  if (view === 'home') return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <GradHdr title="Profile" />
+      <ScrollView contentContainerStyle={home.content} showsVerticalScrollIndicator={false}>
 
-  return (
-    <SafeAreaView style={PS.root} edges={["top"]}>
-      <ScrollView style={PS.scroll} contentContainerStyle={PS.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Gradient header */}
-        <LinearGradient
-          colors={[Colors.gradientStart, Colors.gradientMid, Colors.gradientEnd]}
-          locations={[0, 0.42, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={PS.gradHeader}
-        >
-          <Text
-            style={PS.gradTitle}
-          >
-            My Profile
-          </Text>
-          {/* Avatar + details */}
-          <View style={PS.avatarRow}>
-            <View style={PS.avatarWrap}>
-              <View style={PS.avatarCircle}>
-                <Text style={PS.avatarInitials}>{initials}</Text>
-              </View>
-              <View style={PS.editBadge}>
-                <Pencil size={11} color="#fff" strokeWidth={2.5} />
+        {/* ── Avatar card ── */}
+        <View style={home.avatarCard}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+            <LinearGradient
+              colors={G.avatar.colors as [string, string]}
+              start={G.avatar.start}
+              end={G.avatar.end}
+              style={home.avatar}
+            >
+              <Text style={home.avatarText}>
+                {USER.name.split(' ').map((n: string) => n[0]).join('')}
+              </Text>
+            </LinearGradient>
+
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={home.userName}>{USER.name}</Text>
+              <Text style={home.userEmail} numberOfLines={1}>{USER.email}</Text>
+              <View style={home.accountBadge}>
+                <View style={home.onlineDot} />
+                <Text style={home.accountBadgeText}>{USER.accountId}</Text>
               </View>
             </View>
-            {/* Details */}
-            <View style={{ flex: 1, gap: 2 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Text
-                  style={{ fontSize: 18, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "#fff" }}
-                >
-                  {user?.name ?? "User"}
-                </Text>
-                <BadgeCheck size={17} color={Colors.orange} />
-              </View>
-              <Text style={{ fontSize: 12, fontFamily: "Urbanist_400Regular", color: "rgba(255,255,255,0.6)" }}>
-                {user?.phone ?? "+233 00 000 0000"}
-              </Text>
-              <Text style={{ fontSize: 12, fontFamily: "Urbanist_400Regular", color: "rgba(255,255,255,0.5)" }}>
-                {user?.email ?? "user@mpay.com"}
-              </Text>
-            </View>
-          </View>
-          {/* Stats row */}
-          <View style={PS.statsRow}>
-            {[
-              { label: "Total Spent", value: "GHS340.00" },
-              { label: "Transactions", value: "47" },
-              { label: "Member Since", value: "Jan 2023" },
-            ].map((stat, i) => (
-              <View
-                key={stat.label}
-                style={[PS.statItem, i < 2 && PS.statBorder]}
-              >
-                <Text style={PS.statValue}>{stat.value}</Text>
-                <Text style={PS.statLabel}>{stat.label}</Text>
-              </View>
-            ))}
-          </View>
-        </LinearGradient>
 
-        {/* Sections */}
-        <View style={PS.sectionsArea}>
-          {MOCK_PROFILE_SECTIONS.map((section) => (
-            <View key={section.title}>
-              <Text style={PS.sectionTitle}>{section.title.toUpperCase()}</Text>
-              <View style={[PS.sectionCard, Shadows.subtle]}>
-                {section.items.map((item, i) => (
-                  <View key={item.label}>
-                    <TouchableOpacity
-                      accessibilityRole="button"
-                      accessibilityLabel={item.label}
-                      style={PS.itemRow}
-                    >
-                      <View style={[PS.itemIcon, { backgroundColor: item.bg }]}>
-                        <Icon name={item.iconName} size={17} color={item.color} />
-                      </View>
-                      <Text style={PS.itemLabel}>{item.label}</Text>
-                      {item.badge ? (
-                        <View style={[
-                          PS.badge,
-                          { backgroundColor: item.badge === "Verified" ? Colors.successBg : item.badge === "On" ? Colors.primaryLight : Colors.surfaceRaised },
-                        ]}>
-                          <Text style={[PS.badgeText, {
-                            color: item.badge === "Verified" ? Colors.green : item.badge === "On" ? Colors.primary : Colors.textMuted,
-                          }]}>{item.badge}</Text>
-                        </View>
-                      ) : (
-                        <ChevronRight size={15} color={Colors.textDisabled} />
-                      )}
-                    </TouchableOpacity>
-                    {i < section.items.length - 1 && (
-                      <View style={PS.itemDivider} />
-                    )}
-                  </View>
-                ))}
-              </View>
+            <TouchableOpacity
+              onPress={() => setView('edit')}
+              style={home.editIconBtn}
+              activeOpacity={0.8}
+            >
+              <Pencil size={14} color={C.blue} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ── Stats strip ── */}
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+          {[
+            { label: "Today's Sales", value: `GH\u20B5${totalSales.toFixed(2)}`,         color: C.blue  },
+            { label: 'e Top-Up',      value: `GH\u20B5${USER.eTopupBalance.toFixed(2)}`, color: C.blue  },
+            { label: 'MoMo',          value: `GH\u20B5${USER.momoBalance.toFixed(2)}`,   color: C.green },
+          ].map(s => (
+            <View key={s.label} style={home.statCard}>
+              <Text style={[home.statValue, { color: s.color }]}>{s.value}</Text>
+              <Text style={home.statLabel}>{s.label}</Text>
             </View>
           ))}
-
-          {/* Sign out */}
-          <TouchableOpacity onPress={handleLogout} accessibilityRole="button"
-            accessibilityLabel="Sign out" style={PS.signOutBtn}>
-            <LogOut size={17} color={Colors.error} />
-            <Text style={PS.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
-
-          <Text style={PS.versionText}>M-Pay v1.0.0 · © 2025 M-Pay Inc.</Text>
         </View>
+
+        {/* ── Account actions menu ── */}
+        <View style={home.menuCard}>
+          {[
+            {
+              Icon:    Pencil,
+              iconBg:  'rgba(24,120,206,0.08)',
+              color:   C.blue,
+              label:   'Edit Profile',
+              sub:     'Update your account info',
+              onPress: () => setView('edit'),
+            },
+            {
+              Icon:    Key,
+              iconBg:  'rgba(124,92,252,0.08)',
+              color:   C.purple,
+              label:   'Change Password',
+              sub:     'Update your login password',
+              onPress: () => { resetPwd(); setView('password'); },
+            },
+            {
+              Icon:    Users,
+              iconBg:  'rgba(13,168,112,0.08)',
+              color:   C.green,
+              label:   'Assistant Accounts',
+              sub:     `${assistants.length} assistant${assistants.length !== 1 ? 's' : ''}`,
+              onPress: () => setView('assistants'),
+            },
+          ].map((row, i) => (
+            <View key={row.label}>
+              <TouchableOpacity
+                onPress={row.onPress}
+                activeOpacity={0.85}
+                style={home.menuRow}
+              >
+                <View style={[home.menuIcon, { backgroundColor: row.iconBg }]}>
+                  <row.Icon size={15} color={row.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={home.menuLabel}>{row.label}</Text>
+                  <Text style={home.menuSub}>{row.sub}</Text>
+                </View>
+                <ChevronRight size={14} color={C.pale} />
+              </TouchableOpacity>
+              {i < 2 && <View style={home.menuDivider} />}
+            </View>
+          ))}
+        </View>
+
+        {/* ── Settings menu ── */}
+        <View style={[home.menuCard, { marginBottom: 14 }]}>
+          {[
+            { Icon: Bell,       iconBg: 'rgba(24,120,206,0.08)', color: C.blue,   label: 'Notifications',  sub: 'Manage push alerts'  },
+            { Icon: HelpCircle, iconBg: 'rgba(13,168,112,0.08)', color: C.green,  label: 'Help & Support', sub: 'FAQs \u00B7 Contact us'   },
+            { Icon: FileText,   iconBg: 'rgba(255,150,0,0.08)',  color: C.orange, label: 'Privacy Policy', sub: 'Terms of service'    },
+          ].map((row, i) => (
+            <View key={row.label}>
+              <TouchableOpacity activeOpacity={0.85} style={home.menuRow}>
+                <View style={[home.menuIcon, { backgroundColor: row.iconBg }]}>
+                  <row.Icon size={15} color={row.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={home.menuLabel}>{row.label}</Text>
+                  <Text style={home.menuSub}>{row.sub}</Text>
+                </View>
+                <ChevronRight size={14} color={C.pale} />
+              </TouchableOpacity>
+              {i < 2 && <View style={home.menuDivider} />}
+            </View>
+          ))}
+        </View>
+
+        {/* ── Sign out ── */}
+        <TouchableOpacity
+          onPress={onLogout}
+          activeOpacity={0.85}
+          style={home.signOutBtn}
+        >
+          <LogOut size={15} color={C.red} />
+          <Text style={home.signOutText}>Sign Out</Text>
+        </TouchableOpacity>
+
       </ScrollView>
-    </SafeAreaView>
+    </View>
+  );
+
+  // ── EDIT PROFILE VIEW ──────────────────────────────────────────────────────
+  if (view === 'edit') {
+    type EK = keyof typeof editForm;
+
+    const EF = ({
+      label, field, disabled = false, kbt = 'default' as any,
+    }: { label: string; field: EK; disabled?: boolean; kbt?: any }) => (
+      <View style={{ flex: 1, marginBottom: 12 }}>
+        <Text style={ep.label}>{label}</Text>
+        <TextInput
+          value={editForm[field]}
+          editable={!disabled}
+          keyboardType={kbt}
+          onChangeText={v => setEditForm(p => ({ ...p, [field]: v }))}
+          style={[ep.input, disabled && ep.inputDisabled]}
+        />
+      </View>
+    );
+
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg }}>
+        <GradHdr title="Edit Profile" onBack={() => setView('home')} />
+        <ScrollView
+          contentContainerStyle={ep.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <EF label="ACCOUNT NAME"       field="accountName"     />
+          <EF label="COMPANY NAME"       field="companyName"     />
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <EF label="FIRST NAME"       field="firstName"       />
+            <EF label="LAST NAME"        field="lastName"        />
+          </View>
+          <EF label="PHONE NUMBER"       field="phoneNumber"     kbt="phone-pad"    />
+          <EF label="EMAIL ADDRESS"      field="email"           disabled kbt="email-address" />
+          <EF label="ADDRESS"            field="address"         />
+          <EF label="GHANA CARD NUMBER"  field="ghanaCardNumber" />
+          <EF label="TAX ID"             field="taxId"           />
+
+          <TouchableOpacity
+            onPress={async () => {
+              setEditSaving(true);
+              await new Promise(r => setTimeout(r, 900));
+              setEditSaving(false);
+              setEditDone(true);
+              setTimeout(() => { setEditDone(false); setView('home'); }, 1500);
+            }}
+            activeOpacity={0.85}
+            disabled={editSaving}
+            style={[ep.saveBtn, editDone && ep.saveBtnDone]}
+          >
+            {editDone ? (
+              <View style={ep.saveBtnInner}>
+                <CheckCircle2 size={15} color={C.green} />
+                <Text style={[ep.saveBtnText, { color: C.green }]}>Saved!</Text>
+              </View>
+            ) : (
+              <LinearGradient
+                colors={G.wallet.colors}
+                start={G.wallet.start}
+                end={G.wallet.end}
+                style={ep.saveBtnInner}
+              >
+                {editSaving
+                  ? <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+                  : null}
+                <Text style={ep.saveBtnText}>
+                  {editSaving ? 'Saving\u2026' : 'Save Changes'}
+                </Text>
+              </LinearGradient>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ── CHANGE PASSWORD VIEW ───────────────────────────────────────────────────
+  if (view === 'password') {
+    const pwdMatch = newPwd === confirmPwd;
+    const pwdOk    = pwdMatch && newPwd.length >= 8;
+
+    const strength = (() => {
+      if (!newPwd) return 0;
+      if (newPwd.length < 6) return 1;
+      if (newPwd.length < 8) return 2;
+      const hasUpper  = /[A-Z]/.test(newPwd);
+      const hasNum    = /[0-9]/.test(newPwd);
+      const hasSymbol = /[^A-Za-z0-9]/.test(newPwd);
+      if (hasUpper && hasNum && hasSymbol) return 4;
+      if (hasUpper || hasNum) return 3;
+      return 2;
+    })();
+    const strengthColor = [C.border, C.red, 'rgba(255,150,0,0.85)', C.orange, C.green][strength];
+    const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][strength];
+
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg }}>
+        <GradHdr
+          title="Change Password"
+          onBack={() => { resetPwd(); setView('home'); }}
+        />
+        <ScrollView
+          contentContainerStyle={pw.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={pw.banner}>
+            <Shield size={15} color={C.blue} />
+            <Text style={pw.bannerText}>
+              Verify your current password before setting a new one.
+            </Text>
+          </View>
+
+          <View style={pw.fieldWrap}>
+            <Text style={pw.label}>CURRENT PASSWORD</Text>
+            <View style={{ position: 'relative' }}>
+              <TextInput
+                secureTextEntry={!showOld}
+                placeholder="Enter current password"
+                placeholderTextColor={C.pale}
+                value={oldPwd}
+                onChangeText={v => { setOldPwd(v); setOldPwdError(''); }}
+                editable={!oldPwdVerified}
+                style={[
+                  pw.input,
+                  {
+                    borderColor: oldPwdError
+                      ? C.red
+                      : oldPwdVerified ? C.green : C.border,
+                    paddingRight: 44,
+                    backgroundColor: oldPwdVerified
+                      ? 'rgba(13,168,112,0.04)'
+                      : C.bg,
+                  },
+                ]}
+              />
+              {oldPwdVerified ? (
+                <CheckCircle2
+                  size={16}
+                  color={C.green}
+                  style={pw.inputRightIcon}
+                />
+              ) : (
+                <TouchableOpacity
+                  onPress={() => setShowOld(p => !p)}
+                  style={pw.inputRightBtn}
+                >
+                  {showOld
+                    ? <EyeOff size={15} color={C.pale} />
+                    : <Eye    size={15} color={C.pale} />}
+                </TouchableOpacity>
+              )}
+            </View>
+            {oldPwdError ? (
+              <Text style={pw.errText}>{oldPwdError}</Text>
+            ) : null}
+          </View>
+
+          {!oldPwdVerified && (
+            <TouchableOpacity
+              onPress={async () => {
+                setVerifying(true);
+                await new Promise(r => setTimeout(r, 800));
+                if (oldPwd === 'password123') {
+                  setOldPwdVerified(true);
+                } else {
+                  setOldPwdError('Incorrect password. Hint: password123');
+                }
+                setVerifying(false);
+              }}
+              disabled={verifying || oldPwd.length < 3}
+              activeOpacity={0.85}
+              style={[
+                pw.actionBtn,
+                (verifying || oldPwd.length < 3) && { opacity: 0.45 },
+              ]}
+            >
+              <LinearGradient
+                colors={G.wallet.colors}
+                start={G.wallet.start}
+                end={G.wallet.end}
+                style={pw.actionBtnGrad}
+              >
+                {verifying && (
+                  <ActivityIndicator
+                    size="small"
+                    color="#fff"
+                    style={{ marginRight: 8 }}
+                  />
+                )}
+                <Text style={pw.actionBtnText}>
+                  {verifying ? 'Verifying\u2026' : 'Verify Password'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+
+          {oldPwdVerified && (
+            <>
+              <View style={pw.fieldWrap}>
+                <Text style={pw.label}>NEW PASSWORD</Text>
+                <View style={{ position: 'relative' }}>
+                  <TextInput
+                    secureTextEntry={!showNew}
+                    placeholder="Minimum 8 characters"
+                    placeholderTextColor={C.pale}
+                    value={newPwd}
+                    onChangeText={setNewPwd}
+                    style={[pw.input, { paddingRight: 44 }]}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowNew(p => !p)}
+                    style={pw.inputRightBtn}
+                  >
+                    {showNew
+                      ? <EyeOff size={15} color={C.pale} />
+                      : <Eye    size={15} color={C.pale} />}
+                  </TouchableOpacity>
+                </View>
+
+                {newPwd.length > 0 && (
+                  <View style={{ marginTop: 8 }}>
+                    <View style={{ flexDirection: 'row', gap: 4, marginBottom: 4 }}>
+                      {[1, 2, 3, 4].map(i => (
+                        <View
+                          key={i}
+                          style={[
+                            pw.strBar,
+                            { backgroundColor: i <= strength ? strengthColor : C.divider },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                    <Text style={[pw.strLabel, { color: strengthColor }]}>
+                      {strengthLabel}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={[pw.fieldWrap, { marginBottom: 20 }]}>
+                <Text style={pw.label}>CONFIRM NEW PASSWORD</Text>
+                <View style={{ position: 'relative' }}>
+                  <TextInput
+                    secureTextEntry={!showConf}
+                    placeholder="Re-enter new password"
+                    placeholderTextColor={C.pale}
+                    value={confirmPwd}
+                    onChangeText={setConfirmPwd}
+                    style={[
+                      pw.input,
+                      {
+                        paddingRight: 44,
+                        borderColor: confirmPwd.length > 0
+                          ? (pwdMatch ? C.green : C.red)
+                          : C.border,
+                      },
+                    ]}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConf(p => !p)}
+                    style={pw.inputRightBtn}
+                  >
+                    {showConf
+                      ? <EyeOff size={15} color={C.pale} />
+                      : <Eye    size={15} color={C.pale} />}
+                  </TouchableOpacity>
+                </View>
+                {confirmPwd.length > 0 && !pwdMatch && (
+                  <Text style={pw.errText}>Passwords do not match</Text>
+                )}
+              </View>
+
+              <TouchableOpacity
+                onPress={async () => {
+                  setPwdSaving(true);
+                  await new Promise(r => setTimeout(r, 900));
+                  setPwdSaving(false);
+                  setPwdDone(true);
+                  setTimeout(() => { resetPwd(); setView('home'); }, 1600);
+                }}
+                disabled={!pwdOk || pwdSaving || pwdDone}
+                activeOpacity={0.85}
+                style={[
+                  pw.actionBtn,
+                  (!pwdOk && !pwdDone) && { opacity: 0.45 },
+                  pwdDone && pw.actionBtnDone,
+                ]}
+              >
+                {pwdDone ? (
+                  <View style={[pw.actionBtnGrad, { backgroundColor: 'transparent' }]}>
+                    <CheckCircle2 size={15} color={C.green} style={{ marginRight: 8 }} />
+                    <Text style={[pw.actionBtnText, { color: C.green }]}>
+                      Password Changed!
+                    </Text>
+                  </View>
+                ) : (
+                  <LinearGradient
+                    colors={G.wallet.colors}
+                    start={G.wallet.start}
+                    end={G.wallet.end}
+                    style={pw.actionBtnGrad}
+                  >
+                    {pwdSaving && (
+                      <ActivityIndicator
+                        size="small"
+                        color="#fff"
+                        style={{ marginRight: 8 }}
+                      />
+                    )}
+                    <Text style={pw.actionBtnText}>
+                      {pwdSaving ? 'Changing\u2026' : 'Change Password'}
+                    </Text>
+                  </LinearGradient>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ── ASSISTANT LIST VIEW ────────────────────────────────────────────────────
+  if (view === 'assistants') return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <GradHdr
+        title="Assistant Accounts"
+        onBack={() => setView('home')}
+        right={
+          <TouchableOpacity
+            onPress={() => {
+              setAsstForm({ firstName: '', lastName: '', phoneNumber: '', email: '' });
+              setAsstPerms(makeEmptyPerms());
+              setView('add-asst');
+            }}
+            style={al.headerBtn}
+            activeOpacity={0.8}
+          >
+            <UserPlus size={14} color="#fff" />
+          </TouchableOpacity>
+        }
+      />
+
+      <ScrollView
+        contentContainerStyle={al.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {assistants.length === 0 && (
+          <View style={al.empty}>
+            <View style={al.emptyIconWrap}>
+              <Users size={24} color={C.pale} />
+            </View>
+            <Text style={al.emptyTitle}>No assistant accounts</Text>
+            <Text style={al.emptySub}>
+              Add an assistant to delegate transactions and manage permissions.
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setAsstForm({ firstName: '', lastName: '', phoneNumber: '', email: '' });
+                setAsstPerms(makeEmptyPerms());
+                setView('add-asst');
+              }}
+              activeOpacity={0.85}
+              style={al.addFirstBtn}
+            >
+              <LinearGradient
+                colors={G.wallet.colors}
+                start={G.wallet.start}
+                end={G.wallet.end}
+                style={al.addFirstGrad}
+              >
+                <Text style={al.addFirstText}>Add First Assistant</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {assistants.map(asst => {
+          const permSections = PERM_SECTIONS.filter(sec =>
+            sec.modules.some(mod =>
+              sec.cols.some(col =>
+                asst.permissions[`${sec.key}:${mod}`]?.[col as PermKey]
+              )
+            )
+          );
+          return (
+            <View key={asst.id} style={al.card}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={al.cardAvatar}>
+                  <Text style={al.cardInitials}>
+                    {asst.firstName[0]}{asst.lastName[0]}
+                  </Text>
+                </View>
+
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={al.cardName}>
+                    {asst.firstName} {asst.lastName}
+                  </Text>
+                  <Text style={al.cardEmail} numberOfLines={1}>{asst.email}</Text>
+                  <Text style={al.cardPhone}>{asst.phoneNumber}</Text>
+                </View>
+
+                <View style={{ alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
+                  <View style={[
+                    al.statusBadge,
+                    { backgroundColor: asst.status === 'active'
+                        ? 'rgba(13,168,112,0.1)'
+                        : 'rgba(232,51,74,0.08)' },
+                  ]}>
+                    <View style={[
+                      al.statusDot,
+                      { backgroundColor: asst.status === 'active' ? C.green : C.red },
+                    ]} />
+                    <Text style={[
+                      al.statusText,
+                      { color: asst.status === 'active' ? C.green : C.red },
+                    ]}>
+                      {asst.status}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 7 }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setEditingAsst(asst);
+                        setAsstPerms({ ...asst.permissions });
+                        setView('edit-asst');
+                      }}
+                      style={al.editBtn}
+                      activeOpacity={0.8}
+                    >
+                      <Pencil size={12} color={C.blue} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setDeleteConfirm(asst.id)}
+                      style={al.deleteBtn}
+                      activeOpacity={0.8}
+                    >
+                      <Trash2 size={12} color={C.red} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              {permSections.length > 0 && (
+                <View style={al.permChips}>
+                  {permSections.map(sec => (
+                    <View key={sec.key} style={al.permChip}>
+                      <Text style={al.permChipText}>{sec.key}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </ScrollView>
+
+      <Modal
+        visible={!!deleteConfirm}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDeleteConfirm(null)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: C.overlay }}
+          activeOpacity={1}
+          onPress={() => setDeleteConfirm(null)}
+        />
+        <View style={al.deleteSheet}>
+          <View style={{ alignItems: 'center', marginBottom: 22 }}>
+            <View style={al.deleteIconBox}>
+              <Trash2 size={24} color={C.red} />
+            </View>
+            <Text style={al.deleteTitle}>Remove Assistant?</Text>
+            <Text style={al.deleteSub}>
+              This will immediately revoke all access for this assistant account.
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity
+              onPress={() => setDeleteConfirm(null)}
+              style={al.deleteCancelBtn}
+              activeOpacity={0.8}
+            >
+              <Text style={al.deleteCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setAssistants(p => p.filter(a => a.id !== deleteConfirm));
+                setDeleteConfirm(null);
+              }}
+              style={al.deleteConfirmBtn}
+              activeOpacity={0.85}
+            >
+              <Text style={al.deleteConfirmText}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+
+  // ── ADD / EDIT ASSISTANT VIEW ──────────────────────────────────────────────
+  const isEdit = view === 'edit-asst';
+
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <GradHdr
+        title={isEdit
+          ? `${editingAsst?.firstName} ${editingAsst?.lastName}`
+          : 'New Assistant'}
+        onBack={() => setView('assistants')}
+      />
+      <ScrollView
+        contentContainerStyle={asf.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {!isEdit && (
+          <>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {(['firstName', 'lastName'] as const).map(k => (
+                <View key={k} style={{ flex: 1, marginBottom: 12 }}>
+                  <Text style={asf.label}>
+                    {k === 'firstName' ? 'FIRST NAME' : 'LAST NAME'}
+                  </Text>
+                  <TextInput
+                    value={asstForm[k]}
+                    onChangeText={v => setAsstForm(p => ({ ...p, [k]: v }))}
+                    style={asf.input}
+                  />
+                </View>
+              ))}
+            </View>
+            {(['phoneNumber', 'email'] as const).map(k => (
+              <View key={k} style={{ marginBottom: 12 }}>
+                <Text style={asf.label}>
+                  {k === 'phoneNumber' ? 'PHONE NUMBER' : 'EMAIL ADDRESS'}
+                </Text>
+                <TextInput
+                  keyboardType={k === 'email' ? 'email-address' : 'phone-pad'}
+                  autoCapitalize="none"
+                  value={asstForm[k]}
+                  onChangeText={v => setAsstForm(p => ({ ...p, [k]: v }))}
+                  style={asf.input}
+                />
+              </View>
+            ))}
+            <View style={asf.divider} />
+          </>
+        )}
+
+        {isEdit && editingAsst && (
+          <View style={asf.statusRow}>
+            <View>
+              <Text style={asf.statusTitle}>Account Status</Text>
+              <Text style={asf.statusSub}>Enable or disable this assistant</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() =>
+                setEditingAsst(p =>
+                  p ? { ...p, status: p.status === 'active' ? 'inactive' : 'active' } : p
+                )
+              }
+              activeOpacity={0.8}
+              style={[
+                asf.toggleBtn,
+                {
+                  backgroundColor: editingAsst.status === 'active'
+                    ? 'rgba(13,168,112,0.1)'
+                    : 'rgba(232,51,74,0.08)',
+                },
+              ]}
+            >
+              <Text style={[
+                asf.toggleText,
+                { color: editingAsst.status === 'active' ? C.green : C.red },
+              ]}>
+                {editingAsst.status}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={asf.permHeader}>
+          <ShieldCheck size={15} color={C.blue} />
+          <Text style={asf.permTitle}>Permissions</Text>
+        </View>
+        <Text style={asf.permSub}>
+          Control exactly what this assistant can view, create, approve, export, or delete.
+        </Text>
+
+        <PermMatrix perms={asstPerms} onChange={setAsstPerms} />
+
+        <View style={{ height: 18 }} />
+
+        <TouchableOpacity
+          onPress={async () => {
+            setAsstSaving(true);
+            await new Promise(r => setTimeout(r, 900));
+            if (isEdit && editingAsst) {
+              setAssistants(prev =>
+                prev.map(a =>
+                  a.id === editingAsst.id
+                    ? { ...editingAsst, permissions: asstPerms }
+                    : a
+                )
+              );
+            } else {
+              setAssistants(prev => [
+                ...prev,
+                {
+                  id:          `AST${String(Date.now()).slice(-4)}`,
+                  ...asstForm,
+                  status:      'active' as const,
+                  permissions: asstPerms,
+                  createdAt:   new Date().toISOString(),
+                },
+              ]);
+            }
+            setAsstSaving(false);
+            setView('assistants');
+          }}
+          disabled={asstSaving}
+          activeOpacity={0.85}
+          style={asf.saveBtn}
+        >
+          <LinearGradient
+            colors={G.wallet.colors}
+            start={G.wallet.start}
+            end={G.wallet.end}
+            style={asf.saveBtnGrad}
+          >
+            {asstSaving && (
+              <ActivityIndicator
+                size="small"
+                color="#fff"
+                style={{ marginRight: 8 }}
+              />
+            )}
+            <Text style={asf.saveBtnText}>
+              {asstSaving
+                ? 'Saving\u2026'
+                : isEdit ? 'Update Assistant' : 'Add Assistant'}
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 }
 
-const PS = StyleSheet.create({
-  root:        { flex: 1, backgroundColor: Colors.bg },
-  scroll:      { flex: 1 },
-  scrollContent: { paddingBottom: Spacing["3xl"] },
-  gradHeader:  { overflow: "hidden", paddingBottom: Spacing["3xl"], paddingTop: Spacing.xl },
-  gradTitle:   { fontSize: 12, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: "rgba(255,255,255,0.6)", marginBottom: Spacing.xl, paddingHorizontal: Spacing["2xl"] },
-  avatarRow:   { flexDirection: "row", alignItems: "center", gap: Spacing.lg, paddingHorizontal: Spacing["2xl"] },
-  avatarWrap:  { position: "relative" },
-  avatarCircle: {
-    width: 72, height: 72, borderRadius: 36,
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 3, borderColor: "rgba(255,255,255,0.45)", backgroundColor: "rgba(255,255,255,0.2)",
-  },
-  avatarInitials: { fontSize: 26, fontFamily: "Urbanist_800ExtraBold", color: "#fff" },
-  editBadge:   {
-    position: "absolute", bottom: 0, right: 0,
-    width: 24, height: 24, borderRadius: 12,
-    alignItems: "center", justifyContent: "center",
-    backgroundColor: Colors.orange, borderWidth: 2, borderColor: "#fff",
-  },
-  statsRow:    {
-    flexDirection: "row", marginHorizontal: Spacing["2xl"], marginTop: Spacing["2xl"],
-    borderRadius: Radius.xl, overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.12)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
-  },
-  statItem:    { flex: 1, alignItems: "center", paddingVertical: 14 },
-  statBorder:  { borderRightWidth: 1, borderRightColor: "rgba(255,255,255,0.1)" },
-  statValue:   { fontSize: 14, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "#fff" },
-  statLabel:   { fontSize: 10, fontWeight: "500", fontFamily: "Urbanist_500Medium", color: "rgba(255,255,255,0.55)", marginTop: 3, textAlign: "center" },
+// ─────────────────────────────────────────────────────────────────────────────
+// Expo Router default export
+// ─────────────────────────────────────────────────────────────────────────────
+export default function ProfileRoute() {
+  const { logout } = useAuth();
+  const router = useRouter();
 
-  sectionsArea: { marginTop: Spacing.xl, gap: Spacing.xl, paddingHorizontal: Spacing.xl },
-  sectionTitle: { fontSize: 10, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textLight, letterSpacing: 1.5, marginBottom: Spacing.sm },
-  sectionCard:  {
-    borderRadius: Radius.lg, overflow: "hidden",
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-  },
-  itemRow:     { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: Spacing.lg, paddingVertical: 14 },
-  itemIcon:    { width: 36, height: 36, borderRadius: Radius.md, alignItems: "center", justifyContent: "center" },
-  itemLabel:   { flex: 1, fontSize: 14, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: Colors.textPrimary },
-  itemDivider: { height: 1, backgroundColor: Colors.divider, marginHorizontal: Spacing.lg },
-  badge:       { paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.pill },
-  badgeText:   { fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold" },
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/(auth)/login');
+  };
 
-  signOutBtn:  {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 10, borderRadius: Radius.xl, borderWidth: 1.5,
-    borderColor: Colors.errorBg, backgroundColor: Colors.errorBg, paddingVertical: Spacing.lg,
-    marginTop: Spacing.xs,
-  },
-  signOutText: { fontSize: 14, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.error },
-  versionText: { fontSize: 11, fontFamily: "Urbanist_400Regular", color: Colors.pale, textAlign: "center", marginTop: Spacing.xs },
+  return <ProfileScreen onLogout={handleLogout} />;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────────────────────────────
+
+const home = StyleSheet.create({
+  content:          { padding: 20, paddingBottom: 36 },
+  avatarCard:       { borderRadius: 22, padding: 18, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, shadowColor: '#071830', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 3, marginBottom: 14 },
+  avatar:           { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  avatarText:       { fontSize: 18, fontFamily: F.extrabold, color: '#fff' },
+  userName:         { fontSize: 15, fontFamily: F.extrabold, color: C.navy },
+  userEmail:        { fontSize: 11, color: C.muted, marginTop: 2 },
+  accountBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, backgroundColor: 'rgba(24,120,206,0.07)', borderRadius: 99, paddingVertical: 3, paddingHorizontal: 10, alignSelf: 'flex-start' },
+  onlineDot:        { width: 6, height: 6, borderRadius: 3, backgroundColor: C.green },
+  accountBadgeText: { fontSize: 9, fontFamily: F.semibold, color: C.mid },
+  editIconBtn:      { width: 36, height: 36, borderRadius: 11, backgroundColor: 'rgba(24,120,206,0.08)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  statCard:         { flex: 1, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 6, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, alignItems: 'center' },
+  statValue:        { fontSize: 10, fontFamily: F.extrabold, marginBottom: 2 },
+  statLabel:        { fontSize: 8, fontFamily: F.semibold, color: C.muted, textAlign: 'center', lineHeight: 12 },
+  menuCard:         { borderRadius: 18, overflow: 'hidden', backgroundColor: C.white, borderWidth: 1, borderColor: C.border, marginBottom: 12, shadowColor: '#071830', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
+  menuRow:          { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, paddingVertical: 14 },
+  menuIcon:         { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  menuLabel:        { fontSize: 13, fontFamily: F.semibold, color: C.navy },
+  menuSub:          { fontSize: 10, color: C.muted, marginTop: 1 },
+  menuDivider:      { marginLeft: 67, height: 1, backgroundColor: C.divider },
+  signOutBtn:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, paddingVertical: 14, borderRadius: 14, backgroundColor: 'rgba(232,51,74,0.07)', borderWidth: 1.5, borderColor: 'rgba(232,51,74,0.2)' },
+  signOutText:      { fontSize: 13, fontFamily: F.bold, color: C.red },
+});
+
+const ep = StyleSheet.create({
+  content:       { padding: 20, paddingBottom: 36 },
+  label:         { fontSize: 9, fontFamily: F.extrabold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 },
+  input:         { borderWidth: 1.5, borderColor: C.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, fontSize: 12, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
+  inputDisabled: { color: C.muted, backgroundColor: 'rgba(7,24,48,0.04)' },
+  saveBtn:       { borderRadius: 14, overflow: 'hidden', marginTop: 6 },
+  saveBtnDone:   { borderWidth: 2, borderColor: C.green, backgroundColor: 'rgba(13,168,112,0.08)' },
+  saveBtnInner:  { paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  saveBtnText:   { fontSize: 13, fontFamily: F.extrabold, color: '#fff' },
+});
+
+const pw = StyleSheet.create({
+  content:       { padding: 20, paddingBottom: 36 },
+  banner:        { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 13, borderRadius: 14, marginBottom: 18, backgroundColor: 'rgba(24,120,206,0.06)', borderWidth: 1.5, borderColor: 'rgba(24,120,206,0.15)' },
+  bannerText:    { fontSize: 11, color: C.mid, fontFamily: F.medium, flex: 1, lineHeight: 17 },
+  fieldWrap:     { marginBottom: 14 },
+  label:         { fontSize: 9, fontFamily: F.extrabold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 },
+  input:         { borderWidth: 1.5, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 12, fontSize: 13, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
+  inputRightIcon:{ position: 'absolute', right: 12, top: 13 },
+  inputRightBtn: { position: 'absolute', right: 12, top: 13, padding: 2 },
+  errText:       { fontSize: 10, color: C.red, marginTop: 5, fontFamily: F.medium },
+  strBar:        { flex: 1, height: 3, borderRadius: 2 },
+  strLabel:      { fontSize: 9, fontFamily: F.semibold },
+  actionBtn:     { borderRadius: 14, overflow: 'hidden', marginBottom: 14 },
+  actionBtnDone: { borderWidth: 2, borderColor: C.green, backgroundColor: 'rgba(13,168,112,0.08)' },
+  actionBtnGrad: { paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  actionBtnText: { fontSize: 13, fontFamily: F.extrabold, color: '#fff' },
+});
+
+const al = StyleSheet.create({
+  content:           { padding: 20, paddingBottom: 36 },
+  headerBtn:         { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  empty:             { alignItems: 'center', paddingVertical: 52 },
+  emptyIconWrap:     { width: 56, height: 56, borderRadius: 18, backgroundColor: 'rgba(24,120,206,0.07)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  emptyTitle:        { fontSize: 14, fontFamily: F.bold, color: C.navy, marginBottom: 5 },
+  emptySub:          { fontSize: 11, color: C.muted, textAlign: 'center', lineHeight: 17, marginBottom: 22, paddingHorizontal: 24 },
+  addFirstBtn:       { borderRadius: 13, overflow: 'hidden' },
+  addFirstGrad:      { paddingVertical: 11, paddingHorizontal: 28, alignItems: 'center' },
+  addFirstText:      { fontSize: 13, fontFamily: F.bold, color: '#fff' },
+  card:              { borderRadius: 18, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, padding: 14, paddingHorizontal: 16, shadowColor: '#071830', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2, marginBottom: 12 },
+  cardAvatar:        { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(124,92,252,0.1)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  cardInitials:      { fontSize: 14, fontFamily: F.extrabold, color: C.purple },
+  cardName:          { fontSize: 13, fontFamily: F.bold, color: C.navy },
+  cardEmail:         { fontSize: 10, color: C.muted, marginTop: 1 },
+  cardPhone:         { fontSize: 10, color: C.muted },
+  statusBadge:       { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 99, paddingVertical: 3, paddingHorizontal: 9 },
+  statusDot:         { width: 5, height: 5, borderRadius: 3 },
+  statusText:        { fontSize: 9, fontFamily: F.bold, textTransform: 'capitalize' },
+  editBtn:           { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(24,120,206,0.08)', alignItems: 'center', justifyContent: 'center' },
+  deleteBtn:         { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(232,51,74,0.08)', alignItems: 'center', justifyContent: 'center' },
+  permChips:         { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 11, paddingTop: 11, borderTopWidth: 1, borderTopColor: C.divider },
+  permChip:          { borderRadius: 6, paddingVertical: 3, paddingHorizontal: 9, backgroundColor: 'rgba(24,120,206,0.07)', borderWidth: 1, borderColor: 'rgba(24,120,206,0.14)' },
+  permChipText:      { fontSize: 9, fontFamily: F.semibold, color: C.mid },
+  deleteSheet:       { backgroundColor: C.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 36 },
+  deleteIconBox:     { width: 56, height: 56, borderRadius: 18, backgroundColor: 'rgba(232,51,74,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  deleteTitle:       { fontSize: 16, fontFamily: F.extrabold, color: C.navy, marginBottom: 6, textAlign: 'center' },
+  deleteSub:         { fontSize: 12, color: C.muted, textAlign: 'center', lineHeight: 18 },
+  deleteCancelBtn:   { flex: 1, paddingVertical: 13, borderRadius: 13, borderWidth: 2, borderColor: C.border, alignItems: 'center' },
+  deleteCancelText:  { fontSize: 13, fontFamily: F.bold, color: C.muted },
+  deleteConfirmBtn:  { flex: 1, paddingVertical: 13, borderRadius: 13, backgroundColor: C.red, alignItems: 'center' },
+  deleteConfirmText: { fontSize: 13, fontFamily: F.bold, color: '#fff' },
+});
+
+const asf = StyleSheet.create({
+  content:     { padding: 20, paddingBottom: 36 },
+  label:       { fontSize: 9, fontFamily: F.extrabold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 },
+  input:       { borderWidth: 1.5, borderColor: C.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, fontSize: 12, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
+  divider:     { height: 1, backgroundColor: C.divider, marginBottom: 18, marginTop: 4 },
+  statusRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 16, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, marginBottom: 18 },
+  statusTitle: { fontSize: 12, fontFamily: F.bold, color: C.navy },
+  statusSub:   { fontSize: 10, color: C.muted, marginTop: 1 },
+  toggleBtn:   { borderRadius: 99, paddingVertical: 6, paddingHorizontal: 16 },
+  toggleText:  { fontSize: 11, fontFamily: F.bold, textTransform: 'capitalize' },
+  permHeader:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  permTitle:   { fontSize: 13, fontFamily: F.bold, color: C.navy },
+  permSub:     { fontSize: 10, color: C.muted, marginBottom: 14, lineHeight: 16 },
+  saveBtn:     { borderRadius: 14, overflow: 'hidden' },
+  saveBtnGrad: { paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: C.blue, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 5 },
+  saveBtnText: { fontSize: 13, fontFamily: F.extrabold, color: '#fff' },
 });
