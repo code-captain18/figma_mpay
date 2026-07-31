@@ -97,6 +97,33 @@ export interface QuickAction {
   bg: string;
 }
 
+// ── History screen ────────────────────────────────────────────────────────────
+export interface TxRecord {
+  id: string;
+  ref: string;
+  createdAt: string;
+  status: 'success' | 'pending' | 'failed';
+  type: SvcType;
+  network: string;
+  phone: string;
+  amount: number;
+  fee: number;
+  bundle?: string;
+  momoType?: string;
+  accountId?: string;
+}
+
+export interface FilterState {
+  status: string;
+  svcType: string;
+  phone: string;
+  ref: string;
+  dateFrom: string;
+  dateTo: string;
+  amtMin: string;
+  amtMax: string;
+}
+
 // ── Services screen ────────────────────────────────────────────────────────────
 export type SvcType = 'airtime' | 'data' | 'fibre' | 'bulk' | 'momo';
 export type SvcView = SvcType | 'home' | 'confirm' | 'success';

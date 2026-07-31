@@ -29,4 +29,9 @@ export const G = {
     start:  { x: 0, y: 0 },
     end:    { x: 1, y: 1 },
   },
+  header: {
+    colors: ['#4BAEE8', '#1878CE', '#052D6E'] as [string, string, string],
+    start:  { x: 0, y: 0 },
+    end:    { x: 1, y: 1 },
+  },
 } as const;

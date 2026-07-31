@@ -6,6 +6,7 @@ const FONT_FAMILY = {
   semibold:  "Urbanist_600SemiBold",
   bold:      "Urbanist_700Bold",
   extrabold: "Urbanist_800ExtraBold",
+  black:     "Urbanist_800ExtraBold",
 } as const;
 
 /** Canonical type scale */
