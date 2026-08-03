@@ -13,10 +13,14 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { Stack, useRouter, useSegments } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+
+SplashScreen.preventAutoHideAsync();
+SplashScreen.setOptions({ duration: 800, fade: true });
 import { AuthProvider, useAuth } from "@/store/auth.store";
 import { Colors } from "@/theme";
 import "../../global.css";
@@ -68,8 +72,14 @@ export default function RootLayout() {
     PlusJakartaSans_800ExtraBold,
   });
 
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hide();
+    }
+  }, [fontsLoaded]);
+
   if (!fontsLoaded) {
-    return <View className="flex-1 bg-mpay-bg" />;
+    return null;
   }
 
   return (
