@@ -11,10 +11,10 @@ import {
 } from '@/data';
 import { C, F, G } from '@/theme';
 import type { FilterState, SvcType, TxRecord } from '@/types';
-import * as FileSystem from 'expo-file-system';
+import * as Clipboard from 'expo-clipboard';
+import * as FileSystem from 'expo-file-system/legacy';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
-import * as Clipboard from 'expo-clipboard';
 import {
   Calendar,
   CheckCircle2,
@@ -277,7 +277,7 @@ function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
           <Text style={det.refCardLabel}>TRANSACTION REFERENCE</Text>
           <Text style={det.refCardValue}>{tx.ref}</Text>
           <TouchableOpacity
-          onPress={handleCopyRef}
+            onPress={handleCopyRef}
             style={det.refCopyBtn}
             activeOpacity={0.85}
           >
@@ -354,19 +354,19 @@ function FilterSheet({
     );
   };
 
-  const fullFields = [
-    { label: 'PHONE NUMBER', field: 'phone' as keyof FilterState, kbd: 'phone-pad', ph: 'e.g. 233244123456' },
-    { label: 'REFERENCE ID', field: 'ref' as keyof FilterState, kbd: 'default', ph: 'e.g. WB17220912234567890' },
+  const fullFields: { label: string; field: keyof FilterState; kbd: import('react-native').KeyboardTypeOptions; ph: string }[] = [
+    { label: 'PHONE NUMBER', field: 'phone', kbd: 'phone-pad', ph: 'e.g. 233244123456' },
+    { label: 'REFERENCE ID', field: 'ref', kbd: 'default', ph: 'e.g. WB17220912234567890' },
   ];
 
-  const pairedFields = [
+  const pairedFields: { label: string; field: keyof FilterState; kbd: import('react-native').KeyboardTypeOptions; ph: string; icon?: true }[][] = [
     [
-      { label: 'DATE FROM', field: 'dateFrom' as keyof FilterState, kbd: 'default', ph: 'mm/dd/yyyy', icon: true },
-      { label: 'DATE TO', field: 'dateTo' as keyof FilterState, kbd: 'default', ph: 'mm/dd/yyyy', icon: true },
+      { label: 'DATE FROM', field: 'dateFrom', kbd: 'default', ph: 'mm/dd/yyyy', icon: true },
+      { label: 'DATE TO', field: 'dateTo', kbd: 'default', ph: 'mm/dd/yyyy', icon: true },
     ],
     [
-      { label: 'MIN AMOUNT', field: 'amtMin' as keyof FilterState, kbd: 'decimal-pad', ph: '0.00' },
-      { label: 'MAX AMOUNT', field: 'amtMax' as keyof FilterState, kbd: 'decimal-pad', ph: '0.00' },
+      { label: 'MIN AMOUNT', field: 'amtMin', kbd: 'decimal-pad', ph: '0.00' },
+      { label: 'MAX AMOUNT', field: 'amtMax', kbd: 'decimal-pad', ph: '0.00' },
     ],
   ];
 

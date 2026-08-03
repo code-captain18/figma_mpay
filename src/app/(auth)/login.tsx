@@ -161,7 +161,7 @@ export default function LoginScreen() {
 
             {/* Feature pills */}
             <View style={s.pillRow}>
-              {(['Airtime', 'Data', 'Fiber'] as const).map((p, i) => (
+              {(['Airtime', 'Data', 'Fibre', 'SMS'] as const).map((p, i) => (
                 <View key={p} style={[s.pill, i === 1 && s.pillAccent]}>
                   <Text style={[s.pillText, i === 1 && s.pillTextAccent]}>{p}</Text>
                 </View>

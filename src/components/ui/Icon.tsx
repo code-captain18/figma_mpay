@@ -81,7 +81,6 @@ const ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
   "more-horizontal": MoreHorizontal,
   "arrow-right": ArrowRight,
   "banknote": Banknote,
-  "layers": Layers,
 };
 
 interface IconProps {
