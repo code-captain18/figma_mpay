@@ -1,4 +1,6 @@
 import { NetworkLogo } from "@/components/svg/NetworkLogo";
+import { formatGHS } from "@/utils/format";
+import { ghanaPhoneSchema } from "@/utils/phone";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { ReceiptRows } from "@/components/ui/ReceiptRows";
 import { NETWORKS, PRESET_AMOUNTS } from "@/constants/networks";
@@ -29,19 +31,20 @@ export default function AirtimeScreen() {
   const [network, setNetwork] = useState(NETWORKS[0]);
   const [recipient, setRecipient] = useState<Recipient>("self");
   const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [amount, setAmount] = useState("");
 
   const parsed = parseFloat(amount) || 0;
   const fee = parseFloat((parsed * 0.01).toFixed(2));
   const total = parseFloat((parsed + fee).toFixed(2));
-  const canProceed = network && phone.trim().length >= 9 && parsed > 0;
+  const canProceed = network && ghanaPhoneSchema.safeParse(phone.trim()).success && parsed > 0;
 
   const receiptRows = [
     { label: "Network", value: network.label },
     { label: "Phone Number", value: `+233 ${phone}` },
-    { label: "Amount", value: `GHS${parsed.toFixed(2)}` },
-    { label: "Fee (1%)", value: `GHS${fee.toFixed(2)}` },
-    { label: "Total", value: `GHS${total.toFixed(2)}`, green: true },
+    { label: "Amount", value: formatGHS(parsed) },
+    { label: "Fee (1%)", value: formatGHS(fee) },
+    { label: "Total", value: formatGHS(total), green: true },
   ];
 
   const handleConfirmPurchase = () => {
@@ -297,10 +300,12 @@ export default function AirtimeScreen() {
                 keyboardType="phone-pad"
                 maxLength={10}
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={(v) => { setPhone(v); if (phoneError) setPhoneError(""); }}
+                onBlur={() => { const r = ghanaPhoneSchema.safeParse(phone.trim()); if (!r.success) setPhoneError(r.error.errors[0].message); }}
                 accessibilityLabel="Phone number"
               />
             </View>
+            {phoneError ? <Text style={{ color: "#E8334A", fontSize: 12, marginTop: 4, marginLeft: 4 }}>{phoneError}</Text> : null}
 
             {/* Amount */}
             <Text style={{ fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textSecondary, marginBottom: 12 }}>
@@ -380,7 +385,7 @@ export default function AirtimeScreen() {
             </View>
             {parsed > 0 && (
               <Text style={{ fontSize: 11, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: Colors.primary, marginBottom: 20 }}>
-                Fee: GHS{fee.toFixed(2)} · Total: GHS{total.toFixed(2)}
+                Fee: {formatGHS(fee)} · Total: {formatGHS(total)}
               </Text>
             )}
 
@@ -425,7 +430,7 @@ export default function AirtimeScreen() {
                 You are topping up
               </Text>
               <Text style={{ fontSize: 32, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: "#fff" }}>
-                GHS{parsed.toFixed(2)}
+                {formatGHS(parsed)}
               </Text>
               <Text style={{ fontSize: 14, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: "rgba(255,255,255,0.85)", marginTop: 6 }}>
                 {network.label} · +233 {phone}
@@ -491,7 +496,7 @@ export default function AirtimeScreen() {
               Top-Up Successful!
             </Text>
             <Text style={{ fontSize: 14, fontFamily: "Urbanist_400Regular", color: Colors.textMuted, marginBottom: 32, textAlign: "center" }}>
-              GHS{parsed.toFixed(2)} airtime sent to {network.label} +233 {phone}
+              {formatGHS(parsed)} airtime sent to {network.label} +233 {phone}
             </Text>
             <View
               style={{

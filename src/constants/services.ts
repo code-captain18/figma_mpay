@@ -36,26 +36,24 @@ export const GRADIENTS = {
 } satisfies Record<string, GradientDef>;
 
 // ─── Reference generator ──────────────────────────────────────────────────────
-export function genRef(): string {
-  return 'MP' + Math.random().toString(36).slice(2, 8).toUpperCase();
-}
+export { genRef } from '@/utils/ref';
 
 // ─── Data bundles (flat, for services screen) ─────────────────────────────────
 export const SVC_DATA_BUNDLES: SvcBundle[] = [
-  { id: 'sb1', label: '100MB · 1 day',   price: 1.00 },
-  { id: 'sb2', label: '500MB · 1 day',   price: 3.50 },
-  { id: 'sb3', label: '1GB · 1 day',     price: 5.00 },
-  { id: 'sb4', label: '2GB · 7 days',    price: 12.00, tag: 'Popular' },
-  { id: 'sb5', label: '5GB · 30 days',   price: 30.00 },
-  { id: 'sb6', label: '10GB · 30 days',  price: 50.00, tag: 'Best Value' },
+  { id: 'sb1', label: '100MB · 1 day', price: 1.00 },
+  { id: 'sb2', label: '500MB · 1 day', price: 3.50 },
+  { id: 'sb3', label: '1GB · 1 day', price: 5.00 },
+  { id: 'sb4', label: '2GB · 7 days', price: 12.00, tag: 'Popular' },
+  { id: 'sb5', label: '5GB · 30 days', price: 30.00 },
+  { id: 'sb6', label: '10GB · 30 days', price: 50.00, tag: 'Best Value' },
 ];
 
 // ─── Fibre broadband ──────────────────────────────────────────────────────────
 export const FIBRE_PROVIDERS = ['Vodafone', 'Surfline', 'Busy', 'Comsys'];
 
 export const FIBRE_BUNDLES: SvcBundle[] = [
-  { id: 'fb1', label: '10 Mbps · 30 days',  price: 120.00 },
-  { id: 'fb2', label: '25 Mbps · 30 days',  price: 200.00 },
-  { id: 'fb3', label: '50 Mbps · 30 days',  price: 350.00 },
+  { id: 'fb1', label: '10 Mbps · 30 days', price: 120.00 },
+  { id: 'fb2', label: '25 Mbps · 30 days', price: 200.00 },
+  { id: 'fb3', label: '50 Mbps · 30 days', price: 350.00 },
   { id: 'fb4', label: '100 Mbps · 30 days', price: 500.00, tag: 'Premium' },
 ];

@@ -14,12 +14,14 @@
             }
         },
         "preview": {
+            "autoIncrement": true,
             "distribution": "internal",
             "android": {
                 "buildType": "apk"
             }
         },
         "internal-aab": {
+            "autoIncrement": true,
             "distribution": "internal",
             "android": {
                 "buildType": "app-bundle"

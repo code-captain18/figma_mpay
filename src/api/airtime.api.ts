@@ -1,3 +1,4 @@
+import { genRef } from '@/utils/ref';
 import { mockRequest } from './client';
 
 export interface AirtimePayload {
@@ -20,10 +21,6 @@ export interface PurchaseResult {
   reference: string;
   status: 'success';
 }
-
-const genRef = () =>
-  'MPY-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') +
-  '-' + Math.random().toString(36).slice(2, 7).toUpperCase();
 
 export async function apiPurchaseAirtime(payload: AirtimePayload): Promise<PurchaseResult> {
   return mockRequest(() => ({ reference: genRef(), status: 'success' as const }));

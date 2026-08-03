@@ -26,25 +26,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/store/auth.store';
-
-/* ─── Colors ─────────────────────────────────────────────────────────────────── */
-const C = {
-  bg: '#EFF5FC',
-  navy: '#071830',
-  blue: '#1878CE',
-  sky: '#4BAEE8',
-  deep: '#052D6E',
-  mid: '#2B5080',
-  muted: '#5C7A9E',
-  light: '#7A9ABE',
-  pale: '#A0BEDC',
-  green: '#0DA870',
-  orange: '#E9910A',
-  red: '#E8334A',
-  border: 'rgba(24,120,206,0.12)',
-  divider: '#E0EDF8',
-  white: '#FFFFFF',
-};
+import { C } from '@/theme';
+import { genRef } from '@/utils/ref';
+import { formatGHS } from '@/utils/format';
 
 /* ─── Shadow helper ──────────────────────────────────────────────────────────── */
 const sd = (size: number, color: string, opacity: number) =>
@@ -69,16 +53,6 @@ interface WFState {
   referenceId: string;
 }
 
-/* ─── Helpers ────────────────────────────────────────────────────────────────── */
-function genRef(): string {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, '0');
-  const r = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return (
-    `REF-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}` +
-    `-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}-${r}`
-  );
-}
 
 /* ══════════════════════════════════════════════════════════════════════════════
    SHARED UI COMPONENTS
@@ -288,7 +262,7 @@ function GradHdr({
 }) {
   return (
     <LinearGradient
-      colors={colors ?? [C.sky, C.blue, C.deep]}
+      colors={colors ?? [C.gradientStart, C.blue, C.gradientEnd]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{
@@ -302,7 +276,7 @@ function GradHdr({
             onPress={onBack}
             activeOpacity={0.8}
             style={{
-              width: 32, height: 32, borderRadius: 16,
+              width: 44, height: 44, borderRadius: 22,
               backgroundColor: 'rgba(255,255,255,0.15)',
               alignItems: 'center', justifyContent: 'center',
             }}
@@ -366,7 +340,7 @@ function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
       }}>
         {(user?.hasETopup ?? true) && (
           <LinearGradient
-            colors={[C.sky, C.blue, C.deep]}
+            colors={[C.gradientStart, C.blue, C.gradientEnd]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{ flex: 1, borderRadius: 20, padding: 16, overflow: 'hidden' }}
@@ -619,7 +593,7 @@ function WalletForm({
 
   const btnGrad: readonly [string, string] = isMoMo
     ? ['#12C47E', '#0A9260']
-    : [C.sky, C.blue];
+    : [C.gradientStart, C.blue];
 
   return (
     <KeyboardAvoidingView
@@ -957,7 +931,7 @@ function WalletConfirm({
           style={{ flex: 2 }}
         >
           <LinearGradient
-            colors={loading ? [C.pale, C.pale] : [C.sky, C.blue]}
+            colors={loading ? [C.pale, C.pale] : [C.gradientStart, C.blue]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={{
@@ -1054,7 +1028,7 @@ function WalletSuccess({
       <Animated.View style={{ width: '100%', opacity: fade, transform: [{ translateY: slideY }] }}>
         <TouchableOpacity onPress={onDone} activeOpacity={0.85}>
           <LinearGradient
-            colors={[C.sky, C.blue]}
+            colors={[C.gradientStart, C.blue]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={{ borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
@@ -1091,11 +1065,11 @@ export default function WalletScreen() {
     'momo-form': 'home', confirm: from, success: 'home',
   };
   const headerColors: Record<WalletView, readonly [string, string, string]> = {
-    home: [C.sky, C.blue, C.deep],
-    'etopup-form': [C.sky, C.blue, C.deep],
+    home: [C.gradientStart, C.blue, C.gradientEnd],
+    'etopup-form': [C.gradientStart, C.blue, C.gradientEnd],
     'momo-form': ['#12C47E', '#0A9260', '#065C3D'],
-    confirm: [C.sky, C.blue, C.deep],
-    success: [C.sky, C.blue, C.deep],
+    confirm: [C.gradientStart, C.blue, C.gradientEnd],
+    success: [C.gradientStart, C.blue, C.gradientEnd],
   };
 
   const handleConfirm = () => {

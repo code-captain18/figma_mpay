@@ -10,6 +10,7 @@ import {
   groupByDate,
 } from '@/data';
 import { C, F, G } from '@/theme';
+import { formatGHS } from '@/utils/format';
 import type { FilterState, SvcType, TxRecord } from '@/types';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -34,6 +35,7 @@ import {
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
+  FlatList,
   ScrollView,
   StyleSheet,
   Text,
@@ -41,6 +43,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -120,6 +123,7 @@ function getTxTag(tx: TxRecord): string | null {
 // ─────────────────────────────────────────────────────────────────────────────
 function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
   const [refCopied, setRefCopied] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const handleCopyRef = async () => {
     await Clipboard.setStringAsync(tx.ref);
@@ -186,9 +190,9 @@ function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
     {
       title: 'Financial',
       rows: [
-        { label: 'Amount', value: `GH₵ ${tx.amount.toFixed(2)}`, mono: false },
-        { label: 'Fee', value: `GH₵ ${tx.fee.toFixed(2)}`, mono: false },
-        { label: 'Net Amount', value: `GH₵ ${(tx.amount - tx.fee).toFixed(2)}`, mono: false },
+        { label: 'Amount', value: formatGHS(tx.amount), mono: false },
+        { label: 'Fee', value: formatGHS(tx.fee), mono: false },
+        { label: 'Net Amount', value: formatGHS(tx.amount - tx.fee), mono: false },
       ],
     },
     {
@@ -208,7 +212,7 @@ function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
         colors={G.header.colors}
         start={G.header.start}
         end={G.header.end}
-        style={det.hdr}
+        style={[det.hdr, { paddingTop: insets.top + 16 }]}
       >
         <TouchableOpacity onPress={onBack} style={det.backBtn} activeOpacity={0.8}>
           <ChevronLeft size={17} color="#fff" strokeWidth={2.5} />
@@ -234,7 +238,7 @@ function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
             {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
           </Text>
           <Text style={[det.statusAmount, { color: statusColor }]}>
-            GH₵ {tx.amount.toFixed(2)}
+            {formatGHS(tx.amount)}
           </Text>
           <Text style={det.statusTime}>{fmtAgo(tx.createdAt)}</Text>
 
@@ -293,7 +297,7 @@ function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
 }
 
 const det = StyleSheet.create({
-  hdr: { flexDirection: 'row', alignItems: 'center', paddingTop: 56, paddingBottom: 16, paddingHorizontal: 20 },
+  hdr: { flexDirection: 'row', alignItems: 'center', paddingBottom: 16, paddingHorizontal: 20 },
   backBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
   hdrTitle: { flex: 1, fontSize: 15, fontFamily: F.extrabold, color: '#fff', textAlign: 'center' },
   content: { padding: 20, paddingBottom: 40 },
@@ -493,7 +497,7 @@ const fs = StyleSheet.create({
   sheet: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 101, backgroundColor: C.white, borderTopLeftRadius: 26, borderTopRightRadius: 26, maxHeight: '82%' },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.divider },
   sheetTitle: { fontSize: 15, fontFamily: F.extrabold, color: C.navy },
-  closeBtn: { width: 30, height: 30, borderRadius: 10, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
+  closeBtn: { width: 44, height: 44, borderRadius: 10, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
   sheetContent: { padding: 20, paddingTop: 14, paddingBottom: 8 },
   groupLabel: { fontSize: 11, fontFamily: F.semibold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 7, marginTop: 2 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 16 },
@@ -581,17 +585,70 @@ export default function HistoryScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <GradHdr title="Transactions" />
 
-      <ScrollView
+      <FlatList
+        data={groups}
+        keyExtractor={(g) => g.label}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-      >
+        renderItem={({ item: group }) => (
+          <View style={hs.groupWrapper}>
+            <View style={hs.dateLabelRow}>
+              <Calendar size={12} color={C.muted} strokeWidth={2} />
+              <Text style={hs.dateLabel}>{group.label}</Text>
+              <View style={hs.dateLabelLine} />
+              <Text style={hs.dateCount}>{group.items.length} txns</Text>
+            </View>
+            <View style={hs.txCard}>
+              {group.items.map((tx, i) => {
+                const net = NETWORKS.find(n => n.id === tx.network);
+                const statusColor = STATUS_COLORS[tx.status] ?? C.mid;
+                const isLast = i === group.items.length - 1;
+                const IconComp = SVC_ICON[tx.type] ?? Phone;
+                const iconColor = SVC_ICON_COLOR[tx.type] ?? C.blue;
+                const iconBg = SVC_ICON_BG[tx.type] ?? 'rgba(24,120,206,0.13)';
+                const title = getTxTitle(tx);
+                const tag = getTxTag(tx);
+                const StatusBadgeIcon = tx.status === 'failed' ? XCircle : CheckCircle2;
+                const statusLabel = tx.status === 'success' ? 'Success'
+                  : tx.status === 'failed' ? 'Failed' : 'Pending';
+                return (
+                  <TouchableOpacity key={tx.id} onPress={() => setSelected(tx)}
+                    activeOpacity={0.85} style={[hs.txRow, !isLast && hs.txRowBorder]}
+                  >
+                    <View style={hs.iconWrap}>
+                      <View style={[hs.iconCircle, { backgroundColor: iconBg }]}>
+                        <IconComp size={18} color={iconColor} strokeWidth={1.8} />
+                      </View>
+                      <View style={[hs.netDot, { backgroundColor: net?.color ?? C.pale }]}>
+                        <Text style={hs.netDotLetter}>{tx.network[0]?.toUpperCase() ?? "?"}</Text>
+                      </View>
+                    </View>
+                    <View style={{ flex: 1, gap: 1 }}>
+                      <Text style={hs.txTitle} numberOfLines={1}>{title}</Text>
+                      <Text style={hs.txPhone}>{tx.phone}</Text>
+                      {tag && (<View style={hs.tagPill}><Text style={hs.tagText}>{tag}</Text></View>)}
+                    </View>
+                    <View style={{ alignItems: "flex-end", gap: 5, flexShrink: 0 }}>
+                      <Text style={hs.txAmount} allowFontScaling={false}>{formatGHS(tx.amount)}</Text>
+                      <View style={[hs.statusBadge, { backgroundColor: statusColor + "15" }]}>
+                        <StatusBadgeIcon size={9} color={statusColor} strokeWidth={2.2} />
+                        <Text style={[hs.statusText, { color: statusColor }]}>{statusLabel}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
+        ListHeaderComponent={<>
         {/* ── Stats strip ── */}
         <View style={hs.statsStrip}>
           {[
             { label: 'Total', value: `${stats.total}`, color: C.blue },
             { label: 'Success', value: `${stats.success}`, color: C.green },
             { label: 'Failed', value: `${stats.failed}`, color: C.red },
-            { label: 'Amount', value: `GHS ${stats.amount.toFixed(0)}`, color: C.purple },
+            { label: 'Amount', value: formatGHS(stats.amount), color: C.purple },
           ].map(s => (
             <View key={s.label} style={hs.statCard}>
               <Text style={[hs.statValue, { color: s.color }]}>{s.value}</Text>
@@ -674,131 +731,43 @@ export default function HistoryScreen() {
           </Text>
         </View>
 
-        {/* ── Transaction groups ── */}
-        <View style={hs.listContent}>
-          {groups.length === 0 ? (
+
+        </>}
+        ListEmptyComponent={
+          <View style={hs.listContent}>
             <View style={hs.empty}>
               <View style={hs.emptyIconWrap}>
                 <Search size={28} color={C.pale} />
               </View>
               <Text style={hs.emptyTitle}>No transactions found</Text>
-              <Text style={hs.emptySub}>
-                Try adjusting your search or clearing filters.
-              </Text>
+              <Text style={hs.emptySub}>Try adjusting your search or clearing filters.</Text>
               {(query || activeFilterCount > 0) && (
-                <TouchableOpacity
-                  onPress={() => { setQuery(''); setFilter(EMPTY_FILTER); }}
-                  style={hs.emptyResetBtn}
-                  activeOpacity={0.85}
-                >
+                <TouchableOpacity onPress={() => { setQuery(""); setFilter(EMPTY_FILTER); }}
+                  style={hs.emptyResetBtn} activeOpacity={0.85}>
                   <Text style={hs.emptyResetText}>Reset Search</Text>
                 </TouchableOpacity>
               )}
             </View>
-          ) : (
-            groups.map(group => (
-              <View key={group.label} style={{ marginBottom: 16 }}>
-                <View style={hs.dateLabelRow}>
-                  <Calendar size={12} color={C.muted} strokeWidth={2} />
-                  <Text style={hs.dateLabel}>{group.label}</Text>
-                  <View style={hs.dateLabelLine} />
-                  <Text style={hs.dateCount}>{group.items.length} txns</Text>
-                </View>
-
-                <View style={hs.txCard}>
-                  {group.items.map((tx, i) => {
-                    const net = NETWORKS.find(n => n.id === tx.network);
-                    const statusColor = STATUS_COLORS[tx.status] ?? C.mid;
-                    const isLast = i === group.items.length - 1;
-                    const IconComp = SVC_ICON[tx.type] ?? Phone;
-                    const iconColor = SVC_ICON_COLOR[tx.type] ?? C.blue;
-                    const iconBg = SVC_ICON_BG[tx.type] ?? 'rgba(24,120,206,0.13)';
-                    const title = getTxTitle(tx);
-                    const tag = getTxTag(tx);
-                    const StatusBadgeIcon = tx.status === 'failed' ? XCircle : CheckCircle2;
-                    const statusLabel = tx.status === 'success' ? 'Success'
-                      : tx.status === 'failed' ? 'Failed'
-                        : 'Pending';
-
-                    return (
-                      <TouchableOpacity
-                        key={tx.id}
-                        onPress={() => setSelected(tx)}
-                        activeOpacity={0.85}
-                        style={[hs.txRow, !isLast && hs.txRowBorder]}
-                      >
-                        {/* Service icon + network badge */}
-                        <View style={hs.iconWrap}>
-                          <View style={[hs.iconCircle, { backgroundColor: iconBg }]}>
-                            <IconComp size={18} color={iconColor} strokeWidth={1.8} />
-                          </View>
-                          <View style={[hs.netDot, { backgroundColor: net?.color ?? C.pale }]}>
-                            <Text style={hs.netDotLetter}>
-                              {tx.network[0]?.toUpperCase() ?? '?'}
-                            </Text>
-                          </View>
-                        </View>
-
-                        {/* Info */}
-                        <View style={{ flex: 1, gap: 1 }}>
-                          <Text style={hs.txTitle} numberOfLines={1}>{title}</Text>
-                          <Text style={hs.txPhone}>{tx.phone}</Text>
-                          {tag && (
-                            <View style={hs.tagPill}>
-                              <Text style={hs.tagText}>{tag}</Text>
-                            </View>
-                          )}
-                        </View>
-
-                        {/* Amount + status */}
-                        <View style={{ alignItems: 'flex-end', gap: 5, flexShrink: 0 }}>
-                          <Text style={hs.txAmount}>GHS {tx.amount.toFixed(2)}</Text>
-                          <View style={[hs.statusBadge, { backgroundColor: statusColor + '15' }]}>
-                            <StatusBadgeIcon size={9} color={statusColor} strokeWidth={2.2} />
-                            <Text style={[hs.statusText, { color: statusColor }]}>
-                              {statusLabel}
-                            </Text>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            ))
-          )}
-
-          {paged.length < filtered.length && (
-            <TouchableOpacity
-              onPress={() => setPage(p => p + 1)}
-              style={hs.loadMoreBtn}
-              activeOpacity={0.85}
-            >
-              <Text style={hs.loadMoreText}>
-                Load more · {filtered.length - paged.length} remaining
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          <View style={{ height: 24 }} />
-        </View>
-      </ScrollView>
-
-      {filterOpen && (
-        <FilterSheet
-          filter={filter}
-          setFilter={f => { setFilter(f); setPage(1); }}
-          onApply={() => setPage(1)}
-          onClose={() => setFilterOpen(false)}
-        />
-      )}
+          </View>
+        }
+        ListFooterComponent={
+          <View style={hs.listContent}>
+            {paged.length < filtered.length && (
+              <TouchableOpacity onPress={() => setPage(p => p + 1)}
+                style={hs.loadMoreBtn} activeOpacity={0.85}>
+                <Text style={hs.loadMoreText}>
+                  Load more · {filtered.length - paged.length} remaining
+                </Text>
+              </TouchableOpacity>
+            )}
+            <View style={{ height: 24 }} />
+          </View>
+        }
+      />
     </View>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Styles
-// ─────────────────────────────────────────────────────────────────────────────
 const hs = StyleSheet.create({
   statsStrip: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   statCard: { flex: 1, backgroundColor: C.white, borderRadius: 13, borderWidth: 1, borderColor: C.border, paddingVertical: 11, alignItems: 'center' },
@@ -857,5 +826,6 @@ const hs = StyleSheet.create({
   emptyResetText: { fontSize: 12, fontFamily: F.semibold, color: C.mid },
 
   loadMoreBtn: { paddingVertical: 13, borderRadius: 13, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', marginBottom: 8 },
+  groupWrapper: { paddingHorizontal: 16, marginBottom: 16 },
   loadMoreText: { fontSize: 12, fontFamily: F.semibold, color: C.mid },
 });

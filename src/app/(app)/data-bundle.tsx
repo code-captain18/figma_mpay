@@ -1,3 +1,5 @@
+import { formatGHS } from "@/utils/format";
+import { ghanaPhoneSchema } from "@/utils/phone";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Check, Wifi } from "lucide-react-native";
@@ -31,18 +33,19 @@ export default function DataBundleScreen() {
   const [network, setNetwork] = useState(NETWORKS[0]);
   const [recipient, setRecipient] = useState<Recipient>("self");
   const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [duration, setDuration] = useState<BundleDuration>("Daily");
   const [selected, setSelected] = useState<Bundle | null>(null);
 
   const bundles = DATA_BUNDLES[duration] ?? [];
-  const canProceed = network && phone.trim().length >= 9 && selected !== null;
+  const canProceed = network && ghanaPhoneSchema.safeParse(phone.trim()).success && selected !== null;
 
   const receiptRows = selected
     ? [
         { label: "Network", value: network.label },
         { label: "Phone Number", value: `+233 ${phone}` },
         { label: "Bundle", value: `${selected.size} – ${selected.validity}` },
-        { label: "Price", value: `GHS${selected.price.toFixed(2)}`, green: true },
+        { label: "Price", value: formatGHS(selected.price), green: true },
       ]
     : [];
 
@@ -302,10 +305,12 @@ export default function DataBundleScreen() {
                 keyboardType="phone-pad"
                 maxLength={10}
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={(v) => { setPhone(v); if (phoneError) setPhoneError(""); }}
+                onBlur={() => { const r = ghanaPhoneSchema.safeParse(phone.trim()); if (!r.success) setPhoneError(r.error.errors[0].message); }}
                 accessibilityLabel="Phone number"
               />
             </View>
+            {phoneError ? <Text style={{ color: "#E8334A", fontSize: 12, marginTop: 4, marginLeft: 4 }}>{phoneError}</Text> : null}
 
             {/* Duration tabs */}
             <Text style={{ fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textSecondary, marginBottom: 12 }}>
@@ -425,7 +430,7 @@ export default function DataBundleScreen() {
                       {b.validity}
                     </Text>
                     <Text style={{ fontSize: 14, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: active ? "#fff" : Colors.blue, marginTop: 8 }}>
-                      GHS{b.price.toFixed(2)}
+                      {formatGHS(b.price)}
                     </Text>
                   </TouchableOpacity>
                 );
