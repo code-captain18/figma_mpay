@@ -67,7 +67,7 @@ const R = StyleSheet.create({
   iconWrapSm: { width: 48, height: 48, borderRadius: Radius.lg },
   iconWrapLg: { width: 50, height: 50, borderRadius: Radius.lg + 1 },
   mid: { flex: 1, minWidth: 0 },
-  label: { fontSize: 12, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: Colors.textPrimary },
+  label: { fontSize: 13, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: Colors.textPrimary },
   subRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3 },
   statusText: { fontSize: 10, fontWeight: "600", fontFamily: "Urbanist_600SemiBold" },
   timeText: { fontSize: 10, color: Colors.textLight, fontFamily: "Urbanist_400Regular" },

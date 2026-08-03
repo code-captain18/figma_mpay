@@ -102,11 +102,11 @@ function SubmitBtn({
 
 const shr = StyleSheet.create({
   label: {
-    fontSize: 9,
-    fontFamily: F.extrabold,
+    fontSize: 11,
+    fontFamily: F.semibold,
     color: C.mid,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
     marginBottom: 5,
   },
   input: {
@@ -115,14 +115,14 @@ const shr = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 11,
-    fontSize: 13,
-    fontFamily: F.semibold,
+    fontSize: 14,
+    fontFamily: F.medium,
     color: C.navy,
     backgroundColor: C.bg,
   },
   submitBtn:  { borderRadius: BTN_R, overflow: 'hidden', marginTop: 6 },
   submitGrad: { paddingVertical: BTN_H / 2 - 1, alignItems: 'center', justifyContent: 'center' },
-  submitText: { fontSize: BTN_FS, fontFamily: F.extrabold, color: '#fff' },
+  submitText: { fontSize: 15, fontFamily: F.extrabold, color: '#fff' },
 });
 
 // ─── Airtime Top-Up Form ──────────────────────────────────────────────────────

@@ -33,5 +33,5 @@ export const G = {
 export const BTN = {
     primaryR: 14,   // border radius
     primaryH: 54,   // height
-    primaryFS: 15,   // font size
+    primaryFS: 15,  // font size — matches T.button
 } as const;

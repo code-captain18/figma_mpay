@@ -13,14 +13,16 @@ import {
 import { GradHdr } from '@/components/services/GradHdr';
 import { PermMatrix } from '@/components/services/PermMatrix';
 import { C, F, G } from '@/theme';
-import { USER, DASH, INIT_ASSISTANTS, makeEmptyPerms, PERM_SECTIONS } from '@/data';
+import { DASH, INIT_ASSISTANTS, makeEmptyPerms, PERM_SECTIONS } from '@/data';
 import type { ProfileView, Assistant, PermMap, PermKey } from '@/types';
 import { useAuth } from '@/store/auth.store';
+import { apiVerifyPassword, apiChangePassword } from '@/api';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main ProfileScreen — state machine
 // ─────────────────────────────────────────────────────────────────────────────
 function ProfileScreen({ onLogout }: { onLogout: () => void }) {
+  const { user, updateUser } = useAuth();
   const [view,          setView]          = useState<ProfileView>('home');
   const [assistants,    setAssistants]    = useState<Assistant[]>(INIT_ASSISTANTS);
   const [editingAsst,   setEditingAsst]   = useState<Assistant | null>(null);
@@ -33,10 +35,10 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
   const [editForm, setEditForm] = useState({
     accountName:     "John's Business",
     companyName:     'JM Enterprises Ltd',
-    firstName:       'John',
-    lastName:        'Mensah',
-    phoneNumber:     USER.phone,
-    email:           USER.email,
+    firstName:       user?.name.split(' ')[0] ?? 'John',
+    lastName:        user?.name.split(' ')[1] ?? 'Mensah',
+    phoneNumber:     user?.phone ?? '',
+    email:           user?.email ?? '',
     address:         '123 Independence Ave, Accra',
     ghanaCardNumber: 'GHA-123456789-0',
     taxId:           'TIN987654321',
@@ -84,16 +86,16 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               style={home.avatar}
             >
               <Text style={home.avatarText}>
-                {USER.name.split(' ').map((n: string) => n[0]).join('')}
+                {(user?.name ?? 'U').split(' ').map((n: string) => n[0]).join('')}
               </Text>
             </LinearGradient>
 
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={home.userName}>{USER.name}</Text>
-              <Text style={home.userEmail} numberOfLines={1}>{USER.email}</Text>
+              <Text style={home.userName}>{user?.name ?? ''}</Text>
+              <Text style={home.userEmail} numberOfLines={1}>{user?.email ?? ''}</Text>
               <View style={home.accountBadge}>
                 <View style={home.onlineDot} />
-                <Text style={home.accountBadgeText}>{USER.accountId}</Text>
+                <Text style={home.accountBadgeText}>{user?.accountId ?? ''}</Text>
               </View>
             </View>
 
@@ -110,9 +112,9 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         {/* ── Stats strip ── */}
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
           {[
-            { label: "Today's Sales", value: `GH\u20B5${totalSales.toFixed(2)}`,         color: C.blue  },
-            { label: 'e Top-Up',      value: `GH\u20B5${USER.eTopupBalance.toFixed(2)}`, color: C.blue  },
-            { label: 'MoMo',          value: `GH\u20B5${USER.momoBalance.toFixed(2)}`,   color: C.green },
+            { label: "Today's Sales", value: `GH\u20B5${totalSales.toFixed(2)}`,                   color: C.blue  },
+            { label: 'e Top-Up',      value: `GH\u20B5${(user?.eTopupBalance ?? 0).toFixed(2)}`, color: C.blue  },
+            { label: 'MoMo',          value: `GH\u20B5${(user?.momoBalance ?? 0).toFixed(2)}`,   color: C.green },
           ].map(s => (
             <View key={s.label} style={home.statCard}>
               <Text style={[home.statValue, { color: s.color }]}>{s.value}</Text>
@@ -247,10 +249,18 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
           <TouchableOpacity
             onPress={async () => {
               setEditSaving(true);
-              await new Promise(r => setTimeout(r, 900));
-              setEditSaving(false);
-              setEditDone(true);
-              setTimeout(() => { setEditDone(false); setView('home'); }, 1500);
+              try {
+                await updateUser({
+                  name: `${editForm.firstName} ${editForm.lastName}`.trim(),
+                  phone: editForm.phoneNumber,
+                });
+                setEditDone(true);
+                setTimeout(() => { setEditDone(false); setView('home'); }, 1500);
+              } catch {
+                // silently stay on edit view
+              } finally {
+                setEditSaving(false);
+              }
             }}
             activeOpacity={0.85}
             disabled={editSaving}
@@ -366,14 +376,20 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
           {!oldPwdVerified && (
             <TouchableOpacity
               onPress={async () => {
+                if (!user) return;
                 setVerifying(true);
-                await new Promise(r => setTimeout(r, 800));
-                if (oldPwd === 'password123') {
-                  setOldPwdVerified(true);
-                } else {
-                  setOldPwdError('Incorrect password. Hint: password123');
+                try {
+                  const ok = await apiVerifyPassword(user.id, oldPwd);
+                  if (ok) {
+                    setOldPwdVerified(true);
+                  } else {
+                    setOldPwdError('Current password is incorrect.');
+                  }
+                } catch {
+                  setOldPwdError('Verification failed. Please try again.');
+                } finally {
+                  setVerifying(false);
                 }
-                setVerifying(false);
               }}
               disabled={verifying || oldPwd.length < 3}
               activeOpacity={0.85}
@@ -480,11 +496,18 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
 
               <TouchableOpacity
                 onPress={async () => {
+                  if (!user) return;
                   setPwdSaving(true);
-                  await new Promise(r => setTimeout(r, 900));
-                  setPwdSaving(false);
-                  setPwdDone(true);
-                  setTimeout(() => { resetPwd(); setView('home'); }, 1600);
+                  try {
+                    await apiChangePassword(user.id, oldPwd, newPwd);
+                    setPwdDone(true);
+                    setTimeout(() => { resetPwd(); setView('home'); }, 1600);
+                  } catch {
+                    setOldPwdError('Failed to change password. Please try again.');
+                    setView('password');
+                  } finally {
+                    setPwdSaving(false);
+                  }
                 }}
                 disabled={!pwdOk || pwdSaving || pwdDone}
                 activeOpacity={0.85}
@@ -885,11 +908,11 @@ const home = StyleSheet.create({
   userEmail:        { fontSize: 11, color: C.muted, marginTop: 2 },
   accountBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, backgroundColor: 'rgba(24,120,206,0.07)', borderRadius: 99, paddingVertical: 3, paddingHorizontal: 10, alignSelf: 'flex-start' },
   onlineDot:        { width: 6, height: 6, borderRadius: 3, backgroundColor: C.green },
-  accountBadgeText: { fontSize: 9, fontFamily: F.semibold, color: C.mid },
+  accountBadgeText: { fontSize: 10, fontFamily: F.semibold, color: C.mid },
   editIconBtn:      { width: 36, height: 36, borderRadius: 11, backgroundColor: 'rgba(24,120,206,0.08)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   statCard:         { flex: 1, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 6, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, alignItems: 'center' },
-  statValue:        { fontSize: 10, fontFamily: F.extrabold, marginBottom: 2 },
-  statLabel:        { fontSize: 8, fontFamily: F.semibold, color: C.muted, textAlign: 'center', lineHeight: 12 },
+  statValue:        { fontSize: 11, fontFamily: F.extrabold, marginBottom: 2 },
+  statLabel:        { fontSize: 10, fontFamily: F.semibold, color: C.muted, textAlign: 'center', lineHeight: 13 },
   menuCard:         { borderRadius: 18, overflow: 'hidden', backgroundColor: C.white, borderWidth: 1, borderColor: C.border, marginBottom: 12, shadowColor: '#071830', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
   menuRow:          { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, paddingVertical: 14 },
   menuIcon:         { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
@@ -902,13 +925,13 @@ const home = StyleSheet.create({
 
 const ep = StyleSheet.create({
   content:       { padding: 20, paddingBottom: 36 },
-  label:         { fontSize: 9, fontFamily: F.extrabold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 },
-  input:         { borderWidth: 1.5, borderColor: C.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, fontSize: 12, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
+  label:         { fontSize: 11, fontFamily: F.semibold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 },
+  input:         { borderWidth: 1.5, borderColor: C.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
   inputDisabled: { color: C.muted, backgroundColor: 'rgba(7,24,48,0.04)' },
   saveBtn:       { borderRadius: 14, overflow: 'hidden', marginTop: 6 },
   saveBtnDone:   { borderWidth: 2, borderColor: C.green, backgroundColor: 'rgba(13,168,112,0.08)' },
   saveBtnInner:  { paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  saveBtnText:   { fontSize: 13, fontFamily: F.extrabold, color: '#fff' },
+  saveBtnText:   { fontSize: 14, fontFamily: F.extrabold, color: '#fff' },
 });
 
 const pw = StyleSheet.create({
@@ -916,8 +939,8 @@ const pw = StyleSheet.create({
   banner:        { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 13, borderRadius: 14, marginBottom: 18, backgroundColor: 'rgba(24,120,206,0.06)', borderWidth: 1.5, borderColor: 'rgba(24,120,206,0.15)' },
   bannerText:    { fontSize: 11, color: C.mid, fontFamily: F.medium, flex: 1, lineHeight: 17 },
   fieldWrap:     { marginBottom: 14 },
-  label:         { fontSize: 9, fontFamily: F.extrabold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 },
-  input:         { borderWidth: 1.5, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 12, fontSize: 13, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
+  label:         { fontSize: 11, fontFamily: F.semibold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 },
+  input:         { borderWidth: 1.5, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 12, fontSize: 14, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
   inputRightIcon:{ position: 'absolute', right: 12, top: 13 },
   inputRightBtn: { position: 'absolute', right: 12, top: 13, padding: 2 },
   errText:       { fontSize: 10, color: C.red, marginTop: 5, fontFamily: F.medium },
@@ -926,7 +949,7 @@ const pw = StyleSheet.create({
   actionBtn:     { borderRadius: 14, overflow: 'hidden', marginBottom: 14 },
   actionBtnDone: { borderWidth: 2, borderColor: C.green, backgroundColor: 'rgba(13,168,112,0.08)' },
   actionBtnGrad: { paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  actionBtnText: { fontSize: 13, fontFamily: F.extrabold, color: '#fff' },
+  actionBtnText: { fontSize: 14, fontFamily: F.extrabold, color: '#fff' },
 });
 
 const al = StyleSheet.create({
@@ -947,12 +970,12 @@ const al = StyleSheet.create({
   cardPhone:         { fontSize: 10, color: C.muted },
   statusBadge:       { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 99, paddingVertical: 3, paddingHorizontal: 9 },
   statusDot:         { width: 5, height: 5, borderRadius: 3 },
-  statusText:        { fontSize: 9, fontFamily: F.bold, textTransform: 'capitalize' },
+  statusText:        { fontSize: 10, fontFamily: F.bold, textTransform: 'capitalize' },
   editBtn:           { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(24,120,206,0.08)', alignItems: 'center', justifyContent: 'center' },
   deleteBtn:         { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(232,51,74,0.08)', alignItems: 'center', justifyContent: 'center' },
   permChips:         { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 11, paddingTop: 11, borderTopWidth: 1, borderTopColor: C.divider },
   permChip:          { borderRadius: 6, paddingVertical: 3, paddingHorizontal: 9, backgroundColor: 'rgba(24,120,206,0.07)', borderWidth: 1, borderColor: 'rgba(24,120,206,0.14)' },
-  permChipText:      { fontSize: 9, fontFamily: F.semibold, color: C.mid },
+  permChipText:      { fontSize: 10, fontFamily: F.semibold, color: C.mid },
   deleteSheet:       { backgroundColor: C.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 36 },
   deleteIconBox:     { width: 56, height: 56, borderRadius: 18, backgroundColor: 'rgba(232,51,74,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   deleteTitle:       { fontSize: 16, fontFamily: F.extrabold, color: C.navy, marginBottom: 6, textAlign: 'center' },
@@ -965,8 +988,8 @@ const al = StyleSheet.create({
 
 const asf = StyleSheet.create({
   content:     { padding: 20, paddingBottom: 36 },
-  label:       { fontSize: 9, fontFamily: F.extrabold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 },
-  input:       { borderWidth: 1.5, borderColor: C.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, fontSize: 12, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
+  label:       { fontSize: 11, fontFamily: F.semibold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 },
+  input:       { borderWidth: 1.5, borderColor: C.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
   divider:     { height: 1, backgroundColor: C.divider, marginBottom: 18, marginTop: 4 },
   statusRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 16, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, marginBottom: 18 },
   statusTitle: { fontSize: 12, fontFamily: F.bold, color: C.navy },
@@ -978,5 +1001,5 @@ const asf = StyleSheet.create({
   permSub:     { fontSize: 10, color: C.muted, marginBottom: 14, lineHeight: 16 },
   saveBtn:     { borderRadius: 14, overflow: 'hidden' },
   saveBtnGrad: { paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: C.blue, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 5 },
-  saveBtnText: { fontSize: 13, fontFamily: F.extrabold, color: '#fff' },
+  saveBtnText: { fontSize: 14, fontFamily: F.extrabold, color: '#fff' },
 });

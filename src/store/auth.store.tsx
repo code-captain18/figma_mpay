@@ -6,15 +6,12 @@ import React, {
   useState,
 } from "react";
 import * as SecureStore from "expo-secure-store";
+import { apiLogin, apiUpdateUser } from "@/api";
+import type { AuthUser } from "@/api";
+
+export type { AuthUser };
 
 const SESSION_KEY = "mpay_session";
-
-interface AuthUser {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-}
 
 interface AuthState {
   user: AuthUser | null;
@@ -23,8 +20,9 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (data: Partial<Pick<AuthUser, 'name' | 'phone' | 'email'>>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -54,16 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = useCallback(async (email: string, _password: string) => {
-    // TODO: Replace with real API call
-    const mockUser: AuthUser = {
-      id: "1",
-      name: "John Mensah",
-      email,
-      phone: "+233 24 123 4567",
-    };
-    await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(mockUser));
-    setState({ user: mockUser, isAuthenticated: true, isLoading: false });
+  const login = useCallback(async (username: string, password: string) => {
+    const user = await apiLogin(username, password);
+    await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(user));
+    setState({ user, isAuthenticated: true, isLoading: false });
   }, []);
 
   const logout = useCallback(async () => {
@@ -71,8 +63,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user: null, isAuthenticated: false, isLoading: false });
   }, []);
 
+  const updateUser = useCallback(async (
+    data: Partial<Pick<AuthUser, 'name' | 'phone' | 'email'>>,
+  ) => {
+    if (!state.user) return;
+    const updated = await apiUpdateUser(state.user.id, data);
+    await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(updated));
+    setState((prev) => ({ ...prev, user: updated }));
+  }, [state.user]);
+
   return (
-    <AuthContext.Provider value={{ ...state, login, logout }}>
+    <AuthContext.Provider value={{ ...state, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

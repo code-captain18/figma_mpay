@@ -58,7 +58,7 @@ export default function AirtimeScreen() {
     <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.bg }} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         {/* Header */}
         {step === "form" ? (

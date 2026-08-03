@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   tagText: {
-    fontSize: 8,
+    fontSize: 10,
     fontFamily: 'Urbanist_700Bold',
     color: '#fff',
   },

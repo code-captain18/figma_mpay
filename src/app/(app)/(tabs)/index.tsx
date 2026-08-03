@@ -73,10 +73,10 @@ export default function HomeScreen() {
       {/* ── Header ─────────────────────────────────────────────── */}
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, marginBottom: 18 }}>
         <View>
-          <Text style={{ fontSize: 12, color: C.muted, fontFamily: "Urbanist_500Medium" }}>
+          <Text style={{ fontSize: 11, color: C.muted, fontFamily: "Urbanist_400Regular" }}>
             {getGreeting()}
           </Text>
-          <Text style={{ fontSize: 17, color: C.navy, fontFamily: "Urbanist_800ExtraBold" }}>
+          <Text style={{ fontSize: 17, color: C.navy, fontFamily: "Urbanist_700Bold" }}>
             {displayName} 👋
           </Text>
         </View>
@@ -136,7 +136,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={{ fontSize: 32, color: "#fff", fontFamily: "Urbanist_800ExtraBold", letterSpacing: -0.5, marginBottom: 2 }}>
+          <Text style={{ fontSize: 36, color: "#fff", fontFamily: "Urbanist_800ExtraBold", letterSpacing: -0.5, marginBottom: 2 }}>
             {hidden ? "••••••" : `GH₵${totalSales.toFixed(2)}`}
           </Text>
           <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 20, fontFamily: "Urbanist_500Medium" }}>
@@ -166,8 +166,8 @@ export default function HomeScreen() {
       <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 13 }}>
           <View>
-            <Text style={{ fontSize: 15, color: C.navy, fontFamily: "Urbanist_800ExtraBold" }}>Buy</Text>
-            <Text style={{ fontSize: 10, color: C.muted, fontFamily: "Urbanist_500Medium", marginTop: 1 }}>Quick top-up &amp; transfers</Text>
+            <Text style={{ fontSize: 15, color: C.navy, fontFamily: "Urbanist_700Bold" }}>Buy</Text>
+            <Text style={{ fontSize: 11, color: C.muted, fontFamily: "Urbanist_400Regular", marginTop: 1 }}>Quick top-up &amp; transfers</Text>
           </View>
           <TouchableOpacity
             accessibilityRole="button"
@@ -204,7 +204,7 @@ export default function HomeScreen() {
               <View style={{ width: 44, height: 44, borderRadius: 13, backgroundColor: link.iconBg, alignItems: "center", justifyContent: "center" }}>
                 <Icon name={link.icon} size={20} color={link.iconColor} />
               </View>
-              <Text style={{ fontSize: 11, fontFamily: "Urbanist_800ExtraBold", color: C.navy, textAlign: "center" }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+              <Text style={{ fontSize: 11, fontFamily: "Urbanist_600SemiBold", color: C.navy, textAlign: "center" }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                 {link.label}
               </Text>
             </TouchableOpacity>
@@ -215,7 +215,7 @@ export default function HomeScreen() {
       {/* ── Sales breakdown cards ──────────────────────────────── */}
       <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <Text style={{ fontSize: 13, color: C.navy, fontFamily: "Urbanist_700Bold" }}>Sales Breakdown</Text>
+          <Text style={{ fontSize: 15, color: C.navy, fontFamily: "Urbanist_700Bold" }}>Sales Breakdown</Text>
           <Text style={{ fontSize: 11, color: C.blue, fontFamily: "Urbanist_600SemiBold" }}>Today</Text>
         </View>
         <ScrollView
@@ -242,25 +242,25 @@ export default function HomeScreen() {
                   </View>
                   {hasData ? (
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 3, borderRadius: 99, paddingVertical: 3, paddingHorizontal: 7, backgroundColor: s.trend > 0 ? "rgba(13,168,112,0.1)" : "rgba(232,51,74,0.1)" }}>
-                      <Icon name={s.trend > 0 ? "trending-up" : "trending-down"} size={9} color={s.trend > 0 ? C.green : C.red} />
-                      <Text style={{ fontSize: 9, fontFamily: "Urbanist_700Bold", color: s.trend > 0 ? C.green : C.red }}>+{s.trend}</Text>
+                      <Icon name={s.trend > 0 ? "trending-up" : "trending-down"} size={10} color={s.trend > 0 ? C.green : C.red} />
+                      <Text style={{ fontSize: 10, fontFamily: "Urbanist_700Bold", color: s.trend > 0 ? C.green : C.red }}>+{s.trend}</Text>
                     </View>
                   ) : (
                     <View style={{ borderRadius: 99, paddingVertical: 3, paddingHorizontal: 7, backgroundColor: "rgba(24,120,206,0.07)" }}>
-                      <Text style={{ fontSize: 9, fontFamily: "Urbanist_700Bold", color: C.muted }}>—</Text>
+                      <Text style={{ fontSize: 10, fontFamily: "Urbanist_700Bold", color: C.muted }}>—</Text>
                     </View>
                   )}
                 </View>
                 <Text style={{ fontSize: 18, fontFamily: "Urbanist_800ExtraBold", color: hasData ? C.navy : C.pale, marginBottom: 2 }}>
                   {hasData ? `GH₵${s.amount}` : "GH₵0"}
                 </Text>
-                <Text style={{ fontSize: 9, fontFamily: "Urbanist_600SemiBold", color: C.muted, marginBottom: 10 }}>{s.label}</Text>
+                <Text style={{ fontSize: 11, fontFamily: "Urbanist_600SemiBold", color: C.muted, marginBottom: 10 }}>{s.label}</Text>
                 <View style={{ height: 4, borderRadius: 99, backgroundColor: "rgba(24,120,206,0.08)", overflow: "hidden" }}>
                   <View style={{ width: `${pct}%`, height: 4, borderRadius: 99, backgroundColor: s.color }} />
                 </View>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 5 }}>
-                  <Text style={{ fontSize: 8, color: C.pale, fontFamily: "Urbanist_500Medium" }}>Last month</Text>
-                  <Text style={{ fontSize: 8, fontFamily: "Urbanist_700Bold", color: C.light }}>GH₵{s.last}</Text>
+                  <Text style={{ fontSize: 10, color: C.pale, fontFamily: "Urbanist_500Medium" }}>Last month</Text>
+                  <Text style={{ fontSize: 10, fontFamily: "Urbanist_700Bold", color: C.light }}>GH₵{s.last}</Text>
                 </View>
               </View>
             );
@@ -271,7 +271,7 @@ export default function HomeScreen() {
       {/* ── Today's transactions ───────────────────────────────── */}
       <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <Text style={{ fontSize: 13, color: C.navy, fontFamily: "Urbanist_700Bold" }}>{"Today's Transactions"}</Text>
+          <Text style={{ fontSize: 15, color: C.navy, fontFamily: "Urbanist_700Bold" }}>{"Today's Transactions"}</Text>
           <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
             accessibilityRole="button" accessibilityLabel="View all transactions">
             <Text style={{ fontSize: 11, color: C.blue, fontFamily: "Urbanist_600SemiBold" }}>View all</Text>
@@ -294,7 +294,7 @@ export default function HomeScreen() {
                     <Icon name={row.icon} size={15} color={row.color} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 12, fontFamily: "Urbanist_600SemiBold", color: C.navy, marginBottom: hasActivity ? 5 : 0 }}>{row.label}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: "Urbanist_600SemiBold", color: C.navy, marginBottom: hasActivity ? 5 : 0 }}>{row.label}</Text>
                     {hasActivity ? (
                       <View style={{ height: 4, borderRadius: 99, backgroundColor: "rgba(24,120,206,0.08)", overflow: "hidden" }}>
                         <View style={{ width: `${(row.tx.successful / total) * 100}%`, height: 4, borderRadius: 99, backgroundColor: C.green }} />
@@ -330,7 +330,7 @@ export default function HomeScreen() {
       {/* ── Sales by channel ───────────────────────────────────── */}
       <View style={{ paddingHorizontal: 20 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <Text style={{ fontSize: 13, color: C.navy, fontFamily: "Urbanist_700Bold" }}>Sales by Channel</Text>
+          <Text style={{ fontSize: 15, color: C.navy, fontFamily: "Urbanist_700Bold" }}>Sales by Channel</Text>
           <Text style={{ fontSize: 11, color: C.muted, fontFamily: "Urbanist_600SemiBold" }}>
             GH₵{channelTotal.toFixed(1)} total
           </Text>
@@ -350,11 +350,11 @@ export default function HomeScreen() {
                 <Text style={{ fontSize: 14, fontFamily: "Urbanist_800ExtraBold", color: ch.amount > 0 ? C.navy : C.pale, marginBottom: 1 }}>
                   {ch.amount > 0 ? `GH₵${ch.amount}` : "—"}
                 </Text>
-                <Text style={{ fontSize: 9, fontFamily: "Urbanist_600SemiBold", color: C.muted, marginBottom: 8 }}>{ch.label}</Text>
+                <Text style={{ fontSize: 11, fontFamily: "Urbanist_600SemiBold", color: C.muted, marginBottom: 8 }}>{ch.label}</Text>
                 <View style={{ height: 3, borderRadius: 99, backgroundColor: C.divider, overflow: "hidden" }}>
                   <View style={{ width: `${pct}%`, height: 3, borderRadius: 99, backgroundColor: ch.color }} />
                 </View>
-                <Text style={{ fontSize: 8, fontFamily: "Urbanist_700Bold", color: C.light, marginTop: 4 }}>
+                <Text style={{ fontSize: 10, fontFamily: "Urbanist_700Bold", color: C.light, marginTop: 4 }}>
                   {pct}% of total
                 </Text>
               </View>

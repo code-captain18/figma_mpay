@@ -56,14 +56,14 @@ export const T = {
 
   bodyMD: {
     fontFamily: FONT_FAMILY.medium,
-    fontSize: 13.5,
+    fontSize: 14,
     lineHeight: 20,
     letterSpacing: 0,
   } satisfies TextStyle,
 
   bodySM: {
     fontFamily: FONT_FAMILY.regular,
-    fontSize: 12.5,
+    fontSize: 13,
     lineHeight: 18,
     letterSpacing: 0,
   } satisfies TextStyle,
@@ -82,9 +82,25 @@ export const T = {
     letterSpacing: 0.6,
   } satisfies TextStyle,
 
+  /** Tab bar labels — secondary to icons */
+  tabLabel: {
+    fontFamily: FONT_FAMILY.semibold,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0,
+  } satisfies TextStyle,
+
+  /** Text inside text inputs */
+  inputText: {
+    fontFamily: FONT_FAMILY.medium,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0,
+  } satisfies TextStyle,
+
   button: {
     fontFamily: FONT_FAMILY.bold,
-    fontSize: 15.5,
+    fontSize: 15,
     lineHeight: 20,
     letterSpacing: 0.1,
   } satisfies TextStyle,

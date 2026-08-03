@@ -14,6 +14,7 @@ import type { FilterState, SvcType, TxRecord } from '@/types';
 import * as FileSystem from 'expo-file-system';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
+import * as Clipboard from 'expo-clipboard';
 import {
   Calendar,
   CheckCircle2,
@@ -118,6 +119,13 @@ function getTxTag(tx: TxRecord): string | null {
 // TxDetail — full transaction detail view
 // ─────────────────────────────────────────────────────────────────────────────
 function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
+  const [refCopied, setRefCopied] = useState(false);
+
+  const handleCopyRef = async () => {
+    await Clipboard.setStringAsync(tx.ref);
+    setRefCopied(true);
+    setTimeout(() => setRefCopied(false), 2000);
+  };
   const net = NETWORKS.find(n => n.id === tx.network);
   const statusColor = STATUS_COLORS[tx.status] ?? C.mid;
   const isSuccess = tx.status === 'success';
@@ -145,7 +153,7 @@ function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
           </Text>
           {mono && (
             <TouchableOpacity
-              onPress={() => Alert.alert('Copied', value)}
+              onPress={() => Clipboard.setStringAsync(value)}
               style={det.copyBtn}
               activeOpacity={0.7}
             >
@@ -269,12 +277,14 @@ function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
           <Text style={det.refCardLabel}>TRANSACTION REFERENCE</Text>
           <Text style={det.refCardValue}>{tx.ref}</Text>
           <TouchableOpacity
-            onPress={() => Alert.alert('Copied', tx.ref)}
+          onPress={handleCopyRef}
             style={det.refCopyBtn}
             activeOpacity={0.85}
           >
-            <Copy size={12} color={C.blue} />
-            <Text style={det.refCopyText}>Copy Reference</Text>
+            <Copy size={12} color={refCopied ? C.green : C.blue} />
+            <Text style={[det.refCopyText, refCopied && { color: C.green }]}>
+              {refCopied ? 'Copied!' : 'Copy Reference'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -296,7 +306,7 @@ const det = StyleSheet.create({
   netBadgeText: { fontSize: 11, fontFamily: F.bold },
   section: { backgroundColor: C.white, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden', marginBottom: 12 },
   sectionHeader: { backgroundColor: C.bg, paddingHorizontal: 14, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: C.divider },
-  sectionTitle: { fontSize: 9, fontFamily: F.extrabold, color: C.navy, letterSpacing: 1.2 },
+  sectionTitle: { fontSize: 11, fontFamily: F.semibold, color: C.navy, letterSpacing: 0.6 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11 },
   rowLabel: { fontSize: 11, color: C.muted, fontFamily: F.medium },
   rowValue: { fontSize: 12, color: C.navy, fontFamily: F.semibold, textAlign: 'right' },
@@ -304,7 +314,7 @@ const det = StyleSheet.create({
   rowDivider: { marginLeft: 14, height: 1, backgroundColor: C.divider },
   copyBtn: { width: 22, height: 22, borderRadius: 7, backgroundColor: 'rgba(24,120,206,0.1)', alignItems: 'center', justifyContent: 'center' },
   refCard: { backgroundColor: C.white, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 16, alignItems: 'center', gap: 4 },
-  refCardLabel: { fontSize: 9, fontFamily: F.extrabold, color: C.muted, letterSpacing: 1 },
+  refCardLabel: { fontSize: 11, fontFamily: F.semibold, color: C.muted, letterSpacing: 0.6 },
   refCardValue: { fontSize: 14, fontFamily: F.black, color: C.navy, letterSpacing: 1.5 },
   refCopyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: 'rgba(24,120,206,0.07)', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 14, borderWidth: 1, borderColor: 'rgba(24,120,206,0.15)' },
   refCopyText: { fontSize: 11, fontFamily: F.semibold, color: C.blue },
@@ -485,22 +495,22 @@ const fs = StyleSheet.create({
   sheetTitle: { fontSize: 15, fontFamily: F.extrabold, color: C.navy },
   closeBtn: { width: 30, height: 30, borderRadius: 10, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
   sheetContent: { padding: 20, paddingTop: 14, paddingBottom: 8 },
-  groupLabel: { fontSize: 9, fontFamily: F.extrabold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 7, marginTop: 2 },
+  groupLabel: { fontSize: 11, fontFamily: F.semibold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 7, marginTop: 2 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 16 },
   chip: { paddingVertical: 7, paddingHorizontal: 13, borderRadius: 9, borderWidth: 1.5, borderColor: C.border, backgroundColor: C.white },
   chipActive: { borderColor: C.blue, backgroundColor: 'rgba(24,120,206,0.08)' },
   chipText: { fontSize: 11, fontFamily: F.medium, color: C.muted, textTransform: 'capitalize' },
   chipTextActive: { color: C.blue, fontFamily: F.bold },
-  input: { borderWidth: 1.5, borderColor: C.border, borderRadius: 11, paddingHorizontal: 11, paddingVertical: 10, fontSize: 12, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
+  input: { borderWidth: 1.5, borderColor: C.border, borderRadius: 11, paddingHorizontal: 11, paddingVertical: 10, fontSize: 13, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
   inputRow: { borderWidth: 1.5, borderColor: C.border, borderRadius: 11, paddingHorizontal: 11, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.bg },
-  inputInner: { flex: 1, fontSize: 12, fontFamily: F.medium, color: C.navy, padding: 0 },
+  inputInner: { flex: 1, fontSize: 13, fontFamily: F.medium, color: C.navy, padding: 0 },
   dragHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: C.divider, alignSelf: 'center', marginTop: 10, marginBottom: 2 },
   footer: { flexDirection: 'row', gap: 10, padding: 16, paddingTop: 8, borderTopWidth: 1, borderTopColor: C.divider },
   clearBtn: { flex: 1, paddingVertical: 13, borderRadius: 13, borderWidth: 2, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
   clearText: { fontSize: 13, fontFamily: F.bold, color: C.muted },
   applyBtn: { flex: 2, borderRadius: 13, overflow: 'hidden' },
   applyGrad: { paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
-  applyText: { fontSize: 13, fontFamily: F.extrabold, color: '#fff' },
+  applyText: { fontSize: 14, fontFamily: F.extrabold, color: '#fff' },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -793,15 +803,15 @@ const hs = StyleSheet.create({
   statsStrip: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   statCard: { flex: 1, backgroundColor: C.white, borderRadius: 13, borderWidth: 1, borderColor: C.border, paddingVertical: 11, alignItems: 'center' },
   statValue: { fontSize: 13, fontFamily: F.extrabold, marginBottom: 1 },
-  statLabel: { fontSize: 8, fontFamily: F.medium, color: C.muted },
+  statLabel: { fontSize: 10, fontFamily: F.medium, color: C.muted },
 
   searchRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 10 },
   searchBox: { flex: 1, height: 44, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.white, borderRadius: 12, borderWidth: 1.5, borderColor: C.border, paddingHorizontal: 12 },
-  searchInput: { flex: 1, fontSize: 12, fontFamily: F.medium, color: C.navy },
+  searchInput: { flex: 1, fontSize: 13, fontFamily: F.medium, color: C.navy },
   filterBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.white, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center', position: 'relative' },
   filterBtnActive: { borderColor: C.blue, backgroundColor: 'rgba(24,120,206,0.06)' },
   filterBadge: { position: 'absolute', top: 6, right: 6, width: 15, height: 15, borderRadius: 8, backgroundColor: C.blue, alignItems: 'center', justifyContent: 'center' },
-  filterBadgeText: { fontSize: 8, fontFamily: F.extrabold, color: '#fff' },
+  filterBadgeText: { fontSize: 10, fontFamily: F.extrabold, color: '#fff' },
   csvBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 44, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.white, borderWidth: 1.5, borderColor: C.border },
   csvText: { fontSize: 11, fontFamily: F.bold, color: C.mid },
 
@@ -819,7 +829,7 @@ const hs = StyleSheet.create({
   dateLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   dateLabel: { fontSize: 10, fontFamily: F.semibold, color: C.muted },
   dateLabelLine: { flex: 1, height: 1, backgroundColor: C.divider },
-  dateCount: { fontSize: 9, fontFamily: F.medium, color: C.pale },
+  dateCount: { fontSize: 10, fontFamily: F.medium, color: C.pale },
 
   txCard: { backgroundColor: C.white, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden', shadowColor: '#071830', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   txRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 14 },
@@ -830,14 +840,14 @@ const hs = StyleSheet.create({
   netDot: { position: 'absolute', bottom: 0, left: 0, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: C.white },
   netDotLetter: { fontSize: 7, fontFamily: F.extrabold, color: '#fff' },
 
-  txTitle: { fontSize: 12, fontFamily: F.bold, color: C.navy },
+  txTitle: { fontSize: 13, fontFamily: F.bold, color: C.navy },
   txPhone: { fontSize: 10, color: C.muted, fontFamily: F.medium },
   tagPill: { alignSelf: 'flex-start', backgroundColor: 'rgba(24,120,206,0.07)', borderRadius: 6, paddingVertical: 2, paddingHorizontal: 7, marginTop: 2 },
-  tagText: { fontSize: 9, fontFamily: F.semibold, color: C.blue },
+  tagText: { fontSize: 10, fontFamily: F.semibold, color: C.blue },
 
-  txAmount: { fontSize: 13, fontFamily: F.extrabold, color: C.navy },
+  txAmount: { fontSize: 14, fontFamily: F.extrabold, color: C.navy },
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 6, paddingVertical: 3, paddingHorizontal: 7 },
-  statusText: { fontSize: 9, fontFamily: F.bold },
+  statusText: { fontSize: 10, fontFamily: F.bold },
 
   empty: { alignItems: 'center', paddingVertical: 52 },
   emptyIconWrap: { width: 60, height: 60, borderRadius: 20, backgroundColor: 'rgba(24,120,206,0.06)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },

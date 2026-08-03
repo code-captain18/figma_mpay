@@ -25,6 +25,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/store/auth.store';
 
 /* ─── Colors ─────────────────────────────────────────────────────────────────── */
 const C = {
@@ -56,15 +57,6 @@ const sd = (size: number, color: string, opacity: number) =>
     },
     android: { elevation: Math.round(size * 0.8) },
   }) ?? {};
-
-/* ─── Mock user data — replace with API/context ──────────────────────────────── */
-const USER = {
-  accountId: 'ACC-20240031-GH',
-  hasETopup: true,
-  hasMoMo: true,
-  eTopupBalance: 480.5,
-  momoBalance: 1250.0,
-};
 
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
 type WalletView = 'home' | 'etopup-form' | 'momo-form' | 'confirm' | 'success';
@@ -105,9 +97,9 @@ function Field({
     <View style={{ marginBottom: 16 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
         <Text style={{
-          fontSize: 10, fontWeight: '700', color: C.mid,
-          textTransform: 'uppercase', letterSpacing: 0.8,
-          fontFamily: 'Urbanist_700Bold',
+          fontSize: 11, fontWeight: '700', color: C.mid,
+          textTransform: 'uppercase', letterSpacing: 0.6,
+          fontFamily: 'Urbanist_600SemiBold',
         }}>
           {label}
         </Text>
@@ -164,9 +156,9 @@ function SInput({
         onFocus={e => { setFocused(true); props.onFocus?.(e); }}
         onBlur={e => { setFocused(false); props.onBlur?.(e); }}
         style={{
-          flex: 1, fontSize: 13, fontWeight: '600',
+          flex: 1, fontSize: 14, fontWeight: '500',
           color: disabled ? C.muted : C.navy,
-          fontFamily: 'Urbanist_600SemiBold',
+          fontFamily: 'Urbanist_500Medium',
           paddingVertical: 11,
           padding: 0, margin: 0,
         }}
@@ -333,8 +325,9 @@ function GradHdr({
    WALLET HOME
 ══════════════════════════════════════════════════════════════════════════════ */
 function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
+  const { user } = useAuth();
   const [hidden, setHidden] = useState(false);
-  const both = USER.hasETopup && USER.hasMoMo;
+  const both = (user?.hasETopup ?? true) && (user?.hasMoMo ?? true);
 
   return (
     <ScrollView
@@ -371,7 +364,7 @@ function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
         flexDirection: both ? 'row' : 'column',
         gap: 10, marginBottom: 24,
       }}>
-        {USER.hasETopup && (
+        {(user?.hasETopup ?? true) && (
           <LinearGradient
             colors={[C.sky, C.blue, C.deep]}
             start={{ x: 0, y: 0 }}
@@ -407,18 +400,18 @@ function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
               color: '#fff', letterSpacing: -0.5, marginBottom: 2,
               fontFamily: 'Urbanist_800ExtraBold',
             }}>
-              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GH\u20B5${USER.eTopupBalance.toFixed(2)}`}
+              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GH\u20B5${(user?.eTopupBalance ?? 0).toFixed(2)}`}
             </Text>
             <Text style={{
               fontSize: 9, color: 'rgba(255,255,255,0.4)',
               fontFamily: 'Urbanist_400Regular',
             }}>
-              {USER.accountId}
+              {user?.accountId ?? ''}
             </Text>
           </LinearGradient>
         )}
 
-        {USER.hasMoMo && (
+        {(user?.hasMoMo ?? true) && (
           <LinearGradient
             colors={['#12C47E', '#0A9260', '#065C3D']}
             start={{ x: 0, y: 0 }}
@@ -454,13 +447,13 @@ function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
               color: '#fff', letterSpacing: -0.5, marginBottom: 2,
               fontFamily: 'Urbanist_800ExtraBold',
             }}>
-              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GH\u20B5${USER.momoBalance.toFixed(2)}`}
+              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GH\u20B5${(user?.momoBalance ?? 0).toFixed(2)}`}
             </Text>
             <Text style={{
               fontSize: 9, color: 'rgba(255,255,255,0.4)',
               fontFamily: 'Urbanist_400Regular',
             }}>
-              {USER.accountId}
+              {user?.accountId ?? ''}
             </Text>
           </LinearGradient>
         )}
@@ -474,7 +467,7 @@ function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
       </Text>
 
       <View style={{ gap: 10 }}>
-        {USER.hasMoMo && (
+        {(user?.hasMoMo ?? true) && (
           <TouchableOpacity
             onPress={() => onSelect('momo-form')}
             activeOpacity={0.8}
@@ -504,14 +497,14 @@ function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
                 fontSize: 11, color: C.muted,
                 fontFamily: 'Urbanist_500Medium',
               }}>
-                {hidden ? 'Balance hidden' : `Balance: GH\u20B5${USER.momoBalance.toFixed(2)}`}
+                {hidden ? 'Balance hidden' : `Balance: GH\u20B5${(user?.momoBalance ?? 0).toFixed(2)}`}
               </Text>
             </View>
             <ChevronRight size={15} color={C.pale} />
           </TouchableOpacity>
         )}
 
-        {USER.hasETopup && (
+        {(user?.hasETopup ?? true) && (
           <TouchableOpacity
             onPress={() => onSelect('etopup-form')}
             activeOpacity={0.8}
@@ -541,14 +534,14 @@ function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
                 fontSize: 11, color: C.muted,
                 fontFamily: 'Urbanist_500Medium',
               }}>
-                {hidden ? 'Balance hidden' : `Balance: GH\u20B5${USER.eTopupBalance.toFixed(2)}`}
+                {hidden ? 'Balance hidden' : `Balance: GH\u20B5${(user?.eTopupBalance ?? 0).toFixed(2)}`}
               </Text>
             </View>
             <ChevronRight size={15} color={C.pale} />
           </TouchableOpacity>
         )}
 
-        {!USER.hasMoMo && !USER.hasETopup && (
+        {!(user?.hasMoMo ?? true) && !(user?.hasETopup ?? true) && (
           <View style={{
             borderRadius: 18, padding: 24,
             backgroundColor: C.white,
@@ -585,9 +578,10 @@ function WalletForm({
   onBack: () => void;
   onSubmit: (d: WFState) => void;
 }) {
+  const { user } = useAuth();
   const [form, setForm] = useState<WFState>({
     product: isMoMo ? 'mtn-momo' : '',
-    accountId: USER.accountId,
+    accountId: user?.accountId ?? '',
     amount: '',
     phoneNumber: '',
     referenceId: genRef(),

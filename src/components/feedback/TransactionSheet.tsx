@@ -1,8 +1,10 @@
 import { Icon } from "@/components/ui/Icon";
 import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
 import type { Transaction } from "@/types";
+import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from "expo-linear-gradient";
 import { CheckCircle2, Clock, Copy, Share2, X } from "lucide-react-native";
+import { useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -23,6 +25,13 @@ interface TransactionSheetProps {
 export function TransactionSheet({ transaction: tx, onClose }: TransactionSheetProps) {
   const insets = useSafeAreaInsets();
   const isCredit = tx.amount > 0;
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await Clipboard.setStringAsync(tx.ref);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <Modal transparent animationType="slide" onRequestClose={onClose}>
@@ -75,8 +84,8 @@ export function TransactionSheet({ transaction: tx, onClose }: TransactionSheetP
               <Text style={DS.detailLabel}>Reference</Text>
               <View style={DS.refRow}>
                 <Text style={{ fontSize: 11, fontWeight: "600", fontFamily: "Urbanist_600SemiBold", color: Colors.textPrimary }}>{tx.ref}</Text>
-                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Copy reference" style={DS.copyBtn}>
-                  <Copy size={13} color={Colors.primary} />
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Copy reference" style={DS.copyBtn} onPress={handleCopy}>
+                  <Copy size={13} color={copied ? Colors.green : Colors.primary} />
                 </TouchableOpacity>
               </View>
             </View>

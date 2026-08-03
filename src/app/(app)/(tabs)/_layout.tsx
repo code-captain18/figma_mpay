@@ -7,7 +7,7 @@ import {
   User,
   Wallet,
 } from "lucide-react-native";
-import { StyleSheet, Pressable, View } from "react-native";
+import { StyleSheet, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function TabIcon({ icon, focused }: { icon: React.ReactNode; focused: boolean }) {
@@ -53,9 +53,18 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: Colors.light,
         tabBarLabelStyle: {
           fontSize: 11,
-          fontFamily: "Urbanist_600SemiBold",
           marginTop: 2,
         },
+        tabBarLabel: ({ focused, color, children }) => (
+          <Text style={{
+            fontSize: 11,
+            fontFamily: focused ? "Urbanist_600SemiBold" : "Urbanist_500Medium",
+            color,
+            marginTop: 2,
+          }}>
+            {children}
+          </Text>
+        ),
         tabBarIconStyle: {
           marginBottom: 0,
         },

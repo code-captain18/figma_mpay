@@ -99,7 +99,7 @@ export default function LoginScreen() {
       router.replace('/(app)/(tabs)');
     } catch {
       setLoading(false);
-      setError('Invalid username or password. Hint: demo / password123');
+      setError('Invalid username or password. Please try again.');
       shake();
     }
   };
@@ -469,7 +469,7 @@ const s = StyleSheet.create({
     marginBottom: 20,
   },
   cardTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontFamily: F.black,
     color: C.navy,
     marginBottom: 4,
@@ -507,11 +507,11 @@ const s = StyleSheet.create({
     marginBottom: 14,
   },
   fieldLabel: {
-    fontSize: 9,
-    fontFamily: F.extrabold,
+    fontSize: 11,
+    fontFamily: F.semibold,
     color: C.mid,
     textTransform: 'uppercase',
-    letterSpacing: 0.9,
+    letterSpacing: 0.6,
     marginBottom: 6,
   },
   inputWrap: {
@@ -539,8 +539,8 @@ const s = StyleSheet.create({
     flex: 1,
     paddingVertical: 13,
     paddingHorizontal: 14,
-    fontSize: 13,
-    fontFamily: F.semibold,
+    fontSize: 14,
+    fontFamily: F.medium,
     color: C.navy,
   },
   eyeBtn: {
@@ -601,7 +601,7 @@ const s = StyleSheet.create({
 
   // ── Footer ───────────────────────────────────────────────────────────────
   footer: {
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: F.medium,
     color: C.pale,
     textAlign: 'center',
