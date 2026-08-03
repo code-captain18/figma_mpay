@@ -13,4 +13,25 @@ export type { RadiusKey } from "./radius";
 export { Shadows, shadowStyle } from "./shadows";
 export type { ShadowKey } from "./shadows";
 
-export { BTN, C, F, G } from "./shorthand";
+// ── Convenience aliases used by profile & service screens ─────────────────────
+export { Colors as C } from "./colors";
+export { FONT_FAMILY as F } from "./typography";
+
+/** Gradient presets shared across screens */
+export const G = {
+  avatar: {
+    colors: ['#4BAEE8', '#1878CE'] as [string, string],
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
+  },
+  wallet: {
+    colors: ['#4BAEE8', '#1878CE', '#052D6E'] as [string, string, string],
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
+  },
+  header: {
+    colors: ['#4BAEE8', '#1878CE', '#052D6E'] as [string, string, string],
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
+  },
+} as const;
