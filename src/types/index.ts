@@ -96,3 +96,33 @@ export interface QuickAction {
   color: string;
   bg: string;
 }
+
+// ── Services screen ────────────────────────────────────────────────────────────
+export type SvcType = 'airtime' | 'data' | 'fibre' | 'bulk' | 'momo';
+export type SvcView = SvcType | 'home' | 'confirm' | 'success';
+export type MomoType = 'send' | 'withdraw' | 'cashin';
+
+export interface SvcBundle {
+  id: string;
+  label: string;
+  price: number;
+  tag?: string;
+}
+
+export interface SFState {
+  network: string;
+  phone: string;
+  amount: string;
+  bundle: SvcBundle | null;
+  reference: string;
+  momoType: MomoType;
+  provider: string;
+  desc: string;
+}
+
+export interface BulkItem {
+  id: string;
+  phone: string;
+  network: string;
+  amount: string;
+}
