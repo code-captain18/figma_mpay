@@ -1,27 +1,26 @@
+import { NetworkLogo } from "@/components/svg/NetworkLogo";
+import { GradientButton } from "@/components/ui/GradientButton";
+import { ReceiptRows } from "@/components/ui/ReceiptRows";
+import { BUNDLE_DURATIONS, DATA_BUNDLES } from "@/constants/bundles";
+import { NETWORKS } from "@/constants/networks";
+import { Colors, Shadows, T } from "@/theme";
+import type { Bundle, BundleDuration } from "@/types";
 import { formatGHS } from "@/utils/format";
 import { ghanaPhoneSchema } from "@/utils/phone";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Check, Wifi } from "lucide-react-native";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GradientButton } from "@/components/ui/GradientButton";
-import { ReceiptRows } from "@/components/ui/ReceiptRows";
-import { NetworkLogo } from "@/components/svg/NetworkLogo";
-import { BUNDLE_DURATIONS, DATA_BUNDLES } from "@/constants/bundles";
-import { NETWORKS } from "@/constants/networks";
-import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
-import type { Bundle, BundleDuration } from "@/types";
 
 type Step = "form" | "confirm" | "success";
 type Recipient = "self" | "other";
@@ -42,11 +41,11 @@ export default function DataBundleScreen() {
 
   const receiptRows = selected
     ? [
-        { label: "Network", value: network.label },
-        { label: "Phone Number", value: `+233 ${phone}` },
-        { label: "Bundle", value: `${selected.size} – ${selected.validity}` },
-        { label: "Price", value: formatGHS(selected.price), green: true },
-      ]
+      { label: "Network", value: network.label },
+      { label: "Phone Number", value: `+233 ${phone}` },
+      { label: "Bundle", value: `${selected.size} – ${selected.validity}` },
+      { label: "Price", value: formatGHS(selected.price), green: true },
+    ]
     : [];
 
   const handleConfirmActivation = () => {
@@ -187,8 +186,8 @@ export default function DataBundleScreen() {
                     borderRadius: 3,
                     backgroundColor:
                       step === s ||
-                      (s === "form" && ["confirm", "success"].includes(step)) ||
-                      (s === "confirm" && step === "success")
+                        (s === "form" && ["confirm", "success"].includes(step)) ||
+                        (s === "confirm" && step === "success")
                         ? "#fff"
                         : "rgba(255,255,255,0.35)",
                   }}

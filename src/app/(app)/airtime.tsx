@@ -1,10 +1,10 @@
 import { NetworkLogo } from "@/components/svg/NetworkLogo";
-import { formatGHS } from "@/utils/format";
-import { ghanaPhoneSchema } from "@/utils/phone";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { ReceiptRows } from "@/components/ui/ReceiptRows";
 import { NETWORKS, PRESET_AMOUNTS } from "@/constants/networks";
-import { Colors, Radius, Shadows, Spacing, T } from "@/theme";
+import { Colors, Shadows, T } from "@/theme";
+import { formatGHS } from "@/utils/format";
+import { ghanaPhoneSchema } from "@/utils/phone";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Check, PhoneCall } from "lucide-react-native";
@@ -13,11 +13,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
