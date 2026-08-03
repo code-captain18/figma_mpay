@@ -101,7 +101,7 @@ function getTxTitle(tx: TxRecord): string {
   const netName = NETWORKS.find(n => n.id === tx.network)?.name ?? tx.network;
   if (tx.type === 'airtime') {
     const amt = tx.amount % 1 === 0 ? tx.amount.toFixed(0) : tx.amount.toFixed(2);
-    return `${netName} Airtime GH\u20B5${amt}`;
+    return `${netName} Airtime`;
   }
   if (tx.bundle) return `${netName} ${tx.bundle}`;
   return `${netName} ${SVC_LABELS[tx.type] ?? tx.type}`;
@@ -591,7 +591,7 @@ export default function HistoryScreen() {
             { label: 'Total', value: `${stats.total}`, color: C.blue },
             { label: 'Success', value: `${stats.success}`, color: C.green },
             { label: 'Failed', value: `${stats.failed}`, color: C.red },
-            { label: 'Amount', value: `GH\u20B5${stats.amount.toFixed(0)}`, color: C.purple },
+            { label: 'Amount', value: `GHS ${stats.amount.toFixed(0)}`, color: C.purple },
           ].map(s => (
             <View key={s.label} style={hs.statCard}>
               <Text style={[hs.statValue, { color: s.color }]}>{s.value}</Text>
@@ -752,7 +752,7 @@ export default function HistoryScreen() {
 
                         {/* Amount + status */}
                         <View style={{ alignItems: 'flex-end', gap: 5, flexShrink: 0 }}>
-                          <Text style={hs.txAmount}>GH\u20B5{tx.amount.toFixed(2)}</Text>
+                          <Text style={hs.txAmount}>GHS {tx.amount.toFixed(2)}</Text>
                           <View style={[hs.statusBadge, { backgroundColor: statusColor + '15' }]}>
                             <StatusBadgeIcon size={9} color={statusColor} strokeWidth={2.2} />
                             <Text style={[hs.statusText, { color: statusColor }]}>
