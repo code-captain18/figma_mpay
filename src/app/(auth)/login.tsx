@@ -2,11 +2,12 @@ import { useAuth } from '@/store/auth.store';
 import { BTN, C, F, G } from '@/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Zap } from 'lucide-react-native';
+import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
+  Image,
   KeyboardAvoidingView, Platform, ScrollView,
   StyleSheet,
   Text,
@@ -137,7 +138,6 @@ export default function LoginScreen() {
               { opacity: logoOpacity, transform: [{ scale: logoScale }] },
             ]}
           >
-            {/* App icon */}
             <View style={s.appIconWrap}>
               <LinearGradient
                 colors={['rgba(255,255,255,0.28)', 'rgba(255,255,255,0.08)']}
@@ -146,19 +146,22 @@ export default function LoginScreen() {
                 style={s.appIconGrad}
               >
                 <View style={s.appIconInner}>
-                  <Zap size={30} color="#fff" strokeWidth={2.2} />
+                  <Image
+                    source={require('../../../assets/mpay_logooo.png')}
+                    style={s.logoImage}
+                    resizeMode="contain"
+                  />
                 </View>
               </LinearGradient>
-              {/* Outer ring */}
               <View style={s.appIconRing} />
             </View>
 
             <Text style={s.appName}>M-PAY</Text>
-            <Text style={s.appTagline}>Agent Banking Platform</Text>
+            <Text style={s.appTagline}>Manage Transactions Grow Your Business</Text>
 
             {/* Feature pills */}
             <View style={s.pillRow}>
-              {(['Secure', 'Fast', 'Reliable'] as const).map((p, i) => (
+              {(['Airtime', 'Data', 'Fiber'] as const).map((p, i) => (
                 <View key={p} style={[s.pill, i === 1 && s.pillAccent]}>
                   <Text style={[s.pillText, i === 1 && s.pillTextAccent]}>{p}</Text>
                 </View>
@@ -184,7 +187,7 @@ export default function LoginScreen() {
             <View style={s.cardHandle} />
 
             <Text style={s.cardTitle}>Welcome back</Text>
-            <Text style={s.cardSub}>Sign in to your agent account to continue</Text>
+            <Text style={s.cardSub}>Sign in to your account to continue</Text>
 
             {/* ── Error banner ── */}
             {error ? (
@@ -196,7 +199,7 @@ export default function LoginScreen() {
 
             {/* ── Username field ── */}
             <View style={s.fieldWrap}>
-              <Text style={s.fieldLabel}>USERNAME / ACCOUNT ID</Text>
+              <Text style={s.fieldLabel}>EMAIL</Text>
               <View style={[
                 s.inputWrap,
                 userFocus && s.inputWrapFocus,
@@ -305,18 +308,18 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             {/* ── Demo hint ── */}
-            <View style={s.hintBox}>
+            {/* <View style={s.hintBox}>
               <Text style={s.hintText}>
                 Demo credentials:{' '}
                 <Text style={s.hintBold}>demo</Text>
                 {' '}·{' '}
                 <Text style={s.hintBold}>password123</Text>
               </Text>
-            </View>
+            </View> */}
 
             {/* ── Footer ── */}
             <Text style={s.footer}>
-              © {new Date().getFullYear()} M-PAY Agent Banking · All rights reserved
+              © {new Date().getFullYear()} M-PAY · All rights reserved
             </Text>
           </Animated.View>
         </ScrollView>
@@ -377,19 +380,20 @@ const s = StyleSheet.create({
     marginBottom: 18,
   },
   appIconGrad: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
+    width: 88,
+    height: 88,
+    borderRadius: 28,
     padding: 2,
   },
   appIconInner: {
     flex: 1,
-    borderRadius: 22,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.25)',
+    overflow: 'hidden',
   },
   appIconRing: {
     position: 'absolute',
@@ -397,9 +401,13 @@ const s = StyleSheet.create({
     left: -5,
     right: -5,
     bottom: -5,
-    borderRadius: 29,
+    borderRadius: 33,
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.15)',
+  },
+  logoImage: {
+    width: 68,
+    height: 68,
   },
   appName: {
     fontSize: 32,
