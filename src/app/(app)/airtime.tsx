@@ -2,6 +2,7 @@ import { NetworkLogo } from "@/components/svg/NetworkLogo";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { ReceiptRows } from "@/components/ui/ReceiptRows";
 import { NETWORKS, PRESET_AMOUNTS } from "@/constants/networks";
+import { scheduleTransactionNotification } from "@/notifications";
 import { Colors, Shadows, T } from "@/theme";
 import { formatGHS } from "@/utils/format";
 import { ghanaPhoneSchema } from "@/utils/phone";
@@ -49,10 +50,18 @@ export default function AirtimeScreen() {
   const handleConfirmPurchase = () => {
     if (isProcessing) return;
     setIsProcessing(true);
-    // Simulate processing window to prevent accidental duplicate submissions.
     setTimeout(() => {
       setStep("success");
       setIsProcessing(false);
+      scheduleTransactionNotification({
+        id: `airtime-${Date.now()}`,
+        type: 'airtime',
+        status: 'success',
+        amount: total,
+        phone: phone,
+        network: network.id,
+        createdAt: new Date().toISOString(),
+      } as any);
     }, 900);
   };
 

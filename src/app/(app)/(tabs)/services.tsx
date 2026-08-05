@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useToast } from '@/store/toast.store';
 import {
   View,
   Text,
@@ -6,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -322,6 +322,7 @@ function BulkForm({
   onNext: (data: { rows: BulkItem[]; bulkType: 'airtime' | 'data'; total: number }) => void;
   onBack: () => void;
 }) {
+  const toast = useToast();
   const [bulkType, setBulkType] = useState<'airtime' | 'data'>('airtime');
   const [rows, setRows] = useState<BulkItem[]>([
     { id: '1', phone: '', network: 'mtn', amount: '' },
@@ -347,7 +348,7 @@ function BulkForm({
       });
       setRows(parsed);
     } catch {
-      Alert.alert('Import Failed', 'Could not read the CSV file. Expected columns: phone, network, amount');
+      toast.show('Could not read CSV. Expected columns: phone, network, amount', 'error');
     }
   };
 

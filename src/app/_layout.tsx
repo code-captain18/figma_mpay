@@ -19,11 +19,17 @@ import React, { useEffect } from "react";
 import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-SplashScreen.preventAutoHideAsync();
-SplashScreen.setOptions({ duration: 800, fade: true });
 import { AuthProvider, useAuth } from "@/store/auth.store";
+import { ToastProvider } from "@/store/toast.store";
+import { registerForPushNotificationsAsync, setupNotificationListeners } from "@/notifications";
 import { Colors } from "@/theme";
+import Constants from "expo-constants";
 import "../../global.css";
+
+SplashScreen.preventAutoHideAsync();
+if (Constants.appOwnership !== 'expo') {
+  SplashScreen.setOptions({ duration: 800, fade: true });
+}
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -76,6 +82,9 @@ export default function RootLayout() {
     if (fontsLoaded) {
       SplashScreen.hide();
     }
+    registerForPushNotificationsAsync();
+    const cleanup = setupNotificationListeners();
+    return cleanup;
   }, [fontsLoaded]);
 
   if (!fontsLoaded) {
@@ -85,7 +94,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <RootLayoutContent />
+        <ToastProvider>
+          <RootLayoutContent />
+        </ToastProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

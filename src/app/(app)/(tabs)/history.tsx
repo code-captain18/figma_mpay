@@ -1,4 +1,9 @@
+import { FilterSheet, EMPTY_FILTER } from '@/components/history/FilterSheet';
+import { TxDetail } from '@/components/history/TxDetail';
+import { useHistoryFilter } from '@/hooks/useHistoryFilter';
 import { GradHdr } from '@/components/services/GradHdr';
+import { useToast } from '@/store/toast.store';
+import { DateInput } from '@/components/ui/DateInput';
 import {
   CSV_HEADER,
   NETWORKS,
@@ -32,9 +37,8 @@ import {
   X,
   XCircle,
 } from 'lucide-react-native';
-import React, { useMemo, useState } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
   FlatList,
   ScrollView,
   StyleSheet,
@@ -49,17 +53,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
-const EMPTY_FILTER: FilterState = {
-  status: '',
-  svcType: '',
-  phone: '',
-  ref: '',
-  dateFrom: '',
-  dateTo: '',
-  amtMin: '',
-  amtMax: '',
-};
-
 const PAGE_SIZE = 4;
 
 const STATUS_COLORS: Record<string, string> = {
@@ -119,448 +112,54 @@ function getTxTag(tx: TxRecord): string | null {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TxDetail — full transaction detail view
-// ─────────────────────────────────────────────────────────────────────────────
-function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
-  const [refCopied, setRefCopied] = useState(false);
-  const insets = useSafeAreaInsets();
-
-  const handleCopyRef = async () => {
-    await Clipboard.setStringAsync(tx.ref);
-    setRefCopied(true);
-    setTimeout(() => setRefCopied(false), 2000);
-  };
+// Memoised transaction row to minimise FlatList re-renders
+interface TxRowProps { tx: TxRecord; isLast: boolean; onPress: (tx: TxRecord) => void; }
+const TxRow = memo(function TxRow({ tx, isLast, onPress }: TxRowProps) {
   const net = NETWORKS.find(n => n.id === tx.network);
   const statusColor = STATUS_COLORS[tx.status] ?? C.mid;
-  const isSuccess = tx.status === 'success';
-  const isPending = tx.status === 'pending';
-
-  const StatusIcon = isSuccess
-    ? () => <CheckCircle2 size={34} color={statusColor} strokeWidth={1.8} />
-    : isPending
-      ? () => <Clock size={34} color={statusColor} strokeWidth={1.8} />
-      : () => <XCircle size={34} color={statusColor} strokeWidth={1.8} />;
-
-  function DetailRow({
-    label, value, mono = false,
-  }: { label: string; value: string; mono?: boolean }) {
-    return (
-      <View style={det.row}>
-        <Text style={det.rowLabel}>{label}</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'flex-end' }}>
-          <Text
-            style={[det.rowValue, mono && det.rowValueMono]}
-            numberOfLines={1}
-            adjustsFontSizeToFit={mono}
-          >
-            {value}
-          </Text>
-          {mono && (
-            <TouchableOpacity
-              onPress={() => Clipboard.setStringAsync(value)}
-              style={det.copyBtn}
-              activeOpacity={0.7}
-            >
-              <Copy size={10} color={C.blue} />
-            </TouchableOpacity>
-          )}
+  const IconComp = SVC_ICON[tx.type] ?? Phone;
+  const iconColor = SVC_ICON_COLOR[tx.type] ?? C.blue;
+  const iconBg = SVC_ICON_BG[tx.type] ?? 'rgba(24,120,206,0.13)';
+  const title = getTxTitle(tx);
+  const tag = getTxTag(tx);
+  const StatusBadgeIcon = tx.status === 'failed' ? XCircle : CheckCircle2;
+  const statusLabel = tx.status === 'success' ? 'Success' : tx.status === 'failed' ? 'Failed' : 'Pending';
+  return (
+    <TouchableOpacity onPress={() => onPress(tx)} activeOpacity={0.85}
+      style={[hs.txRow, !isLast && hs.txRowBorder]}>
+      <View style={hs.iconWrap}>
+        <View style={[hs.iconCircle, { backgroundColor: iconBg }]}>
+          <IconComp size={18} color={iconColor} strokeWidth={1.8} />
+        </View>
+        <View style={[hs.netDot, { backgroundColor: net?.color ?? C.pale }]}>
+          <Text style={hs.netDotLetter}>{tx.network[0]?.toUpperCase() ?? '?'}</Text>
         </View>
       </View>
-    );
-  }
-
-  const sections = [
-    {
-      title: 'Transaction',
-      rows: [
-        { label: 'Reference', value: tx.ref, mono: true },
-        { label: 'Date & Time', value: fmtDateTime(tx.createdAt), mono: false },
-        { label: 'Status', value: tx.status, mono: false },
-      ],
-    },
-    {
-      title: 'Product',
-      rows: [
-        { label: 'Service Type', value: SVC_LABELS[tx.type] ?? tx.type, mono: false },
-        ...(tx.bundle ? [{ label: 'Bundle', value: tx.bundle, mono: false }] : []),
-        ...(tx.momoType ? [{ label: 'MoMo Type', value: tx.momoType, mono: false }] : []),
-        { label: 'Network', value: tx.network, mono: false },
-      ],
-    },
-    {
-      title: 'Financial',
-      rows: [
-        { label: 'Amount', value: formatGHS(tx.amount), mono: false },
-        { label: 'Fee', value: formatGHS(tx.fee), mono: false },
-        { label: 'Net Amount', value: formatGHS(tx.amount - tx.fee), mono: false },
-      ],
-    },
-    {
-      title: 'Account',
-      rows: [
-        { label: 'Phone', value: tx.phone, mono: false },
-        ...(tx.accountId ? [{ label: 'Account ID', value: tx.accountId, mono: true }] : []),
-        { label: 'Agent ID', value: USER.accountId, mono: true },
-      ],
-    },
-  ];
-
-  return (
-    <View style={{ flex: 1, backgroundColor: C.bg }}>
-      {/* Custom header — no GradHdr so we can keep it tight */}
-      <LinearGradient
-        colors={G.header.colors}
-        start={G.header.start}
-        end={G.header.end}
-        style={[det.hdr, { paddingTop: insets.top + 16 }]}
-      >
-        <TouchableOpacity onPress={onBack} style={det.backBtn} activeOpacity={0.8}>
-          <ChevronLeft size={17} color="#fff" strokeWidth={2.5} />
-        </TouchableOpacity>
-        <Text style={det.hdrTitle}>Transaction Detail</Text>
-        <View style={{ width: 32 }} />
-      </LinearGradient>
-
-      <ScrollView
-        contentContainerStyle={det.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ── Status hero ── */}
-        <View style={[
-          det.statusHero,
-          {
-            borderColor: statusColor + '44',
-            backgroundColor: statusColor + '0D',
-          },
-        ]}>
-          <StatusIcon />
-          <Text style={[det.statusLabel, { color: statusColor }]}>
-            {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
-          </Text>
-          <Text style={[det.statusAmount, { color: statusColor }]}>
-            {formatGHS(tx.amount)}
-          </Text>
-          <Text style={det.statusTime}>{fmtAgo(tx.createdAt)}</Text>
-
-          {/* Network badge */}
-          {net && (
-            <View style={[
-              det.netBadge,
-              {
-                backgroundColor: net.color + '22',
-                borderColor: net.color + '66',
-              },
-            ]}>
-              <View style={[det.netDotLarge, { backgroundColor: net.color }]} />
-              <Text style={[det.netBadgeText, { color: net.color }]}>
-                {net.name}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* ── Detail sections ── */}
-        {sections.map(sec => (
-          <View key={sec.title} style={det.section}>
-            <View style={det.sectionHeader}>
-              <Text style={det.sectionTitle}>{sec.title.toUpperCase()}</Text>
-            </View>
-            {sec.rows.map((r, i) => (
-              <View key={r.label}>
-                <DetailRow label={r.label} value={r.value} mono={r.mono} />
-                {i < sec.rows.length - 1 && (
-                  <View style={det.rowDivider} />
-                )}
-              </View>
-            ))}
-          </View>
-        ))}
-
-        {/* ── Reference copy card ── */}
-        <View style={det.refCard}>
-          <Text style={det.refCardLabel}>TRANSACTION REFERENCE</Text>
-          <Text style={det.refCardValue}>{tx.ref}</Text>
-          <TouchableOpacity
-            onPress={handleCopyRef}
-            style={det.refCopyBtn}
-            activeOpacity={0.85}
-          >
-            <Copy size={12} color={refCopied ? C.green : C.blue} />
-            <Text style={[det.refCopyText, refCopied && { color: C.green }]}>
-              {refCopied ? 'Copied!' : 'Copy Reference'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </View>
-  );
-}
-
-const det = StyleSheet.create({
-  hdr: { flexDirection: 'row', alignItems: 'center', paddingBottom: 16, paddingHorizontal: 20 },
-  backBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
-  hdrTitle: { flex: 1, fontSize: 15, fontFamily: F.extrabold, color: '#fff', textAlign: 'center' },
-  content: { padding: 20, paddingBottom: 40 },
-  statusHero: { borderRadius: 20, borderWidth: 1.5, padding: 24, alignItems: 'center', marginBottom: 16, gap: 4 },
-  statusLabel: { fontSize: 13, fontFamily: F.bold, textTransform: 'capitalize', marginTop: 6 },
-  statusAmount: { fontSize: 26, fontFamily: F.black },
-  statusTime: { fontSize: 10, color: C.muted, marginTop: 2 },
-  netBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 99, paddingVertical: 5, paddingHorizontal: 12, borderWidth: 1.5, marginTop: 10 },
-  netDotLarge: { width: 7, height: 7, borderRadius: 4 },
-  netBadgeText: { fontSize: 11, fontFamily: F.bold },
-  section: { backgroundColor: C.white, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden', marginBottom: 12 },
-  sectionHeader: { backgroundColor: C.bg, paddingHorizontal: 14, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: C.divider },
-  sectionTitle: { fontSize: 11, fontFamily: F.semibold, color: C.navy, letterSpacing: 0.6 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11 },
-  rowLabel: { fontSize: 11, color: C.muted, fontFamily: F.medium },
-  rowValue: { fontSize: 12, color: C.navy, fontFamily: F.semibold, textAlign: 'right' },
-  rowValueMono: { fontFamily: F.black, letterSpacing: 0.5, fontSize: 11 },
-  rowDivider: { marginLeft: 14, height: 1, backgroundColor: C.divider },
-  copyBtn: { width: 22, height: 22, borderRadius: 7, backgroundColor: 'rgba(24,120,206,0.1)', alignItems: 'center', justifyContent: 'center' },
-  refCard: { backgroundColor: C.white, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 16, alignItems: 'center', gap: 4 },
-  refCardLabel: { fontSize: 11, fontFamily: F.semibold, color: C.muted, letterSpacing: 0.6 },
-  refCardValue: { fontSize: 14, fontFamily: F.black, color: C.navy, letterSpacing: 1.5 },
-  refCopyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: 'rgba(24,120,206,0.07)', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 14, borderWidth: 1, borderColor: 'rgba(24,120,206,0.15)' },
-  refCopyText: { fontSize: 11, fontFamily: F.semibold, color: C.blue },
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// FilterSheet — bottom sheet modal
-// ─────────────────────────────────────────────────────────────────────────────
-function FilterSheet({
-  filter,
-  setFilter,
-  onApply,
-  onClose,
-}: {
-  filter: FilterState;
-  setFilter: (f: FilterState) => void;
-  onApply: () => void;
-  onClose: () => void;
-}) {
-  const [local, setLocal] = useState<FilterState>(filter);
-
-  const set = (k: keyof FilterState, v: string) =>
-    setLocal(p => ({ ...p, [k]: v }));
-
-  const Chip = ({
-    label, field, value,
-  }: { label: string; field: keyof FilterState; value: string }) => {
-    const active = local[field] === value;
-    return (
-      <TouchableOpacity
-        onPress={() => set(field, active ? '' : value)}
-        activeOpacity={0.8}
-        style={[fs.chip, active && fs.chipActive]}
-      >
-        <Text style={[fs.chipText, active && fs.chipTextActive]}>{label}</Text>
-      </TouchableOpacity>
-    );
-  };
-
-  const fullFields: { label: string; field: keyof FilterState; kbd: import('react-native').KeyboardTypeOptions; ph: string }[] = [
-    { label: 'PHONE NUMBER', field: 'phone', kbd: 'phone-pad', ph: 'e.g. 233244123456' },
-    { label: 'REFERENCE ID', field: 'ref', kbd: 'default', ph: 'e.g. WB17220912234567890' },
-  ];
-
-  const pairedFields: { label: string; field: keyof FilterState; kbd: import('react-native').KeyboardTypeOptions; ph: string; icon?: true }[][] = [
-    [
-      { label: 'DATE FROM', field: 'dateFrom', kbd: 'default', ph: 'mm/dd/yyyy', icon: true },
-      { label: 'DATE TO', field: 'dateTo', kbd: 'default', ph: 'mm/dd/yyyy', icon: true },
-    ],
-    [
-      { label: 'MIN AMOUNT', field: 'amtMin', kbd: 'decimal-pad', ph: '0.00' },
-      { label: 'MAX AMOUNT', field: 'amtMax', kbd: 'decimal-pad', ph: '0.00' },
-    ],
-  ];
-
-  return (
-    <>
-      <TouchableOpacity
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: C.overlay, zIndex: 100 }}
-        activeOpacity={1}
-        onPress={onClose}
-      />
-      <View style={fs.sheet}>
-        <View style={fs.dragHandle} />
-        <View style={fs.sheetHeader}>
-          <Text style={fs.sheetTitle}>Filter Transactions</Text>
-          <TouchableOpacity onPress={onClose} style={fs.closeBtn} activeOpacity={0.8}>
-            <X size={16} color={C.mid} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={fs.sheetContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={fs.groupLabel}>STATUS</Text>
-          <View style={fs.chips}>
-            {[
-              { label: 'Success', value: 'success' },
-              { label: 'Failed', value: 'failed' },
-            ].map(({ label, value }) => (
-              <Chip key={value} label={label} field="status" value={value} />
-            ))}
-          </View>
-
-          <Text style={fs.groupLabel}>SERVICE TYPE</Text>
-          <View style={fs.chips}>
-            {(['airtime', 'data', 'fibre', 'bulk', 'momo'] as SvcType[]).map(t => (
-              <Chip key={t} label={SVC_LABELS[t]} field="svcType" value={t} />
-            ))}
-          </View>
-
-          {/* Full-width fields */}
-          {fullFields.map(f => (
-            <View key={f.field} style={{ marginBottom: 12 }}>
-              <Text style={fs.groupLabel}>{f.label}</Text>
-              <TextInput
-                value={local[f.field]}
-                onChangeText={v => set(f.field, v)}
-                keyboardType={f.kbd}
-                placeholder={f.ph}
-                placeholderTextColor={C.pale}
-                style={fs.input}
-              />
-            </View>
-          ))}
-
-          {/* Paired fields (side by side) */}
-          {pairedFields.map((pair, gi) => (
-            <View key={gi} style={{ flexDirection: 'row', gap: 10 }}>
-              {pair.map(f => (
-                <View key={f.field} style={{ flex: 1, marginBottom: 12 }}>
-                  <Text style={fs.groupLabel}>{f.label}</Text>
-                  {'icon' in f && f.icon ? (
-                    <View style={fs.inputRow}>
-                      <TextInput
-                        value={local[f.field]}
-                        onChangeText={v => set(f.field, v)}
-                        keyboardType={f.kbd}
-                        placeholder={f.ph}
-                        placeholderTextColor={C.pale}
-                        style={fs.inputInner}
-                      />
-                      <Calendar size={14} color={C.pale} />
-                    </View>
-                  ) : (
-                    <TextInput
-                      value={local[f.field]}
-                      onChangeText={v => set(f.field, v)}
-                      keyboardType={f.kbd}
-                      placeholder={f.ph}
-                      placeholderTextColor={C.pale}
-                      style={fs.input}
-                    />
-                  )}
-                </View>
-              ))}
-            </View>
-          ))}
-        </ScrollView>
-
-        <View style={fs.footer}>
-          <TouchableOpacity
-            onPress={() => {
-              setLocal(EMPTY_FILTER);
-              setFilter(EMPTY_FILTER);
-            }}
-            style={fs.clearBtn}
-            activeOpacity={0.8}
-          >
-            <Text style={fs.clearText}>Clear All</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => { setFilter(local); onApply(); onClose(); }}
-            activeOpacity={0.85}
-            style={fs.applyBtn}
-          >
-            <LinearGradient
-              colors={G.wallet.colors}
-              start={G.wallet.start}
-              end={G.wallet.end}
-              style={fs.applyGrad}
-            >
-              <Text style={fs.applyText}>Apply Filters</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+      <View style={{ flex: 1, gap: 1 }}>
+        <Text style={hs.txTitle} numberOfLines={1}>{title}</Text>
+        <Text style={hs.txPhone}>{tx.phone}</Text>
+        {tag && (<View style={hs.tagPill}><Text style={hs.tagText}>{tag}</Text></View>)}
+      </View>
+      <View style={{ alignItems: 'flex-end', gap: 5, flexShrink: 0 }}>
+        <Text style={hs.txAmount} allowFontScaling={false}>{formatGHS(tx.amount)}</Text>
+        <View style={[hs.statusBadge, { backgroundColor: statusColor + '15' }]}>
+          <StatusBadgeIcon size={9} color={statusColor} strokeWidth={2.2} />
+          <Text style={[hs.statusText, { color: statusColor }]}>{statusLabel}</Text>
         </View>
       </View>
-    </>
+    </TouchableOpacity>
   );
-}
-
-const fs = StyleSheet.create({
-  sheet: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 101, backgroundColor: C.white, borderTopLeftRadius: 26, borderTopRightRadius: 26, maxHeight: '82%' },
-  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.divider },
-  sheetTitle: { fontSize: 15, fontFamily: F.extrabold, color: C.navy },
-  closeBtn: { width: 44, height: 44, borderRadius: 10, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
-  sheetContent: { padding: 20, paddingTop: 14, paddingBottom: 8 },
-  groupLabel: { fontSize: 11, fontFamily: F.semibold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 7, marginTop: 2 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 16 },
-  chip: { paddingVertical: 7, paddingHorizontal: 13, borderRadius: 9, borderWidth: 1.5, borderColor: C.border, backgroundColor: C.white },
-  chipActive: { borderColor: C.blue, backgroundColor: 'rgba(24,120,206,0.08)' },
-  chipText: { fontSize: 11, fontFamily: F.medium, color: C.muted, textTransform: 'capitalize' },
-  chipTextActive: { color: C.blue, fontFamily: F.bold },
-  input: { borderWidth: 1.5, borderColor: C.border, borderRadius: 11, paddingHorizontal: 11, paddingVertical: 10, fontSize: 13, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
-  inputRow: { borderWidth: 1.5, borderColor: C.border, borderRadius: 11, paddingHorizontal: 11, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.bg },
-  inputInner: { flex: 1, fontSize: 13, fontFamily: F.medium, color: C.navy, padding: 0 },
-  dragHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: C.divider, alignSelf: 'center', marginTop: 10, marginBottom: 2 },
-  footer: { flexDirection: 'row', gap: 10, padding: 16, paddingTop: 8, borderTopWidth: 1, borderTopColor: C.divider },
-  clearBtn: { flex: 1, paddingVertical: 13, borderRadius: 13, borderWidth: 2, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
-  clearText: { fontSize: 13, fontFamily: F.bold, color: C.muted },
-  applyBtn: { flex: 2, borderRadius: 13, overflow: 'hidden' },
-  applyGrad: { paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
-  applyText: { fontSize: 14, fontFamily: F.extrabold, color: '#fff' },
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Main HistoryScreen
 // ─────────────────────────────────────────────────────────────────────────────
 export default function HistoryScreen() {
+  const toast = useToast();
   const [selected, setSelected] = useState<TxRecord | null>(null);
-  const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<FilterState>(EMPTY_FILTER);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [page, setPage] = useState(1);
+  const { query, setQuery, filter, setFilter, page, setPage, filtered, paged, groups, activeFilterCount, stats, resetFilter } = useHistoryFilter();
 
-  const filtered = useMemo(() => {
-    return TXNS.filter(tx => {
-      if (filter.status && tx.status !== filter.status) return false;
-      if (filter.svcType && tx.type !== filter.svcType) return false;
-      if (filter.phone && !tx.phone.includes(filter.phone)) return false;
-      if (filter.ref && !tx.ref.toLowerCase().includes(filter.ref.toLowerCase())) return false;
-      if (filter.amtMin && tx.amount < parseFloat(filter.amtMin)) return false;
-      if (filter.amtMax && tx.amount > parseFloat(filter.amtMax)) return false;
-      if (query) {
-        const q = query.toLowerCase();
-        const hit =
-          tx.phone.includes(q) ||
-          tx.ref.toLowerCase().includes(q) ||
-          tx.type.includes(q) ||
-          tx.network.includes(q) ||
-          tx.status.includes(q);
-        if (!hit) return false;
-      }
-      return true;
-    });
-  }, [filter, query]);
-
-  const activeFilterCount = Object.values(filter).filter(Boolean).length;
-  const paged = filtered.slice(0, page * PAGE_SIZE);
-  const groups = groupByDate(paged);
-
-  const stats = useMemo(() => ({
-    total: filtered.length,
-    success: filtered.filter(t => t.status === 'success').length,
-    failed: filtered.filter(t => t.status === 'failed').length,
-    amount: filtered.reduce((s, t) => s + t.amount, 0),
-  }), [filtered]);
-
-  const exportCsv = async () => {
+  const exportCsv = useCallback(async () => {
     try {
       const csv = [CSV_HEADER, ...filtered.map(tx => buildCsvRow(tx, USER))].join('\n');
       const path = FileSystem.cacheDirectory + `mpay_txns_${Date.now()}.csv`;
@@ -573,12 +172,15 @@ export default function HistoryScreen() {
         UTI: 'public.comma-separated-values-text',
       });
     } catch {
-      Alert.alert('Export Failed', 'Could not export transactions. Please try again.');
+      toast.show('Could not export transactions. Please try again.', 'error');
     }
-  };
+  }, [filtered, toast]);
+
+  const handleSelect = useCallback((tx: TxRecord) => setSelected(tx), []);
+  const handleBack = useCallback(() => setSelected(null), []);
 
   if (selected) {
-    return <TxDetail tx={selected} onBack={() => setSelected(null)} />;
+    return <TxDetail tx={selected} onBack={handleBack} />;
   }
 
   return (
@@ -599,45 +201,14 @@ export default function HistoryScreen() {
               <Text style={hs.dateCount}>{group.items.length} txns</Text>
             </View>
             <View style={hs.txCard}>
-              {group.items.map((tx, i) => {
-                const net = NETWORKS.find(n => n.id === tx.network);
-                const statusColor = STATUS_COLORS[tx.status] ?? C.mid;
-                const isLast = i === group.items.length - 1;
-                const IconComp = SVC_ICON[tx.type] ?? Phone;
-                const iconColor = SVC_ICON_COLOR[tx.type] ?? C.blue;
-                const iconBg = SVC_ICON_BG[tx.type] ?? 'rgba(24,120,206,0.13)';
-                const title = getTxTitle(tx);
-                const tag = getTxTag(tx);
-                const StatusBadgeIcon = tx.status === 'failed' ? XCircle : CheckCircle2;
-                const statusLabel = tx.status === 'success' ? 'Success'
-                  : tx.status === 'failed' ? 'Failed' : 'Pending';
-                return (
-                  <TouchableOpacity key={tx.id} onPress={() => setSelected(tx)}
-                    activeOpacity={0.85} style={[hs.txRow, !isLast && hs.txRowBorder]}
-                  >
-                    <View style={hs.iconWrap}>
-                      <View style={[hs.iconCircle, { backgroundColor: iconBg }]}>
-                        <IconComp size={18} color={iconColor} strokeWidth={1.8} />
-                      </View>
-                      <View style={[hs.netDot, { backgroundColor: net?.color ?? C.pale }]}>
-                        <Text style={hs.netDotLetter}>{tx.network[0]?.toUpperCase() ?? "?"}</Text>
-                      </View>
-                    </View>
-                    <View style={{ flex: 1, gap: 1 }}>
-                      <Text style={hs.txTitle} numberOfLines={1}>{title}</Text>
-                      <Text style={hs.txPhone}>{tx.phone}</Text>
-                      {tag && (<View style={hs.tagPill}><Text style={hs.tagText}>{tag}</Text></View>)}
-                    </View>
-                    <View style={{ alignItems: "flex-end", gap: 5, flexShrink: 0 }}>
-                      <Text style={hs.txAmount} allowFontScaling={false}>{formatGHS(tx.amount)}</Text>
-                      <View style={[hs.statusBadge, { backgroundColor: statusColor + "15" }]}>
-                        <StatusBadgeIcon size={9} color={statusColor} strokeWidth={2.2} />
-                        <Text style={[hs.statusText, { color: statusColor }]}>{statusLabel}</Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+              {group.items.map((tx, i) => (
+                <TxRow
+                  key={tx.id}
+                  tx={tx}
+                  isLast={i === group.items.length - 1}
+                  onPress={handleSelect}
+                />
+              ))}
             </View>
           </View>
         )}
