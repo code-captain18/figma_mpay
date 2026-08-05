@@ -89,7 +89,7 @@ export async function apiCheckTransactionStatus(referenceId: string): Promise<Tr
     const msg = entry.Message.toLowerCase();
     const status = msg.includes('successfully') ? 'success'
       : (msg.includes('failed') || msg.includes('could not')) ? 'failed'
-      : 'pending';
+        : 'pending';
     return { status, entry };
   } catch (err: any) {
     if (err.response?.status === 404) return { status: 'pending' };

@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
 import { useAuth } from '@/store/auth.store';
+import { useCallback, useState } from 'react';
 
 export function useProfileForms() {
   const { user, updateUser } = useAuth();

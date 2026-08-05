@@ -1,5 +1,5 @@
-import { apiGetDashboardData } from '@/api';
 import type { DashboardData } from '@/api';
+import { apiGetDashboardData } from '@/api';
 import { Icon } from "@/components/ui/Icon";
 import { useAuth } from "@/store/auth.store";
 import { Colors, shadowStyle } from "@/theme";

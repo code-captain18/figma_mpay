@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useAuth } from '@/store/auth.store';
 import { apiGetTransactions } from '@/api';
 import type { TxFilters, TxPage } from '@/api/transactions.api';
-import type { FilterState } from '@/types';
 import { EMPTY_FILTER } from '@/components/history/FilterSheet';
 import { groupByDate } from '@/data';
+import { useAuth } from '@/store/auth.store';
+import type { FilterState } from '@/types';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const PAGE_SIZE = 20;
 

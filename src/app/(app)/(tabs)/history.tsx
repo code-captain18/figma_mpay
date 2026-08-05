@@ -1,24 +1,18 @@
-import { apiExportTransactions, API_CSV_HEADER, buildApiCsvRow } from '@/api';
-import { FilterSheet, EMPTY_FILTER } from '@/components/history/FilterSheet';
+import { API_CSV_HEADER, apiExportTransactions, buildApiCsvRow } from '@/api';
+import { EMPTY_FILTER, FilterSheet } from '@/components/history/FilterSheet';
 import { TxDetail } from '@/components/history/TxDetail';
-import { useHistoryFilter } from '@/hooks/useHistoryFilter';
 import { GradHdr } from '@/components/services/GradHdr';
-import { useToast } from '@/store/toast.store';
-import { DateInput } from '@/components/ui/DateInput';
 import { NETWORKS } from '@/data';
-import { C, F, G } from '@/theme';
+import { useHistoryFilter } from '@/hooks/useHistoryFilter';
+import { useToast } from '@/store/toast.store';
+import { C, F } from '@/theme';
+import type { FilterState, TxRecord } from '@/types';
 import { formatGHS } from '@/utils/format';
-import type { FilterState, SvcType, TxRecord } from '@/types';
-import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
 import {
   Calendar,
   CheckCircle2,
-  ChevronLeft,
-  Clock,
-  Copy,
   Download,
   Globe,
   Phone,
@@ -27,9 +21,9 @@ import {
   Users,
   Wifi,
   X,
-  XCircle,
+  XCircle
 } from 'lucide-react-native';
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -40,7 +34,6 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -242,94 +235,94 @@ export default function HistoryScreen() {
         keyboardShouldPersistTaps="handled"
         renderItem={renderGroup}
         ListHeaderComponent={<>
-        {/* ── Stats strip ── */}
-        <View style={hs.statsStrip}>
-          {[
-            { label: 'Total', value: `${stats.total}`, color: C.blue },
-            { label: 'Success', value: `${stats.success}`, color: C.green },
-            { label: 'Failed', value: `${stats.failed}`, color: C.red },
-            { label: 'Amount', value: formatGHS(stats.amount), color: C.purple },
-          ].map(s => (
-            <View key={s.label} style={hs.statCard}>
-              <Text style={[hs.statValue, { color: s.color }]}>{s.value}</Text>
-              <Text style={hs.statLabel}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* ── Search + filter row ── */}
-        <View style={hs.searchRow}>
-          <View style={hs.searchBox}>
-            <Search size={14} color={C.pale} />
-            <TextInput
-              value={query}
-              onChangeText={v => { setQuery(v); }}
-              placeholder="Search phone, ref, network…"
-              placeholderTextColor={C.pale}
-              style={hs.searchInput}
-              returnKeyType="search"
-            />
-            {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')} activeOpacity={0.7}>
-                <X size={13} color={C.pale} />
-              </TouchableOpacity>
-            )}
-          </View>
-          <TouchableOpacity
-            onPress={() => setFilterOpen(true)}
-            activeOpacity={0.8}
-            style={[hs.filterBtn, activeFilterCount > 0 && hs.filterBtnActive]}
-          >
-            <SlidersHorizontal size={15} color={activeFilterCount > 0 ? C.blue : C.mid} strokeWidth={1.8} />
-            {activeFilterCount > 0 && (
-              <View style={hs.filterBadge}>
-                <Text style={hs.filterBadgeText}>{activeFilterCount}</Text>
+          {/* ── Stats strip ── */}
+          <View style={hs.statsStrip}>
+            {[
+              { label: 'Total', value: `${stats.total}`, color: C.blue },
+              { label: 'Success', value: `${stats.success}`, color: C.green },
+              { label: 'Failed', value: `${stats.failed}`, color: C.red },
+              { label: 'Amount', value: formatGHS(stats.amount), color: C.purple },
+            ].map(s => (
+              <View key={s.label} style={hs.statCard}>
+                <Text style={[hs.statValue, { color: s.color }]}>{s.value}</Text>
+                <Text style={hs.statLabel}>{s.label}</Text>
               </View>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity onPress={exportCsv} style={hs.csvBtn} activeOpacity={0.8}>
-            <Download size={13} color={C.mid} />
-            <Text style={hs.csvText}>CSV</Text>
-          </TouchableOpacity>
-        </View>
+            ))}
+          </View>
 
-        {/* ── Active filter chips ── */}
-        {activeFilterCount > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={hs.activeChipsRow}
-          >
-            {(Object.entries(filter) as [keyof FilterState, string][])
-              .filter(([, v]) => v)
-              .map(([k, v]) => (
-                <TouchableOpacity
-                  key={k}
-                  onPress={() => setFilter({ ...filter, [k]: '' })}
-                  style={hs.activeChip}
-                  activeOpacity={0.8}
-                >
-                  <Text style={hs.activeChipText}>{v}</Text>
-                  <X size={9} color={C.blue} />
+          {/* ── Search + filter row ── */}
+          <View style={hs.searchRow}>
+            <View style={hs.searchBox}>
+              <Search size={14} color={C.pale} />
+              <TextInput
+                value={query}
+                onChangeText={v => { setQuery(v); }}
+                placeholder="Search phone, ref, network…"
+                placeholderTextColor={C.pale}
+                style={hs.searchInput}
+                returnKeyType="search"
+              />
+              {query.length > 0 && (
+                <TouchableOpacity onPress={() => setQuery('')} activeOpacity={0.7}>
+                  <X size={13} color={C.pale} />
                 </TouchableOpacity>
-              ))}
+              )}
+            </View>
             <TouchableOpacity
-              onPress={() => setFilter(EMPTY_FILTER)}
-              style={hs.clearAllChip}
+              onPress={() => setFilterOpen(true)}
               activeOpacity={0.8}
+              style={[hs.filterBtn, activeFilterCount > 0 && hs.filterBtnActive]}
             >
-              <Text style={hs.clearAllChipText}>Clear all</Text>
+              <SlidersHorizontal size={15} color={activeFilterCount > 0 ? C.blue : C.mid} strokeWidth={1.8} />
+              {activeFilterCount > 0 && (
+                <View style={hs.filterBadge}>
+                  <Text style={hs.filterBadgeText}>{activeFilterCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
-          </ScrollView>
-        )}
+            <TouchableOpacity onPress={exportCsv} style={hs.csvBtn} activeOpacity={0.8}>
+              <Download size={13} color={C.mid} />
+              <Text style={hs.csvText}>CSV</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* ── Results count ── */}
-        <View style={hs.resultsRow}>
-          <Text style={hs.resultsText}>
-            {txPage?.pagination.total ?? 0} transaction{(txPage?.pagination.total ?? 0) !== 1 ? 's' : ''}
-            {(query || activeFilterCount > 0) ? ' found' : ''}
-          </Text>
-        </View>
+          {/* ── Active filter chips ── */}
+          {activeFilterCount > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={hs.activeChipsRow}
+            >
+              {(Object.entries(filter) as [keyof FilterState, string][])
+                .filter(([, v]) => v)
+                .map(([k, v]) => (
+                  <TouchableOpacity
+                    key={k}
+                    onPress={() => setFilter({ ...filter, [k]: '' })}
+                    style={hs.activeChip}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={hs.activeChipText}>{v}</Text>
+                    <X size={9} color={C.blue} />
+                  </TouchableOpacity>
+                ))}
+              <TouchableOpacity
+                onPress={() => setFilter(EMPTY_FILTER)}
+                style={hs.clearAllChip}
+                activeOpacity={0.8}
+              >
+                <Text style={hs.clearAllChipText}>Clear all</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          )}
+
+          {/* ── Results count ── */}
+          <View style={hs.resultsRow}>
+            <Text style={hs.resultsText}>
+              {txPage?.pagination.total ?? 0} transaction{(txPage?.pagination.total ?? 0) !== 1 ? 's' : ''}
+              {(query || activeFilterCount > 0) ? ' found' : ''}
+            </Text>
+          </View>
 
 
         </>}

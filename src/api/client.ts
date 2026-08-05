@@ -1,7 +1,7 @@
-import axios from 'axios';
-import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import { clearTokens, getAccessToken, getRefreshToken, setTokens } from '@/utils/tokenStorage';
 import { config } from '@/utils/config';
+import { clearTokens, getAccessToken, getRefreshToken, setTokens } from '@/utils/tokenStorage';
+import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import axios from 'axios';
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {

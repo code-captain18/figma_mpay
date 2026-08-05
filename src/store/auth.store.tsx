@@ -1,3 +1,7 @@
+import type { AuthUser } from "@/api";
+import { apiLogin, apiLogout, apiRefreshSession, apiUpdateUser } from "@/api";
+import { setLogoutHandler } from "@/api/client";
+import { clearTokens, getRefreshToken, setTokens } from "@/utils/tokenStorage";
 import React, {
   createContext,
   useCallback,
@@ -5,10 +9,6 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { apiLogin, apiLogout, apiRefreshSession, apiUpdateUser } from "@/api";
-import type { AuthUser } from "@/api";
-import { clearTokens, getRefreshToken, setTokens } from "@/utils/tokenStorage";
-import { setLogoutHandler } from "@/api/client";
 
 export type { AuthUser };
 

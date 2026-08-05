@@ -1,5 +1,5 @@
+import type { SvcType, TxRecord } from '@/types';
 import { apiClient, ApiError } from './client';
-import type { TxRecord, SvcType } from '@/types';
 
 export interface ApiTxRecord {
   requestId: string;

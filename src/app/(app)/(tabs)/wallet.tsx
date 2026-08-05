@@ -1,3 +1,14 @@
+import {
+  apiCheckTransactionStatus,
+  apiGetWalletBalances,
+  apiLoadWalletFromWallet,
+  apiLoadWalletMoMo,
+  apiSendMoMo,
+} from '@/api';
+import { useAuth } from '@/store/auth.store';
+import { useToast } from '@/store/toast.store';
+import { C } from '@/theme';
+import { genWalletRef } from '@/utils/ref';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   AlertCircle,
@@ -26,18 +37,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  apiCheckTransactionStatus,
-  apiGetWalletBalances,
-  apiLoadWalletFromWallet,
-  apiLoadWalletMoMo,
-  apiSendMoMo,
-} from '@/api';
-import { useAuth } from '@/store/auth.store';
-import { useToast } from '@/store/toast.store';
-import { C } from '@/theme';
-import { genWalletRef } from '@/utils/ref';
-import { formatGHS } from '@/utils/format';
 
 /* ─── Shadow helper ──────────────────────────────────────────────────────────── */
 const sd = (size: number, color: string, opacity: number) =>
@@ -905,9 +904,9 @@ function WalletConfirm({
 }) {
   const productLabel =
     formData.product === 'MMONEYDB' ? 'MTN Mobile Money (MoMo)' :
-    formData.product === 'MOMOWALLET' ? 'Mobile Money Wallet' :
-    formData.product === 'MOMOCASHOUT' ? 'MTN MoMo Cashout' :
-    formData.product === 'MOMOCASHIN' ? 'MTN MoMo Cashin' : '\u2014';
+      formData.product === 'MOMOWALLET' ? 'Mobile Money Wallet' :
+        formData.product === 'MOMOCASHOUT' ? 'MTN MoMo Cashout' :
+          formData.product === 'MOMOCASHIN' ? 'MTN MoMo Cashin' : '\u2014';
 
   const rows: { label: string; value: string; mono?: boolean }[] = [
     { label: 'Wallet', value: walletType === 'etopup-form' ? 'e Top-Up Wallet' : 'Mobile Money Wallet' },

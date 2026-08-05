@@ -1,7 +1,7 @@
+import type { PermMap } from '@/types';
+import { config } from '@/utils/config';
 import axios from 'axios';
 import { apiClient, ApiError } from './client';
-import { config } from '@/utils/config';
-import type { PermMap } from '@/types';
 
 export interface AuthUser {
   userId: number;
@@ -49,7 +49,7 @@ export async function apiRefreshSession(refreshToken: string): Promise<LoginResp
 
 export async function apiLogout(refreshToken: string): Promise<void> {
   // Best-effort: fire and forget, don't block the UI
-  apiClient.post('/auth/logout-mobile', { refreshToken }).catch(() => {});
+  apiClient.post('/auth/logout-mobile', { refreshToken }).catch(() => { });
 }
 
 export async function apiVerifyPassword(password: string): Promise<boolean> {

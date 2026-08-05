@@ -1,23 +1,38 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  TextInput, ActivityIndicator, Modal,
-} from 'react-native';
+import type { ApiPermEntry, ApiPermissions, ProfileProduct } from '@/api';
+import { apiAddAssistant, apiChangePassword, apiDeleteAssistant, apiEditAssistant, apiEditAssistantProfile, apiEditProfile, apiGetAssistantPermissions, apiGetAssistantProfile, apiGetProfile, apiListAssistants, apiSaveAssistantPermissions, apiVerifyPassword } from '@/api';
+import { GradHdr } from '@/components/services/GradHdr';
+import { PermMatrix } from '@/components/services/PermMatrix';
+import { INIT_ASSISTANTS, makeEmptyPerms, PERM_SECTIONS } from '@/data';
+import { useAuth } from '@/store/auth.store';
+import { C, F, G } from '@/theme';
+import type { Assistant, PermKey, PermMap, ProfileView } from '@/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
-  Pencil, Key, Users, UserPlus, Trash2, ChevronRight,
-  Bell, HelpCircle, FileText, LogOut, Eye, EyeOff,
-  CheckCircle2, Shield, ShieldCheck, Package,
+  Bell,
+  CheckCircle2,
+  ChevronRight,
+  Eye, EyeOff,
+  FileText,
+  HelpCircle,
+  Key,
+  LogOut,
+  Package,
+  Pencil,
+  Shield, ShieldCheck,
+  Trash2,
+  UserPlus,
+  Users,
 } from 'lucide-react-native';
-import { GradHdr } from '@/components/services/GradHdr';
-import { PermMatrix } from '@/components/services/PermMatrix';
-import { C, F, G } from '@/theme';
-import { INIT_ASSISTANTS, makeEmptyPerms, PERM_SECTIONS } from '@/data';
-import type { ProfileView, Assistant, PermMap, PermKey } from '@/types';
-import { useAuth } from '@/store/auth.store';
-import { apiVerifyPassword, apiChangePassword, apiGetProfile, apiGetAssistantProfile, apiEditProfile, apiEditAssistantProfile, apiListAssistants, apiAddAssistant, apiEditAssistant, apiDeleteAssistant, apiGetAssistantPermissions, apiSaveAssistantPermissions } from '@/api';
-import type { ProfileProduct, ApiPermissions, ApiPermEntry } from '@/api';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator, Modal,
+  ScrollView, StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -48,12 +63,12 @@ function apiPermsToPermMap(apiPerms: ApiPermissions): PermMap {
     approve: m?.can_edit ?? false, export: m?.can_export ?? false, delete: m?.can_delete ?? false,
   });
   const airtime = get('Web Topup', 'Airtime Topup');
-  const data    = get('Web Topup', 'Data Bundle');
-  const momo    = get('Web Topup', 'Mobile Money Services');
+  const data = get('Web Topup', 'Data Bundle');
+  const momo = get('Web Topup', 'Mobile Money Services');
   const reports = get('Reports', 'Transaction Report');
   pm['Airtime:purchase'] = row(airtime); pm['Airtime:bulk'] = row(airtime);
-  pm['Data:purchase']    = row(data);    pm['Data:bulk']    = row(data);
-  pm['MoMo:send']        = row(momo);    pm['MoMo:withdraw'] = row(momo);
+  pm['Data:purchase'] = row(data); pm['Data:bulk'] = row(data);
+  pm['MoMo:send'] = row(momo); pm['MoMo:withdraw'] = row(momo);
   pm['Reports:transactions'] = row(reports); pm['Reports:sales'] = row(reports);
   return pm;
 }
@@ -61,16 +76,18 @@ function apiPermsToPermMap(apiPerms: ApiPermissions): PermMap {
 function permMapToApiPerms(perms: PermMap): ApiPermEntry[] {
   const e = (tab: string, module: string, key: string): ApiPermEntry => {
     const p = key ? perms[key] : null;
-    return { tab, module, can_view: p?.view ?? false, can_add: p?.create ?? false,
-      can_edit: p?.approve ?? false, can_delete: p?.delete ?? false, can_import: false, can_export: p?.export ?? false };
+    return {
+      tab, module, can_view: p?.view ?? false, can_add: p?.create ?? false,
+      can_edit: p?.approve ?? false, can_delete: p?.delete ?? false, can_import: false, can_export: p?.export ?? false
+    };
   };
   return [
-    e('General', 'Dashboard', ''),      e('General', 'My Profile', ''), e('General', 'Product Information', ''),
+    e('General', 'Dashboard', ''), e('General', 'My Profile', ''), e('General', 'Product Information', ''),
     e('Web Topup', 'Airtime Topup', 'Airtime:purchase'), e('Web Topup', 'Data Bundle', 'Data:purchase'),
-    e('Web Topup', 'Fibre Bundle', ''),  e('Web Topup', 'Bulk Topup', 'Airtime:bulk'),
+    e('Web Topup', 'Fibre Bundle', ''), e('Web Topup', 'Bulk Topup', 'Airtime:bulk'),
     e('Web Topup', 'Mobile Money Services', 'MoMo:send'),
     e('API Topup', 'Airtime Topup', ''), e('API Topup', 'Data Bundle', ''),
-    e('API Topup', 'Fibre Bundle', ''),  e('API Topup', 'Mobile Money Services', ''),
+    e('API Topup', 'Fibre Bundle', ''), e('API Topup', 'Mobile Money Services', ''),
     e('Reports', 'Transaction Report', 'Reports:transactions'),
   ];
 }
@@ -82,53 +99,53 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
   const { user, updateUser } = useAuth();
   const isAsst = user?.accountType?.toLowerCase() === 'assistant';
 
-  const [view,          setView]          = useState<ProfileView>('home');
-  const [assistants,    setAssistants]    = useState<Assistant[]>(INIT_ASSISTANTS);
-  const [editingAsst,   setEditingAsst]   = useState<Assistant | null>(null);
+  const [view, setView] = useState<ProfileView>('home');
+  const [assistants, setAssistants] = useState<Assistant[]>(INIT_ASSISTANTS);
+  const [editingAsst, setEditingAsst] = useState<Assistant | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [products,      setProducts]      = useState<ProfileProduct[]>([]);
-  const [canEdit,       setCanEdit]       = useState(true);
+  const [products, setProducts] = useState<ProfileProduct[]>([]);
+  const [canEdit, setCanEdit] = useState(true);
 
   // ── Edit Profile state ─────────────────────────────────────────────────────
   const [editForm, setEditForm] = useState({
-    resellerid:      '',
-    accountName:     '',
-    companyName:     '',
-    firstName:       user?.name?.split(' ')[0] ?? '',
-    lastName:        user?.name?.split(' ').slice(1).join(' ') ?? '',
-    phoneNumber:     user?.phone ?? '',
-    email:           user?.email ?? user?.username ?? '',
-    address:         '',
+    resellerid: '',
+    accountName: '',
+    companyName: '',
+    firstName: user?.name?.split(' ')[0] ?? '',
+    lastName: user?.name?.split(' ').slice(1).join(' ') ?? '',
+    phoneNumber: user?.phone ?? '',
+    email: user?.email ?? user?.username ?? '',
+    address: '',
     ghanaCardNumber: '',
-    taxId:           '',
-    salesExecutive:  '',
-    category:        'personal',
-    status:          'active',
-    createdAt:       '',
+    taxId: '',
+    salesExecutive: '',
+    category: 'personal',
+    status: 'active',
+    createdAt: '',
   });
   const [editSaving, setEditSaving] = useState(false);
-  const [editDone,   setEditDone]   = useState(false);
+  const [editDone, setEditDone] = useState(false);
 
   // ── Change Password state ──────────────────────────────────────────────────
-  const [oldPwd,         setOldPwd]         = useState('');
+  const [oldPwd, setOldPwd] = useState('');
   const [oldPwdVerified, setOldPwdVerified] = useState(false);
-  const [verifying,      setVerifying]      = useState(false);
-  const [oldPwdError,    setOldPwdError]    = useState('');
-  const [newPwd,         setNewPwd]         = useState('');
-  const [confirmPwd,     setConfirmPwd]     = useState('');
-  const [showOld,        setShowOld]        = useState(false);
-  const [showNew,        setShowNew]        = useState(false);
-  const [showConf,       setShowConf]       = useState(false);
-  const [pwdSaving,      setPwdSaving]      = useState(false);
-  const [pwdDone,        setPwdDone]        = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [oldPwdError, setOldPwdError] = useState('');
+  const [newPwd, setNewPwd] = useState('');
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConf, setShowConf] = useState(false);
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [pwdDone, setPwdDone] = useState(false);
 
   // ── Assistant form state ───────────────────────────────────────────────────
-  const [asstForm,   setAsstForm]   = useState({ firstName: '', lastName: '', phoneNumber: '', email: '', idProofType: 'GHANA_CARD', idNumber: '' });
-  const [asstPerms,  setAsstPerms]  = useState<PermMap>(makeEmptyPerms());
+  const [asstForm, setAsstForm] = useState({ firstName: '', lastName: '', phoneNumber: '', email: '', idProofType: 'GHANA_CARD', idNumber: '' });
+  const [asstPerms, setAsstPerms] = useState<PermMap>(makeEmptyPerms());
   const [asstSaving, setAsstSaving] = useState(false);
-  const [asstError,  setAsstError]  = useState('');
+  const [asstError, setAsstError] = useState('');
   const [assistantsLoading, setAssistantsLoading] = useState(false);
-  const [assistantsSearch,  setAssistantsSearch]  = useState('');
+  const [assistantsSearch, setAssistantsSearch] = useState('');
 
   const loadAssistants = useCallback(async (search?: string) => {
     if (isAsst) return;
@@ -154,13 +171,13 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
           setCanEdit(false);
           setEditForm(prev => ({
             ...prev,
-            resellerid:  p.resellerId,
-            firstName:   p.firstName ?? '',
-            lastName:    p.lastname ?? '',
+            resellerid: p.resellerId,
+            firstName: p.firstName ?? '',
+            lastName: p.lastname ?? '',
             phoneNumber: p.phoneNumber ?? '',
-            email:       p.email ?? '',
-            status:      p.status ?? 'active',
-            createdAt:   p.createdAt ?? '',
+            email: p.email ?? '',
+            status: p.status ?? 'active',
+            createdAt: p.createdAt ?? '',
           }));
           setProducts(prods.filter(pr => pr.prodCode !== 'MMONEYDB'));
         } else {
@@ -168,20 +185,20 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
           if (cancelled) return;
           setEditForm(prev => ({
             ...prev,
-            resellerid:      p.resellerid ?? '',
-            accountName:     p.accountName ?? '',
-            companyName:     p.companyName ?? '',
-            firstName:       p.firstName ?? '',
-            lastName:        p.lastName ?? '',
-            phoneNumber:     p.phoneNumber ?? '',
-            email:           p.email ?? '',
-            address:         p.address ?? '',
+            resellerid: p.resellerid ?? '',
+            accountName: p.accountName ?? '',
+            companyName: p.companyName ?? '',
+            firstName: p.firstName ?? '',
+            lastName: p.lastName ?? '',
+            phoneNumber: p.phoneNumber ?? '',
+            email: p.email ?? '',
+            address: p.address ?? '',
             ghanaCardNumber: p.ghanaCardNum ?? '',
-            taxId:           p.taxId ?? '',
-            salesExecutive:  p.salesExecutiveId ?? '',
-            category:        p.category ?? 'personal',
-            status:          p.status ?? 'active',
-            createdAt:       p.createdAt ?? '',
+            taxId: p.taxId ?? '',
+            salesExecutive: p.salesExecutiveId ?? '',
+            category: p.category ?? 'personal',
+            status: p.status ?? 'active',
+            createdAt: p.createdAt ?? '',
           }));
           setProducts(prods.filter(pr => pr.prodCode !== 'MMONEYDB'));
         }
@@ -248,9 +265,9 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         {/* ── Stats strip ── */}
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
           {[
-            { label: 'e Top-Up',  value: `GH\u20B5${Number(user?.eTopupBalance ?? 0).toFixed(2)}`, color: C.blue  },
-            { label: 'MoMo',      value: `GH\u20B5${Number(user?.momoBalance ?? 0).toFixed(2)}`,   color: C.green },
-            { label: 'Status',    value: editForm.status || '—',                              color: editForm.status === 'active' ? C.green : editForm.status === 'suspended' ? C.red : C.orange },
+            { label: 'e Top-Up', value: `GH\u20B5${Number(user?.eTopupBalance ?? 0).toFixed(2)}`, color: C.blue },
+            { label: 'MoMo', value: `GH\u20B5${Number(user?.momoBalance ?? 0).toFixed(2)}`, color: C.green },
+            { label: 'Status', value: editForm.status || '—', color: editForm.status === 'active' ? C.green : editForm.status === 'suspended' ? C.red : C.orange },
           ].map(s => (
             <View key={s.label} style={home.statCard}>
               <Text style={[home.statValue, { color: s.color }]}>{s.value}</Text>
@@ -263,31 +280,31 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         <View style={home.menuCard}>
           {[
             {
-              Icon:    Pencil,
-              iconBg:  'rgba(24,120,206,0.08)',
-              color:   C.blue,
-              label:   'Edit Profile',
-              sub:     'Update your account info',
+              Icon: Pencil,
+              iconBg: 'rgba(24,120,206,0.08)',
+              color: C.blue,
+              label: 'Edit Profile',
+              sub: 'Update your account info',
               onPress: () => setView('edit'),
-              hidden:  !canEdit,
+              hidden: !canEdit,
             },
             {
-              Icon:    Key,
-              iconBg:  'rgba(124,92,252,0.08)',
-              color:   C.purple,
-              label:   'Change Password',
-              sub:     'Update your login password',
+              Icon: Key,
+              iconBg: 'rgba(124,92,252,0.08)',
+              color: C.purple,
+              label: 'Change Password',
+              sub: 'Update your login password',
               onPress: () => { resetPwd(); setView('password'); },
-              hidden:  false,
+              hidden: false,
             },
             {
-              Icon:    Users,
-              iconBg:  'rgba(13,168,112,0.08)',
-              color:   C.green,
-              label:   'Assistant Accounts',
-              sub:     `${assistants.length} assistant${assistants.length !== 1 ? 's' : ''}`,
+              Icon: Users,
+              iconBg: 'rgba(13,168,112,0.08)',
+              color: C.green,
+              label: 'Assistant Accounts',
+              sub: `${assistants.length} assistant${assistants.length !== 1 ? 's' : ''}`,
               onPress: () => { loadAssistants(''); setAssistantsSearch(''); setView('assistants'); },
-              hidden:  isAsst,
+              hidden: isAsst,
             },
           ].filter(r => !r.hidden).map((row, i, arr) => (
             <View key={row.label}>
@@ -341,9 +358,9 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         {/* ── Settings menu ── */}
         <View style={[home.menuCard, { marginBottom: 14 }]}>
           {[
-            { Icon: Bell,       iconBg: 'rgba(24,120,206,0.08)', color: C.blue,   label: 'Notifications',  sub: 'Manage push alerts'  },
-            { Icon: HelpCircle, iconBg: 'rgba(13,168,112,0.08)', color: C.green,  label: 'Help & Support', sub: 'FAQs \u00B7 Contact us'   },
-            { Icon: FileText,   iconBg: 'rgba(255,150,0,0.08)',  color: C.orange, label: 'Privacy Policy', sub: 'Terms of service'    },
+            { Icon: Bell, iconBg: 'rgba(24,120,206,0.08)', color: C.blue, label: 'Notifications', sub: 'Manage push alerts' },
+            { Icon: HelpCircle, iconBg: 'rgba(13,168,112,0.08)', color: C.green, label: 'Help & Support', sub: 'FAQs \u00B7 Contact us' },
+            { Icon: FileText, iconBg: 'rgba(255,150,0,0.08)', color: C.orange, label: 'Privacy Policy', sub: 'Terms of service' },
           ].map((row, i) => (
             <View key={row.label}>
               <TouchableOpacity activeOpacity={0.85} style={home.menuRow}>
@@ -405,9 +422,9 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
           {!isAsst && editForm.category === 'business' && <EF label="COMPANY NAME" field="companyName" />}
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <EF label="FIRST NAME" field="firstName" />
-            <EF label="LAST NAME"  field="lastName"  />
+            <EF label="LAST NAME" field="lastName" />
           </View>
-          <EF label="PHONE NUMBER"  field="phoneNumber" kbt="phone-pad" />
+          <EF label="PHONE NUMBER" field="phoneNumber" kbt="phone-pad" />
           <EF label="EMAIL ADDRESS" field="email" disabled kbt="email-address" />
           {!isAsst && editForm.category === 'business' && <EF label="ADDRESS" field="address" />}
           {!isAsst && <EF label="GHANA CARD NUMBER" field="ghanaCardNumber" />}
@@ -419,31 +436,31 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               try {
                 if (isAsst) {
                   await apiEditAssistantProfile({
-                    id:          editForm.resellerid,
-                    firstName:   editForm.firstName,
-                    lastName:    editForm.lastName,
+                    id: editForm.resellerid,
+                    firstName: editForm.firstName,
+                    lastName: editForm.lastName,
                     phoneNumber: editForm.phoneNumber,
-                    email:       editForm.email,
+                    email: editForm.email,
                   });
                 } else {
                   await apiEditProfile({
-                    id:              editForm.resellerid,
-                    accountName:     editForm.accountName,
-                    companyName:     editForm.companyName,
-                    firstName:       editForm.firstName,
-                    lastName:        editForm.lastName,
-                    phoneNumber:     editForm.phoneNumber,
-                    email:           editForm.email,
-                    address:         editForm.address,
+                    id: editForm.resellerid,
+                    accountName: editForm.accountName,
+                    companyName: editForm.companyName,
+                    firstName: editForm.firstName,
+                    lastName: editForm.lastName,
+                    phoneNumber: editForm.phoneNumber,
+                    email: editForm.email,
+                    address: editForm.address,
                     ghanaCardNumber: editForm.ghanaCardNumber,
-                    taxId:           editForm.taxId,
-                    salesExecutive:  editForm.salesExecutive,
-                    category:        editForm.category,
-                    status:          editForm.status,
+                    taxId: editForm.taxId,
+                    salesExecutive: editForm.salesExecutive,
+                    category: editForm.category,
+                    status: editForm.status,
                   });
                 }
                 // best-effort local name sync
-                try { await updateUser({ name: `${editForm.firstName} ${editForm.lastName}`.trim(), phone: editForm.phoneNumber }); } catch {}
+                try { await updateUser({ name: `${editForm.firstName} ${editForm.lastName}`.trim(), phone: editForm.phoneNumber }); } catch { }
                 setEditDone(true);
                 setTimeout(() => { setEditDone(false); setView('home'); }, 1500);
               } catch {
@@ -485,14 +502,14 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
   // ── CHANGE PASSWORD VIEW ───────────────────────────────────────────────────
   if (view === 'password') {
     const pwdMatch = newPwd === confirmPwd;
-    const pwdOk    = pwdMatch && newPwd.length >= 8;
+    const pwdOk = pwdMatch && newPwd.length >= 8;
 
     const strength = (() => {
       if (!newPwd) return 0;
       if (newPwd.length < 6) return 1;
       if (newPwd.length < 8) return 2;
-      const hasUpper  = /[A-Z]/.test(newPwd);
-      const hasNum    = /[0-9]/.test(newPwd);
+      const hasUpper = /[A-Z]/.test(newPwd);
+      const hasNum = /[0-9]/.test(newPwd);
       const hasSymbol = /[^A-Za-z0-9]/.test(newPwd);
       if (hasUpper && hasNum && hasSymbol) return 4;
       if (hasUpper || hasNum) return 3;
@@ -554,7 +571,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
                 >
                   {showOld
                     ? <EyeOff size={15} color={C.pale} />
-                    : <Eye    size={15} color={C.pale} />}
+                    : <Eye size={15} color={C.pale} />}
                 </TouchableOpacity>
               )}
             </View>
@@ -627,7 +644,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
                   >
                     {showNew
                       ? <EyeOff size={15} color={C.pale} />
-                      : <Eye    size={15} color={C.pale} />}
+                      : <Eye size={15} color={C.pale} />}
                   </TouchableOpacity>
                 </View>
 
@@ -676,7 +693,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
                   >
                     {showConf
                       ? <EyeOff size={15} color={C.pale} />
-                      : <Eye    size={15} color={C.pale} />}
+                      : <Eye size={15} color={C.pale} />}
                   </TouchableOpacity>
                 </View>
                 {confirmPwd.length > 0 && !pwdMatch && (
@@ -839,9 +856,11 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
                 <View style={{ alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
                   <View style={[
                     al.statusBadge,
-                    { backgroundColor: asst.status === 'active'
+                    {
+                      backgroundColor: asst.status === 'active'
                         ? 'rgba(13,168,112,0.1)'
-                        : 'rgba(232,51,74,0.08)' },
+                        : 'rgba(232,51,74,0.08)'
+                    },
                   ]}>
                     <View style={[
                       al.statusDot,
@@ -855,16 +874,16 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'row', gap: 7 }}>
-            <TouchableOpacity
+                    <TouchableOpacity
                       onPress={async () => {
                         setEditingAsst(asst);
                         setAsstForm({
-                          firstName:   asst.firstName,
-                          lastName:    asst.lastName,
+                          firstName: asst.firstName,
+                          lastName: asst.lastName,
                           phoneNumber: asst.phoneNumber,
-                          email:       asst.email,
+                          email: asst.email,
                           idProofType: asst.idProofType ?? 'GHANA_CARD',
-                          idNumber:    asst.idNumber ?? '',
+                          idNumber: asst.idNumber ?? '',
                         });
                         try {
                           const apiPerms = await apiGetAssistantPermissions(asst.assistantId ?? asst.id);
@@ -938,7 +957,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               onPress={async () => {
                 try {
                   await apiDeleteAssistant(deleteConfirm!);
-                } catch {}
+                } catch { }
                 setAssistants(p => p.filter(a => a.id !== deleteConfirm));
                 setDeleteConfirm(null);
               }}
@@ -1007,9 +1026,11 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
                     key={t}
                     onPress={() => setAsstForm(p => ({ ...p, idProofType: t }))}
                     activeOpacity={0.8}
-                    style={{ paddingHorizontal: 11, paddingVertical: 7, borderRadius: 8, borderWidth: 1.5,
+                    style={{
+                      paddingHorizontal: 11, paddingVertical: 7, borderRadius: 8, borderWidth: 1.5,
                       backgroundColor: asstForm.idProofType === t ? C.blue : C.white,
-                      borderColor: asstForm.idProofType === t ? C.blue : C.border }}
+                      borderColor: asstForm.idProofType === t ? C.blue : C.border
+                    }}
                   >
                     <Text style={{ fontSize: 12, fontFamily: F.medium, color: asstForm.idProofType === t ? '#fff' : C.muted }}>
                       {ID_PROOF_LABELS[t]}
@@ -1090,24 +1111,24 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               if (isEdit && editingAsst) {
                 await apiEditAssistant({
                   assistantId: editingAsst.assistantId ?? editingAsst.id,
-                  firstname:   editingAsst.firstName,
-                  lastname:    editingAsst.lastName,
-                  email:       editingAsst.email,
+                  firstname: editingAsst.firstName,
+                  lastname: editingAsst.lastName,
+                  email: editingAsst.email,
                   phoneNumber: editingAsst.phoneNumber,
                   idProofType: editingAsst.idProofType,
-                  idNumber:    editingAsst.idNumber,
-                  status:      editingAsst.status,
+                  idNumber: editingAsst.idNumber,
+                  status: editingAsst.status,
                 });
                 savedId = editingAsst.assistantId ?? editingAsst.id;
               } else {
                 const res = await apiAddAssistant({
-                  resellerId:  editForm.resellerid || user?.accountId || '',
-                  firstname:   asstForm.firstName,
-                  lastname:    asstForm.lastName,
-                  email:       asstForm.email,
+                  resellerId: editForm.resellerid || user?.accountId || '',
+                  firstname: asstForm.firstName,
+                  lastname: asstForm.lastName,
+                  email: asstForm.email,
                   phoneNumber: asstForm.phoneNumber,
                   idProofType: asstForm.idProofType,
-                  idNumber:    asstForm.idNumber,
+                  idNumber: asstForm.idNumber,
                 });
                 savedId = res.assistantId;
               }
@@ -1169,106 +1190,106 @@ export default function ProfileRoute() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const home = StyleSheet.create({
-  content:          { padding: 20, paddingBottom: 36 },
-  avatarCard:       { borderRadius: 22, padding: 18, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, shadowColor: '#071830', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 3, marginBottom: 14 },
-  avatar:           { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  avatarText:       { fontSize: 18, fontFamily: F.extrabold, color: '#fff' },
-  userName:         { fontSize: 15, fontFamily: F.extrabold, color: C.navy },
-  userEmail:        { fontSize: 11, color: C.muted, marginTop: 2 },
-  accountBadge:     { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, backgroundColor: 'rgba(24,120,206,0.07)', borderRadius: 99, paddingVertical: 3, paddingHorizontal: 10, alignSelf: 'flex-start' },
-  onlineDot:        { width: 6, height: 6, borderRadius: 3, backgroundColor: C.green },
+  content: { padding: 20, paddingBottom: 36 },
+  avatarCard: { borderRadius: 22, padding: 18, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, shadowColor: '#071830', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 3, marginBottom: 14 },
+  avatar: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  avatarText: { fontSize: 18, fontFamily: F.extrabold, color: '#fff' },
+  userName: { fontSize: 15, fontFamily: F.extrabold, color: C.navy },
+  userEmail: { fontSize: 11, color: C.muted, marginTop: 2 },
+  accountBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, backgroundColor: 'rgba(24,120,206,0.07)', borderRadius: 99, paddingVertical: 3, paddingHorizontal: 10, alignSelf: 'flex-start' },
+  onlineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.green },
   accountBadgeText: { fontSize: 10, fontFamily: F.semibold, color: C.mid },
-  editIconBtn:      { width: 36, height: 36, borderRadius: 11, backgroundColor: 'rgba(24,120,206,0.08)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  statCard:         { flex: 1, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 6, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, alignItems: 'center' },
-  statValue:        { fontSize: 11, fontFamily: F.extrabold, marginBottom: 2 },
-  statLabel:        { fontSize: 10, fontFamily: F.semibold, color: C.muted, textAlign: 'center', lineHeight: 13 },
-  menuCard:         { borderRadius: 18, overflow: 'hidden', backgroundColor: C.white, borderWidth: 1, borderColor: C.border, marginBottom: 12, shadowColor: '#071830', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
-  menuRow:          { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, paddingVertical: 14 },
-  menuIcon:         { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  menuLabel:        { fontSize: 13, fontFamily: F.semibold, color: C.navy },
-  menuSub:          { fontSize: 10, color: C.muted, marginTop: 1 },
-  menuDivider:      { marginLeft: 67, height: 1, backgroundColor: C.divider },
-  signOutBtn:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, paddingVertical: 14, borderRadius: 14, backgroundColor: 'rgba(232,51,74,0.07)', borderWidth: 1.5, borderColor: 'rgba(232,51,74,0.2)' },
-  signOutText:      { fontSize: 13, fontFamily: F.bold, color: C.red },
+  editIconBtn: { width: 36, height: 36, borderRadius: 11, backgroundColor: 'rgba(24,120,206,0.08)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  statCard: { flex: 1, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 6, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, alignItems: 'center' },
+  statValue: { fontSize: 11, fontFamily: F.extrabold, marginBottom: 2 },
+  statLabel: { fontSize: 10, fontFamily: F.semibold, color: C.muted, textAlign: 'center', lineHeight: 13 },
+  menuCard: { borderRadius: 18, overflow: 'hidden', backgroundColor: C.white, borderWidth: 1, borderColor: C.border, marginBottom: 12, shadowColor: '#071830', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
+  menuRow: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, paddingVertical: 14 },
+  menuIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  menuLabel: { fontSize: 13, fontFamily: F.semibold, color: C.navy },
+  menuSub: { fontSize: 10, color: C.muted, marginTop: 1 },
+  menuDivider: { marginLeft: 67, height: 1, backgroundColor: C.divider },
+  signOutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, paddingVertical: 14, borderRadius: 14, backgroundColor: 'rgba(232,51,74,0.07)', borderWidth: 1.5, borderColor: 'rgba(232,51,74,0.2)' },
+  signOutText: { fontSize: 13, fontFamily: F.bold, color: C.red },
 });
 
 const ep = StyleSheet.create({
-  content:       { padding: 20, paddingBottom: 36 },
-  label:         { fontSize: 11, fontFamily: F.semibold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 },
-  input:         { borderWidth: 1.5, borderColor: C.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
+  content: { padding: 20, paddingBottom: 36 },
+  label: { fontSize: 11, fontFamily: F.semibold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 },
+  input: { borderWidth: 1.5, borderColor: C.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
   inputDisabled: { color: C.muted, backgroundColor: 'rgba(7,24,48,0.04)' },
-  saveBtn:       { borderRadius: 14, overflow: 'hidden', marginTop: 6 },
-  saveBtnDone:   { borderWidth: 2, borderColor: C.green, backgroundColor: 'rgba(13,168,112,0.08)' },
-  saveBtnInner:  { paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  saveBtnText:   { fontSize: 14, fontFamily: F.extrabold, color: '#fff' },
+  saveBtn: { borderRadius: 14, overflow: 'hidden', marginTop: 6 },
+  saveBtnDone: { borderWidth: 2, borderColor: C.green, backgroundColor: 'rgba(13,168,112,0.08)' },
+  saveBtnInner: { paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  saveBtnText: { fontSize: 14, fontFamily: F.extrabold, color: '#fff' },
 });
 
 const pw = StyleSheet.create({
-  content:       { padding: 20, paddingBottom: 36 },
-  banner:        { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 13, borderRadius: 14, marginBottom: 18, backgroundColor: 'rgba(24,120,206,0.06)', borderWidth: 1.5, borderColor: 'rgba(24,120,206,0.15)' },
-  bannerText:    { fontSize: 11, color: C.mid, fontFamily: F.medium, flex: 1, lineHeight: 17 },
-  fieldWrap:     { marginBottom: 14 },
-  label:         { fontSize: 11, fontFamily: F.semibold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 },
-  input:         { borderWidth: 1.5, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 12, fontSize: 14, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
-  inputRightIcon:{ position: 'absolute', right: 12, top: 13 },
+  content: { padding: 20, paddingBottom: 36 },
+  banner: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 13, borderRadius: 14, marginBottom: 18, backgroundColor: 'rgba(24,120,206,0.06)', borderWidth: 1.5, borderColor: 'rgba(24,120,206,0.15)' },
+  bannerText: { fontSize: 11, color: C.mid, fontFamily: F.medium, flex: 1, lineHeight: 17 },
+  fieldWrap: { marginBottom: 14 },
+  label: { fontSize: 11, fontFamily: F.semibold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 },
+  input: { borderWidth: 1.5, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 12, fontSize: 14, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
+  inputRightIcon: { position: 'absolute', right: 12, top: 13 },
   inputRightBtn: { position: 'absolute', right: 12, top: 13, padding: 2 },
-  errText:       { fontSize: 10, color: C.red, marginTop: 5, fontFamily: F.medium },
-  strBar:        { flex: 1, height: 3, borderRadius: 2 },
-  strLabel:      { fontSize: 9, fontFamily: F.semibold },
-  actionBtn:     { borderRadius: 14, overflow: 'hidden', marginBottom: 14 },
+  errText: { fontSize: 10, color: C.red, marginTop: 5, fontFamily: F.medium },
+  strBar: { flex: 1, height: 3, borderRadius: 2 },
+  strLabel: { fontSize: 9, fontFamily: F.semibold },
+  actionBtn: { borderRadius: 14, overflow: 'hidden', marginBottom: 14 },
   actionBtnDone: { borderWidth: 2, borderColor: C.green, backgroundColor: 'rgba(13,168,112,0.08)' },
   actionBtnGrad: { paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   actionBtnText: { fontSize: 14, fontFamily: F.extrabold, color: '#fff' },
 });
 
 const al = StyleSheet.create({
-  content:           { padding: 20, paddingBottom: 36 },
-  headerBtn:         { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  empty:             { alignItems: 'center', paddingVertical: 52 },
-  emptyIconWrap:     { width: 56, height: 56, borderRadius: 18, backgroundColor: 'rgba(24,120,206,0.07)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  emptyTitle:        { fontSize: 14, fontFamily: F.bold, color: C.navy, marginBottom: 5 },
-  emptySub:          { fontSize: 11, color: C.muted, textAlign: 'center', lineHeight: 17, marginBottom: 22, paddingHorizontal: 24 },
-  addFirstBtn:       { borderRadius: 13, overflow: 'hidden' },
-  addFirstGrad:      { paddingVertical: 11, paddingHorizontal: 28, alignItems: 'center' },
-  addFirstText:      { fontSize: 13, fontFamily: F.bold, color: '#fff' },
-  card:              { borderRadius: 18, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, padding: 14, paddingHorizontal: 16, shadowColor: '#071830', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2, marginBottom: 12 },
-  cardAvatar:        { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(124,92,252,0.1)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  cardInitials:      { fontSize: 14, fontFamily: F.extrabold, color: C.purple },
-  cardName:          { fontSize: 13, fontFamily: F.bold, color: C.navy },
-  cardEmail:         { fontSize: 10, color: C.muted, marginTop: 1 },
-  cardPhone:         { fontSize: 10, color: C.muted },
-  statusBadge:       { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 99, paddingVertical: 3, paddingHorizontal: 9 },
-  statusDot:         { width: 5, height: 5, borderRadius: 3 },
-  statusText:        { fontSize: 10, fontFamily: F.bold, textTransform: 'capitalize' },
-  editBtn:           { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(24,120,206,0.08)', alignItems: 'center', justifyContent: 'center' },
-  deleteBtn:         { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(232,51,74,0.08)', alignItems: 'center', justifyContent: 'center' },
-  permChips:         { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 11, paddingTop: 11, borderTopWidth: 1, borderTopColor: C.divider },
-  permChip:          { borderRadius: 6, paddingVertical: 3, paddingHorizontal: 9, backgroundColor: 'rgba(24,120,206,0.07)', borderWidth: 1, borderColor: 'rgba(24,120,206,0.14)' },
-  permChipText:      { fontSize: 10, fontFamily: F.semibold, color: C.mid },
-  deleteSheet:       { backgroundColor: C.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 36 },
-  deleteIconBox:     { width: 56, height: 56, borderRadius: 18, backgroundColor: 'rgba(232,51,74,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  deleteTitle:       { fontSize: 16, fontFamily: F.extrabold, color: C.navy, marginBottom: 6, textAlign: 'center' },
-  deleteSub:         { fontSize: 12, color: C.muted, textAlign: 'center', lineHeight: 18 },
-  deleteCancelBtn:   { flex: 1, paddingVertical: 13, borderRadius: 13, borderWidth: 2, borderColor: C.border, alignItems: 'center' },
-  deleteCancelText:  { fontSize: 13, fontFamily: F.bold, color: C.muted },
-  deleteConfirmBtn:  { flex: 1, paddingVertical: 13, borderRadius: 13, backgroundColor: C.red, alignItems: 'center' },
+  content: { padding: 20, paddingBottom: 36 },
+  headerBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  empty: { alignItems: 'center', paddingVertical: 52 },
+  emptyIconWrap: { width: 56, height: 56, borderRadius: 18, backgroundColor: 'rgba(24,120,206,0.07)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  emptyTitle: { fontSize: 14, fontFamily: F.bold, color: C.navy, marginBottom: 5 },
+  emptySub: { fontSize: 11, color: C.muted, textAlign: 'center', lineHeight: 17, marginBottom: 22, paddingHorizontal: 24 },
+  addFirstBtn: { borderRadius: 13, overflow: 'hidden' },
+  addFirstGrad: { paddingVertical: 11, paddingHorizontal: 28, alignItems: 'center' },
+  addFirstText: { fontSize: 13, fontFamily: F.bold, color: '#fff' },
+  card: { borderRadius: 18, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, padding: 14, paddingHorizontal: 16, shadowColor: '#071830', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2, marginBottom: 12 },
+  cardAvatar: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(124,92,252,0.1)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  cardInitials: { fontSize: 14, fontFamily: F.extrabold, color: C.purple },
+  cardName: { fontSize: 13, fontFamily: F.bold, color: C.navy },
+  cardEmail: { fontSize: 10, color: C.muted, marginTop: 1 },
+  cardPhone: { fontSize: 10, color: C.muted },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 99, paddingVertical: 3, paddingHorizontal: 9 },
+  statusDot: { width: 5, height: 5, borderRadius: 3 },
+  statusText: { fontSize: 10, fontFamily: F.bold, textTransform: 'capitalize' },
+  editBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(24,120,206,0.08)', alignItems: 'center', justifyContent: 'center' },
+  deleteBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(232,51,74,0.08)', alignItems: 'center', justifyContent: 'center' },
+  permChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 11, paddingTop: 11, borderTopWidth: 1, borderTopColor: C.divider },
+  permChip: { borderRadius: 6, paddingVertical: 3, paddingHorizontal: 9, backgroundColor: 'rgba(24,120,206,0.07)', borderWidth: 1, borderColor: 'rgba(24,120,206,0.14)' },
+  permChipText: { fontSize: 10, fontFamily: F.semibold, color: C.mid },
+  deleteSheet: { backgroundColor: C.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 36 },
+  deleteIconBox: { width: 56, height: 56, borderRadius: 18, backgroundColor: 'rgba(232,51,74,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  deleteTitle: { fontSize: 16, fontFamily: F.extrabold, color: C.navy, marginBottom: 6, textAlign: 'center' },
+  deleteSub: { fontSize: 12, color: C.muted, textAlign: 'center', lineHeight: 18 },
+  deleteCancelBtn: { flex: 1, paddingVertical: 13, borderRadius: 13, borderWidth: 2, borderColor: C.border, alignItems: 'center' },
+  deleteCancelText: { fontSize: 13, fontFamily: F.bold, color: C.muted },
+  deleteConfirmBtn: { flex: 1, paddingVertical: 13, borderRadius: 13, backgroundColor: C.red, alignItems: 'center' },
   deleteConfirmText: { fontSize: 13, fontFamily: F.bold, color: '#fff' },
 });
 
 const asf = StyleSheet.create({
-  content:     { padding: 20, paddingBottom: 36 },
-  label:       { fontSize: 11, fontFamily: F.semibold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 },
-  input:       { borderWidth: 1.5, borderColor: C.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
-  divider:     { height: 1, backgroundColor: C.divider, marginBottom: 18, marginTop: 4 },
-  statusRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 16, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, marginBottom: 18 },
+  content: { padding: 20, paddingBottom: 36 },
+  label: { fontSize: 11, fontFamily: F.semibold, color: C.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 },
+  input: { borderWidth: 1.5, borderColor: C.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontFamily: F.medium, color: C.navy, backgroundColor: C.bg },
+  divider: { height: 1, backgroundColor: C.divider, marginBottom: 18, marginTop: 4 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 16, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, marginBottom: 18 },
   statusTitle: { fontSize: 12, fontFamily: F.bold, color: C.navy },
-  statusSub:   { fontSize: 10, color: C.muted, marginTop: 1 },
-  toggleBtn:   { borderRadius: 99, paddingVertical: 6, paddingHorizontal: 16 },
-  toggleText:  { fontSize: 11, fontFamily: F.bold, textTransform: 'capitalize' },
-  permHeader:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  permTitle:   { fontSize: 13, fontFamily: F.bold, color: C.navy },
-  permSub:     { fontSize: 10, color: C.muted, marginBottom: 14, lineHeight: 16 },
-  saveBtn:     { borderRadius: 14, overflow: 'hidden' },
+  statusSub: { fontSize: 10, color: C.muted, marginTop: 1 },
+  toggleBtn: { borderRadius: 99, paddingVertical: 6, paddingHorizontal: 16 },
+  toggleText: { fontSize: 11, fontFamily: F.bold, textTransform: 'capitalize' },
+  permHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  permTitle: { fontSize: 13, fontFamily: F.bold, color: C.navy },
+  permSub: { fontSize: 10, color: C.muted, marginBottom: 14, lineHeight: 16 },
+  saveBtn: { borderRadius: 14, overflow: 'hidden' },
   saveBtnGrad: { paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: C.blue, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 5 },
   saveBtnText: { fontSize: 14, fontFamily: F.extrabold, color: '#fff' },
 });
