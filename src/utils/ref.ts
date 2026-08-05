@@ -8,3 +8,10 @@ export function genRef(): string {
         `-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}-${r}`
     );
 }
+
+/** Generates a wallet-load reference in the format required by the API: WB{timestamp}{4-digit random} */
+export function genWalletRef(): string {
+    const rand = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    return `WB${Date.now()}${rand}`;
+}
+

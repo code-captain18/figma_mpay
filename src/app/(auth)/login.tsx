@@ -97,9 +97,9 @@ export default function LoginScreen() {
       setSuccess(true);
       await new Promise(r => setTimeout(r, 700));
       router.replace('/(app)/(tabs)');
-    } catch {
+    } catch (err: any) {
       setLoading(false);
-      setError('Invalid username or password. Please try again.');
+      setError(err?.message ?? 'Invalid username or password. Please try again.');
       shake();
     }
   };

@@ -7,10 +7,10 @@ export function useProfileForms() {
   const [editForm, setEditForm] = useState({
     accountName: "John's Business",
     companyName: 'JM Enterprises Ltd',
-    firstName: user?.name.split(' ')[0] ?? 'John',
-    lastName: user?.name.split(' ')[1] ?? 'Mensah',
+    firstName: user?.name?.split(' ')[0] ?? '',
+    lastName: user?.name?.split(' ')[1] ?? '',
     phoneNumber: user?.phone ?? '',
-    email: user?.email ?? '',
+    email: user?.email ?? user?.username ?? '',
     address: '123 Independence Ave, Accra',
     ghanaCardNumber: 'GHA-123456789-0',
     taxId: 'TIN987654321',

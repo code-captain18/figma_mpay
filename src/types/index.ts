@@ -161,6 +161,7 @@ export type ProfileView = 'home' | 'edit' | 'password' | 'assistants' | 'add-ass
 
 export interface Assistant {
   id: string;
+  assistantId?: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;
@@ -168,4 +169,6 @@ export interface Assistant {
   status: 'active' | 'inactive';
   permissions: PermMap;
   createdAt: string;
+  idProofType?: string;
+  idNumber?: string;
 }

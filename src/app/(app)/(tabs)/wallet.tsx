@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   AlertCircle,
+  ArrowUpRight,
   CheckCircle2,
   ChevronDown,
   ChevronLeft, ChevronRight,
@@ -10,7 +11,7 @@ import {
   Smartphone,
   User
 } from 'lucide-react-native';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -25,9 +26,17 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  apiCheckTransactionStatus,
+  apiGetWalletBalances,
+  apiLoadWalletFromWallet,
+  apiLoadWalletMoMo,
+  apiSendMoMo,
+} from '@/api';
 import { useAuth } from '@/store/auth.store';
+import { useToast } from '@/store/toast.store';
 import { C } from '@/theme';
-import { genRef } from '@/utils/ref';
+import { genWalletRef } from '@/utils/ref';
 import { formatGHS } from '@/utils/format';
 
 /* ─── Shadow helper ──────────────────────────────────────────────────────────── */
@@ -43,7 +52,7 @@ const sd = (size: number, color: string, opacity: number) =>
   }) ?? {};
 
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
-type WalletView = 'home' | 'etopup-form' | 'momo-form' | 'confirm' | 'success';
+type WalletView = 'home' | 'etopup-form' | 'momo-form' | 'momo-send' | 'confirm' | 'success';
 
 interface WFState {
   product: string;
@@ -298,10 +307,21 @@ function GradHdr({
 /* ══════════════════════════════════════════════════════════════════════════════
    WALLET HOME
 ══════════════════════════════════════════════════════════════════════════════ */
-function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
+function WalletHome({
+  onSelect, topup, momo, balanceLoading, onRefresh,
+}: {
+  onSelect: (v: WalletView) => void;
+  topup: number;
+  momo: number;
+  balanceLoading: boolean;
+  onRefresh: () => void;
+}) {
   const { user } = useAuth();
   const [hidden, setHidden] = useState(false);
   const both = (user?.hasETopup ?? true) && (user?.hasMoMo ?? true);
+  const perms = user?.permissions;
+  const canLoadMoMo = !perms || perms['MoMo:withdraw']?.create !== false;
+  const canSendMoMo = !perms || perms['MoMo:send']?.create !== false;
 
   return (
     <ScrollView
@@ -312,12 +332,22 @@ function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
         flexDirection: 'row', justifyContent: 'space-between',
         alignItems: 'center', marginBottom: 12,
       }}>
-        <Text style={{
-          fontSize: 13, fontWeight: '700', color: C.navy,
-          fontFamily: 'Urbanist_700Bold',
-        }}>
-          My Wallets
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={{
+            fontSize: 13, fontWeight: '700', color: C.navy,
+            fontFamily: 'Urbanist_700Bold',
+          }}>
+            My Wallets
+          </Text>
+          {balanceLoading
+            ? <ActivityIndicator size="small" color={C.blue} />
+            : (
+              <TouchableOpacity onPress={onRefresh} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <RefreshCw size={13} color={C.muted} />
+              </TouchableOpacity>
+            )
+          }
+        </View>
         <TouchableOpacity
           onPress={() => setHidden(!hidden)}
           style={{
@@ -374,7 +404,7 @@ function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
               color: '#fff', letterSpacing: -0.5, marginBottom: 2,
               fontFamily: 'Urbanist_800ExtraBold',
             }}>
-              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GH\u20B5${(user?.eTopupBalance ?? 0).toFixed(2)}`}
+              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GH\u20B5${topup.toFixed(2)}`}
             </Text>
             <Text style={{
               fontSize: 9, color: 'rgba(255,255,255,0.4)',
@@ -421,7 +451,7 @@ function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
               color: '#fff', letterSpacing: -0.5, marginBottom: 2,
               fontFamily: 'Urbanist_800ExtraBold',
             }}>
-              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GH\u20B5${(user?.momoBalance ?? 0).toFixed(2)}`}
+              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GH\u20B5${momo.toFixed(2)}`}
             </Text>
             <Text style={{
               fontSize: 9, color: 'rgba(255,255,255,0.4)',
@@ -442,40 +472,81 @@ function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
 
       <View style={{ gap: 10 }}>
         {(user?.hasMoMo ?? true) && (
-          <TouchableOpacity
-            onPress={() => onSelect('momo-form')}
-            activeOpacity={0.8}
-            style={{
-              flexDirection: 'row', alignItems: 'center', gap: 14,
-              borderRadius: 18, padding: 16,
-              backgroundColor: C.white,
-              borderWidth: 1.5, borderColor: C.border,
-              ...sd(6, C.navy, 0.05),
-            }}
-          >
-            <View style={{
-              width: 44, height: 44, borderRadius: 14,
-              backgroundColor: 'rgba(13,168,112,0.1)',
-              alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Smartphone size={20} color={C.green} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{
-                fontSize: 13, fontWeight: '700', color: C.navy,
-                marginBottom: 2, fontFamily: 'Urbanist_700Bold',
-              }}>
-                Load Mobile Money Wallet
-              </Text>
-              <Text style={{
-                fontSize: 11, color: C.muted,
-                fontFamily: 'Urbanist_500Medium',
-              }}>
-                {hidden ? 'Balance hidden' : `Balance: GH\u20B5${(user?.momoBalance ?? 0).toFixed(2)}`}
-              </Text>
-            </View>
-            <ChevronRight size={15} color={C.pale} />
-          </TouchableOpacity>
+          <>
+            {canLoadMoMo && (
+              <TouchableOpacity
+                onPress={() => onSelect('momo-form')}
+                activeOpacity={0.8}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 14,
+                  borderRadius: 18, padding: 16,
+                  backgroundColor: C.white,
+                  borderWidth: 1.5, borderColor: C.border,
+                  ...sd(6, C.navy, 0.05),
+                }}
+              >
+                <View style={{
+                  width: 44, height: 44, borderRadius: 14,
+                  backgroundColor: 'rgba(13,168,112,0.1)',
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Smartphone size={20} color={C.green} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{
+                    fontSize: 13, fontWeight: '700', color: C.navy,
+                    marginBottom: 2, fontFamily: 'Urbanist_700Bold',
+                  }}>
+                    Load Mobile Money Wallet
+                  </Text>
+                  <Text style={{
+                    fontSize: 11, color: C.muted,
+                    fontFamily: 'Urbanist_500Medium',
+                  }}>
+                    {hidden ? 'Balance hidden' : `Balance: GH\u20B5${momo.toFixed(2)}`}
+                  </Text>
+                </View>
+                <ChevronRight size={15} color={C.pale} />
+              </TouchableOpacity>
+            )}
+
+            {canSendMoMo && (
+              <TouchableOpacity
+                onPress={() => onSelect('momo-send')}
+                activeOpacity={0.8}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 14,
+                  borderRadius: 18, padding: 16,
+                  backgroundColor: C.white,
+                  borderWidth: 1.5, borderColor: C.border,
+                  ...sd(6, C.navy, 0.05),
+                }}
+              >
+                <View style={{
+                  width: 44, height: 44, borderRadius: 14,
+                  backgroundColor: 'rgba(13,168,112,0.1)',
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <ArrowUpRight size={20} color={C.green} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{
+                    fontSize: 13, fontWeight: '700', color: C.navy,
+                    marginBottom: 2, fontFamily: 'Urbanist_700Bold',
+                  }}>
+                    Cash Disbursement
+                  </Text>
+                  <Text style={{
+                    fontSize: 11, color: C.muted,
+                    fontFamily: 'Urbanist_500Medium',
+                  }}>
+                    Cash disbursement to any phone
+                  </Text>
+                </View>
+                <ChevronRight size={15} color={C.pale} />
+              </TouchableOpacity>
+            )}
+          </>
         )}
 
         {(user?.hasETopup ?? true) && (
@@ -508,7 +579,7 @@ function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
                 fontSize: 11, color: C.muted,
                 fontFamily: 'Urbanist_500Medium',
               }}>
-                {hidden ? 'Balance hidden' : `Balance: GH\u20B5${(user?.eTopupBalance ?? 0).toFixed(2)}`}
+                {hidden ? 'Balance hidden' : `Balance: GH\u20B5${topup.toFixed(2)}`}
               </Text>
             </View>
             <ChevronRight size={15} color={C.pale} />
@@ -546,24 +617,26 @@ function WalletHome({ onSelect }: { onSelect: (v: WalletView) => void }) {
    WALLET FORM  (shared — isMoMo flag switches layout)
 ══════════════════════════════════════════════════════════════════════════════ */
 function WalletForm({
-  isMoMo, onBack, onSubmit,
+  isMoMo, isSend, initialProduct, onBack, onSubmit,
 }: {
   isMoMo: boolean;
+  isSend?: boolean;
+  initialProduct?: string;
   onBack: () => void;
   onSubmit: (d: WFState) => void;
 }) {
   const { user } = useAuth();
   const [form, setForm] = useState<WFState>({
-    product: isMoMo ? 'mtn-momo' : '',
+    product: initialProduct ?? (isMoMo ? 'MOMOCASHOUT' : ''),
     accountId: user?.accountId ?? '',
     amount: '',
     phoneNumber: '',
-    referenceId: genRef(),
+    referenceId: genWalletRef(),
   });
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [touched, setTouch] = useState<Record<string, boolean>>({});
 
-  const showPhone = form.product === 'mtn-momo' || isMoMo;
+  const showPhone = isMoMo || form.product === 'MMONEYDB';
 
   const set = (k: keyof WFState, v: string) => {
     setForm(p => ({ ...p, [k]: v }));
@@ -574,8 +647,8 @@ function WalletForm({
     const e: Record<string, string> = {};
     if (!isMoMo && !form.product)
       e.product = 'Select a product';
-    if (!form.amount || isNaN(+form.amount) || +form.amount <= 0)
-      e.amount = 'Enter a valid amount';
+    if (!form.amount || isNaN(+form.amount) || +form.amount < 0.10)
+      e.amount = 'Minimum amount is GH\u20B50.10';
     if (showPhone && !form.phoneNumber.trim())
       e.phoneNumber = 'Phone number is required';
     if (showPhone && form.phoneNumber &&
@@ -689,11 +762,11 @@ function WalletForm({
               onChange={v => {
                 set('product', v);
                 setTouch(p => ({ ...p, product: true }));
-                if (v !== 'mtn-momo') set('phoneNumber', '');
+                if (v !== 'MMONEYDB') set('phoneNumber', '');
               }}
               options={[
-                { value: 'momo-wallet', label: 'Mobile Money Wallet' },
-                { value: 'mtn-momo', label: 'MTN Mobile Money (MoMo)' },
+                { value: 'MOMOWALLET', label: 'Mobile Money Wallet' },
+                { value: 'MMONEYDB', label: 'MTN Mobile Money (MoMo)' },
               ]}
               placeholder="Select product\u2026"
               error={!!(touched.product && errs.product)}
@@ -745,7 +818,7 @@ function WalletForm({
 
         {showPhone && (
           <Field
-            label="Phone Number"
+            label={isSend ? 'Recipient Phone' : 'Phone Number'}
             required
             error={touched.phoneNumber ? errs.phoneNumber : ''}
           >
@@ -754,7 +827,7 @@ function WalletForm({
               onChangeText={v => set('phoneNumber', v)}
               onBlur={() => setTouch(p => ({ ...p, phoneNumber: true }))}
               keyboardType="phone-pad"
-              placeholder="e.g. 0244123456"
+              placeholder={isSend ? 'Recipient number (0XXXXXXXXX)' : 'e.g. 0244123456'}
               icon={
                 <Phone
                   size={14}
@@ -773,7 +846,7 @@ function WalletForm({
             icon={<Hash size={14} color={C.pale} />}
             rightEl={
               <TouchableOpacity
-                onPress={() => set('referenceId', genRef())}
+                onPress={() => set('referenceId', genWalletRef())}
                 style={{
                   backgroundColor: 'rgba(24,120,206,0.07)',
                   borderRadius: 7, padding: 5,
@@ -809,7 +882,7 @@ function WalletForm({
               fontSize: 15, fontWeight: '800', color: '#fff',
               fontFamily: 'Urbanist_800ExtraBold',
             }}>
-              Load
+              {isSend ? 'Send' : 'Load'}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -831,8 +904,10 @@ function WalletConfirm({
   loading: boolean;
 }) {
   const productLabel =
-    formData.product === 'mtn-momo' ? 'MTN Mobile Money (MoMo)' :
-      formData.product === 'momo-wallet' ? 'Mobile Money Wallet' : '\u2014';
+    formData.product === 'MMONEYDB' ? 'MTN Mobile Money (MoMo)' :
+    formData.product === 'MOMOWALLET' ? 'Mobile Money Wallet' :
+    formData.product === 'MOMOCASHOUT' ? 'MTN MoMo Cashout' :
+    formData.product === 'MOMOCASHIN' ? 'MTN MoMo Cashin' : '\u2014';
 
   const rows: { label: string; value: string; mono?: boolean }[] = [
     { label: 'Wallet', value: walletType === 'etopup-form' ? 'e Top-Up Wallet' : 'Mobile Money Wallet' },
@@ -897,13 +972,13 @@ function WalletConfirm({
         alignItems: 'center',
       }}>
         <Text style={{ fontSize: 11, color: C.muted, marginBottom: 4, fontFamily: 'Urbanist_500Medium' }}>
-          You are loading
+          {walletType === 'momo-send' ? 'You are sending' : 'You are loading'}
         </Text>
         <Text style={{ fontSize: 28, fontWeight: '800', color: C.blue, fontFamily: 'Urbanist_800ExtraBold' }}>
           GH\u20B5{Number(formData.amount).toFixed(2)}
         </Text>
         <Text style={{ fontSize: 11, color: C.muted, marginTop: 2, fontFamily: 'Urbanist_500Medium' }}>
-          into your wallet
+          {walletType === 'momo-send' ? 'to recipient' : 'into your wallet'}
         </Text>
       </View>
 
@@ -955,10 +1030,11 @@ function WalletConfirm({
    SUCCESS SCREEN
 ══════════════════════════════════════════════════════════════════════════════ */
 function WalletSuccess({
-  amount, reference, onDone,
+  amount, reference, title = 'Wallet Loaded!', onDone,
 }: {
   amount: string;
   reference: string;
+  title?: string;
   onDone: () => void;
 }) {
   const scale = useRef(new Animated.Value(0)).current;
@@ -991,7 +1067,7 @@ function WalletSuccess({
         marginBottom: 6, fontFamily: 'Urbanist_800ExtraBold',
         opacity: fade, transform: [{ translateY: slideY }],
       }}>
-        Wallet Loaded!
+        {title}
       </Animated.Text>
 
       <Animated.Text style={{
@@ -1052,30 +1128,101 @@ export default function WalletScreen() {
   const [from, setFrom] = useState<WalletView>('etopup-form');
   const [formData, setFormData] = useState<WFState | null>(null);
   const [loading, setLoading] = useState(false);
+  const [balances, setBalances] = useState({ topup: 0, momo: 0 });
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const toast = useToast();
+
+  const fetchBalances = useCallback(async () => {
+    setBalanceLoading(true);
+    try {
+      const b = await apiGetWalletBalances();
+      setBalances({ topup: b.topup, momo: b.momo });
+    } catch { /* silently fail */ } finally {
+      setBalanceLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchBalances(); }, [fetchBalances]);
 
   const titles: Record<WalletView, string> = {
     home: 'Wallet',
     'etopup-form': 'Load e Top-Up Wallet',
     'momo-form': 'Load Mobile Money',
+    'momo-send': 'Cash Disbursement',
     confirm: 'Confirm Transaction',
     success: 'Success',
   };
   const backTo: Record<WalletView, WalletView> = {
     home: 'home', 'etopup-form': 'home',
-    'momo-form': 'home', confirm: from, success: 'home',
+    'momo-form': 'home', 'momo-send': 'home', confirm: from, success: 'home',
   };
   const headerColors: Record<WalletView, readonly [string, string, string]> = {
     home: [C.gradientStart, C.blue, C.gradientEnd],
     'etopup-form': [C.gradientStart, C.blue, C.gradientEnd],
     'momo-form': ['#12C47E', '#0A9260', '#065C3D'],
+    'momo-send': ['#12C47E', '#0A9260', '#065C3D'],
     confirm: [C.gradientStart, C.blue, C.gradientEnd],
     success: [C.gradientStart, C.blue, C.gradientEnd],
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(async () => {
+    if (!formData) return;
     setLoading(true);
-    setTimeout(() => { setLoading(false); setView('success'); }, 1800);
-  };
+    const amount = Number(formData.amount);
+    const phone = formData.phoneNumber
+      ? '233' + formData.phoneNumber.replace(/^0/, '').replace(/\s/g, '')
+      : undefined;
+    const payload = {
+      amount,
+      phoneNumber: phone,
+      referenceId: formData.referenceId,
+      product: formData.product as 'MMONEYDB' | 'MOMOWALLET' | 'MOMOCASHOUT' | 'MOMOCASHIN',
+      accountId: formData.accountId,
+    };
+    const pollStatus = (refId: string): Promise<void> =>
+      new Promise((resolve, reject) => {
+        const t0 = Date.now();
+        const check = async () => {
+          const elapsed = Date.now() - t0;
+          if (elapsed >= 300_000) { reject(new Error('Transaction timed out.')); return; }
+          try {
+            const r = await apiCheckTransactionStatus(refId);
+            if (r.status === 'success') { resolve(); return; }
+            if (r.status === 'failed') { reject(new Error(r.entry?.Message ?? 'Transaction failed.')); return; }
+          } catch { /* retry on network error */ }
+          setTimeout(check, elapsed < 30_000 ? 1_000 : elapsed < 90_000 ? 2_000 : 5_000);
+        };
+        check();
+      });
+    // Pre-flight balance checks
+    if (
+      (formData.product === 'MOMOCASHIN' || formData.product === 'MOMOWALLET') &&
+      amount > balances.momo
+    ) {
+      setLoading(false);
+      toast.show('Insufficient Mobile Money balance.', 'error');
+      return;
+    }
+
+    try {
+      if (formData.product === 'MOMOWALLET') {
+        await apiLoadWalletFromWallet(payload);
+      } else if (formData.product === 'MOMOCASHIN') {
+        await apiSendMoMo(payload);
+      } else {
+        await apiLoadWalletMoMo(payload);
+      }
+      await pollStatus(formData.referenceId);
+      setLoading(false);
+      setView('success');
+      fetchBalances();
+    } catch (err: any) {
+      setLoading(false);
+      // Regenerate ref ID — failed ref must never be reused
+      setFormData(p => p ? { ...p, referenceId: genWalletRef() } : p);
+      toast.show(err.message ?? 'Transaction failed. Please try again.', 'error');
+    }
+  }, [formData, fetchBalances, toast]);
   const reset = () => { setView('home'); setFormData(null); };
 
   return (
@@ -1088,12 +1235,22 @@ export default function WalletScreen() {
         />
       )}
 
-      {view === 'home' && <WalletHome onSelect={setView} />}
+      {view === 'home' && (
+        <WalletHome
+          onSelect={setView}
+          topup={balances.topup}
+          momo={balances.momo}
+          balanceLoading={balanceLoading}
+          onRefresh={fetchBalances}
+        />
+      )}
 
-      {(view === 'etopup-form' || view === 'momo-form') && (
+      {(view === 'etopup-form' || view === 'momo-form' || view === 'momo-send') && (
         <WalletForm
           key={view}
-          isMoMo={view === 'momo-form'}
+          isMoMo={view === 'momo-form' || view === 'momo-send'}
+          isSend={view === 'momo-send'}
+          initialProduct={view === 'momo-send' ? 'MOMOCASHIN' : undefined}
           onBack={() => setView('home')}
           onSubmit={d => { setFormData(d); setFrom(view); setView('confirm'); }}
         />
@@ -1113,6 +1270,7 @@ export default function WalletScreen() {
         <WalletSuccess
           amount={`GH\u20B5${Number(formData.amount).toFixed(2)}`}
           reference={formData.referenceId}
+          title={formData.product === 'MOMOCASHIN' ? 'Money Sent!' : 'Wallet Loaded!'}
           onDone={reset}
         />
       )}

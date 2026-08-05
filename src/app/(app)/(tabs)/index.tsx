@@ -1,42 +1,47 @@
+import { apiGetDashboardData } from '@/api';
+import type { DashboardData } from '@/api';
 import { Icon } from "@/components/ui/Icon";
 import { useAuth } from "@/store/auth.store";
 import { Colors, shadowStyle } from "@/theme";
 import { LinearGradient } from "expo-linear-gradient";
-import { useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { RefreshCw } from "lucide-react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const C = Colors;
 const sd = (radius: number, _color: string, opacity: number) =>
   shadowStyle(opacity, radius, 1);
 
-const DASH = {
-  databundleSales: 9.3,
-  airtimeSales: 23,
-  mobileMoneyTransfers: 0,
-  databundleLastMonth: 4,
-  airtimeLastMonth: 7,
-  mobileMoneyLastMonth: 0,
-  databundleTrend: 5.3,
-  airtimeTrend: 16,
-  mobileMoneyTrend: 0,
-  webSales: 19.5,
-  apiSales: 12.8,
-  mobileAppSales: 0,
-  todayTransactions: {
-    airtime: { successful: 23, failed: 3 },
-    data: { successful: 11, failed: 0 },
-    mobileMoneyCredit: { successful: 0, failed: 0 },
-    mobileMoneyDebit: { successful: 2, failed: 1 },
-  },
+const getMonthRange = () => {
+  const now = new Date();
+  const start = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const end = now.toISOString().slice(0, 10);
+  return { start, end };
 };
 
 export default function HomeScreen() {
   const { user } = useAuth();
   const [hidden, setHidden] = useState(false);
+  const [dash, setDash] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
 
-  const displayName = user?.name.split(" ")[0] ?? "there";
+  const { start: startDate, end: endDate } = useMemo(getMonthRange, []);
+
+  const fetchDash = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await apiGetDashboardData(startDate, endDate);
+      setDash(data);
+    } catch { /* silently fail */ } finally {
+      setLoading(false);
+    }
+  }, [startDate, endDate]);
+
+  useEffect(() => { fetchDash(); }, [fetchDash]);
+
+  const displayName = user?.name?.split(" ")[0] ?? user?.username?.split('@')[0] ?? "there";
   const initials = displayName[0]?.toUpperCase() ?? "U";
 
   const getGreeting = () => {
@@ -46,23 +51,19 @@ export default function HomeScreen() {
     return "Good evening,";
   };
 
-  const totalSales =
-    DASH.databundleSales + DASH.airtimeSales + DASH.mobileMoneyTransfers;
-  const totalSuccess =
-    DASH.todayTransactions.airtime.successful +
-    DASH.todayTransactions.data.successful +
-    DASH.todayTransactions.mobileMoneyCredit.successful +
-    DASH.todayTransactions.mobileMoneyDebit.successful;
-  const totalFailed =
-    DASH.todayTransactions.airtime.failed +
-    DASH.todayTransactions.data.failed +
-    DASH.todayTransactions.mobileMoneyCredit.failed +
-    DASH.todayTransactions.mobileMoneyDebit.failed;
+  const num = (v: unknown): number => Number(v) || 0;
 
-  const salesMax = Math.max(
-    DASH.databundleSales, DASH.airtimeSales, DASH.mobileMoneyTransfers, 1
-  );
-  const channelTotal = DASH.webSales + DASH.apiSales + DASH.mobileAppSales;
+  const totalSales = num(dash?.databundleSales) + num(dash?.airtimeSales) + num(dash?.mobileMoneyTransfers);
+  const tx = dash?.todayTransactions;
+  const totalSuccess =
+    num(tx?.airtime.successful) + num(tx?.data.successful) +
+    num(tx?.mobileMoneyCredit.successful) + num(tx?.mobileMoneyDebit.successful);
+  const totalFailed =
+    num(tx?.airtime.failed) + num(tx?.data.failed) +
+    num(tx?.mobileMoneyCredit.failed) + num(tx?.mobileMoneyDebit.failed);
+
+  const salesMax = Math.max(num(dash?.databundleSales), num(dash?.airtimeSales), num(dash?.mobileMoneyTransfers), 1);
+  const channelTotal = num(dash?.webSales) + num(dash?.apiSales) + num(dash?.mobileAppSales);
 
   return (
     <ScrollView
@@ -120,9 +121,12 @@ export default function HomeScreen() {
           <View style={{ position: "absolute", bottom: -24, left: -16, width: 100, height: 100, borderRadius: 50, backgroundColor: "rgba(233,145,10,0.10)" }} />
 
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-            <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontFamily: "Urbanist_600SemiBold" }}>
-              {"Today's Total Sales"}
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontFamily: "Urbanist_600SemiBold" }}>
+                Total Sales
+              </Text>
+              {loading && <ActivityIndicator size="small" color="rgba(255,255,255,0.5)" />}
+            </View>
             <TouchableOpacity
               onPress={() => setHidden(!hidden)}
               accessibilityRole="button"
@@ -216,7 +220,20 @@ export default function HomeScreen() {
       <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <Text style={{ fontSize: 15, color: C.navy, fontFamily: "Urbanist_700Bold" }}>Sales Breakdown</Text>
-          <Text style={{ fontSize: 11, color: C.blue, fontFamily: "Urbanist_600SemiBold" }}>Today</Text>
+          <TouchableOpacity
+            onPress={fetchDash}
+            disabled={loading}
+            style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+            accessibilityRole="button"
+            accessibilityLabel="Refresh dashboard"
+          >
+            {loading
+              ? <ActivityIndicator size="small" color={C.blue} />
+              : <RefreshCw size={12} color={C.blue} />}
+            <Text style={{ fontSize: 11, color: loading ? C.pale : C.blue, fontFamily: "Urbanist_600SemiBold" }}>
+              This Month
+            </Text>
+          </TouchableOpacity>
         </View>
         <ScrollView
           horizontal
@@ -224,9 +241,9 @@ export default function HomeScreen() {
           contentContainerStyle={{ gap: 10, paddingRight: 4 }}
         >
           {[
-            { label: "Airtime", icon: "phone", color: C.blue, bg: "rgba(24,120,206,0.1)", amount: DASH.airtimeSales, last: DASH.airtimeLastMonth, trend: DASH.airtimeTrend },
-            { label: "Data", icon: "wifi", color: C.green, bg: "rgba(13,168,112,0.1)", amount: DASH.databundleSales, last: DASH.databundleLastMonth, trend: DASH.databundleTrend },
-            { label: "MoMo", icon: "smartphone", color: C.orange, bg: "rgba(233,145,10,0.1)", amount: DASH.mobileMoneyTransfers, last: DASH.mobileMoneyLastMonth, trend: DASH.mobileMoneyTrend },
+            { label: "Airtime", icon: "phone", color: C.blue, bg: "rgba(24,120,206,0.1)", amount: num(dash?.airtimeSales), last: num(dash?.airtimeLastMonth), trend: num(dash?.airtimeTrend) },
+            { label: "Data", icon: "wifi", color: C.green, bg: "rgba(13,168,112,0.1)", amount: num(dash?.databundleSales), last: num(dash?.databundleLastMonth), trend: num(dash?.databundleTrend) },
+            { label: "MoMo", icon: "smartphone", color: C.orange, bg: "rgba(233,145,10,0.1)", amount: num(dash?.mobileMoneyTransfers), last: num(dash?.mobileMoneyLastMonth), trend: num(dash?.mobileMoneyTrend) },
           ].map((s) => {
             const hasData = s.amount > 0;
             const pct = salesMax > 0 ? (s.amount / salesMax) * 100 : 0;
@@ -243,7 +260,7 @@ export default function HomeScreen() {
                   {hasData ? (
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 3, borderRadius: 99, paddingVertical: 3, paddingHorizontal: 7, backgroundColor: s.trend > 0 ? "rgba(13,168,112,0.1)" : "rgba(232,51,74,0.1)" }}>
                       <Icon name={s.trend > 0 ? "trending-up" : "trending-down"} size={10} color={s.trend > 0 ? C.green : C.red} />
-                      <Text style={{ fontSize: 10, fontFamily: "Urbanist_700Bold", color: s.trend > 0 ? C.green : C.red }}>+{s.trend}</Text>
+                      <Text style={{ fontSize: 10, fontFamily: "Urbanist_700Bold", color: s.trend > 0 ? C.green : C.red }}>{s.trend > 0 ? '+' : ''}{s.trend.toFixed(1)}%</Text>
                     </View>
                   ) : (
                     <View style={{ borderRadius: 99, paddingVertical: 3, paddingHorizontal: 7, backgroundColor: "rgba(24,120,206,0.07)" }}>
@@ -252,7 +269,7 @@ export default function HomeScreen() {
                   )}
                 </View>
                 <Text style={{ fontSize: 18, fontFamily: "Urbanist_800ExtraBold", color: hasData ? C.navy : C.pale, marginBottom: 2 }}>
-                  {hasData ? `GH₵${s.amount}` : "GH₵0"}
+                  {hasData ? `GH₵${s.amount.toFixed(2)}` : "GH₵0.00"}
                 </Text>
                 <Text style={{ fontSize: 11, fontFamily: "Urbanist_600SemiBold", color: C.muted, marginBottom: 10 }}>{s.label}</Text>
                 <View style={{ height: 4, borderRadius: 99, backgroundColor: "rgba(24,120,206,0.08)", overflow: "hidden" }}>
@@ -260,7 +277,7 @@ export default function HomeScreen() {
                 </View>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 5 }}>
                   <Text style={{ fontSize: 10, color: C.pale, fontFamily: "Urbanist_500Medium" }}>Last month</Text>
-                  <Text style={{ fontSize: 10, fontFamily: "Urbanist_700Bold", color: C.light }}>GH₵{s.last}</Text>
+                  <Text style={{ fontSize: 10, fontFamily: "Urbanist_700Bold", color: C.light }}>GH₵{s.last.toFixed(2)}</Text>
                 </View>
               </View>
             );
@@ -280,10 +297,10 @@ export default function HomeScreen() {
         </View>
         <View style={{ borderRadius: 20, overflow: "hidden", backgroundColor: C.white, borderWidth: 1, borderColor: C.border, ...sd(6, C.navy, 0.05) }}>
           {[
-            { label: "Airtime", icon: "phone", color: C.blue, bg: "rgba(24,120,206,0.1)", tx: DASH.todayTransactions.airtime },
-            { label: "Data Bundle", icon: "wifi", color: C.green, bg: "rgba(13,168,112,0.1)", tx: DASH.todayTransactions.data },
-            { label: "MoMo Credit", icon: "arrow-down-left", color: C.green, bg: "rgba(13,168,112,0.1)", tx: DASH.todayTransactions.mobileMoneyCredit },
-            { label: "MoMo Debit", icon: "arrow-up-right", color: C.orange, bg: "rgba(233,145,10,0.1)", tx: DASH.todayTransactions.mobileMoneyDebit },
+            { label: "Airtime", icon: "phone", color: C.blue, bg: "rgba(24,120,206,0.1)", tx: tx?.airtime ?? { successful: 0, failed: 0 } },
+            { label: "Data Bundle", icon: "wifi", color: C.green, bg: "rgba(13,168,112,0.1)", tx: tx?.data ?? { successful: 0, failed: 0 } },
+            { label: "MoMo Credit", icon: "arrow-down-left", color: C.green, bg: "rgba(13,168,112,0.1)", tx: tx?.mobileMoneyCredit ?? { successful: 0, failed: 0 } },
+            { label: "MoMo Debit", icon: "arrow-up-right", color: C.orange, bg: "rgba(233,145,10,0.1)", tx: tx?.mobileMoneyDebit ?? { successful: 0, failed: 0 } },
           ].map((row, i, arr) => {
             const total = row.tx.successful + row.tx.failed;
             const hasActivity = total > 0;
@@ -337,9 +354,9 @@ export default function HomeScreen() {
         </View>
         <View style={{ flexDirection: "row", gap: 10 }}>
           {[
-            { label: "Web", icon: "globe", color: C.blue, bg: "rgba(24,120,206,0.1)", amount: DASH.webSales },
-            { label: "API", icon: "code-2", color: C.purple, bg: "rgba(124,92,252,0.1)", amount: DASH.apiSales },
-            { label: "Mobile App", icon: "layers", color: C.orange, bg: "rgba(233,145,10,0.1)", amount: DASH.mobileAppSales },
+            { label: "Web", icon: "globe", color: C.blue, bg: "rgba(24,120,206,0.1)", amount: num(dash?.webSales) },
+            { label: "API", icon: "code-2", color: C.purple, bg: "rgba(124,92,252,0.1)", amount: num(dash?.apiSales) },
+            { label: "Mobile App", icon: "layers", color: C.orange, bg: "rgba(233,145,10,0.1)", amount: num(dash?.mobileAppSales) },
           ].map((ch) => {
             const pct = channelTotal > 0 ? Math.round((ch.amount / channelTotal) * 100) : 0;
             return (
@@ -348,7 +365,7 @@ export default function HomeScreen() {
                   <Icon name={ch.icon} size={15} color={ch.color} />
                 </View>
                 <Text style={{ fontSize: 14, fontFamily: "Urbanist_800ExtraBold", color: ch.amount > 0 ? C.navy : C.pale, marginBottom: 1 }}>
-                  {ch.amount > 0 ? `GH₵${ch.amount}` : "—"}
+                  {ch.amount > 0 ? `GH₵${ch.amount.toFixed(2)}` : "—"}
                 </Text>
                 <Text style={{ fontSize: 11, fontFamily: "Urbanist_600SemiBold", color: C.muted, marginBottom: 8 }}>{ch.label}</Text>
                 <View style={{ height: 3, borderRadius: 99, backgroundColor: C.divider, overflow: "hidden" }}>

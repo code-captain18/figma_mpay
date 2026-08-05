@@ -1,19 +1,11 @@
+import { apiExportTransactions, API_CSV_HEADER, buildApiCsvRow } from '@/api';
 import { FilterSheet, EMPTY_FILTER } from '@/components/history/FilterSheet';
 import { TxDetail } from '@/components/history/TxDetail';
 import { useHistoryFilter } from '@/hooks/useHistoryFilter';
 import { GradHdr } from '@/components/services/GradHdr';
 import { useToast } from '@/store/toast.store';
 import { DateInput } from '@/components/ui/DateInput';
-import {
-  CSV_HEADER,
-  NETWORKS,
-  TXNS,
-  USER,
-  buildCsvRow,
-  fmtAgo,
-  fmtDateTime,
-  groupByDate,
-} from '@/data';
+import { NETWORKS } from '@/data';
 import { C, F, G } from '@/theme';
 import { formatGHS } from '@/utils/format';
 import type { FilterState, SvcType, TxRecord } from '@/types';
@@ -39,6 +31,7 @@ import {
 } from 'lucide-react-native';
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   ScrollView,
   StyleSheet,
@@ -95,10 +88,7 @@ const SVC_ICON_BG: Record<string, string> = {
 
 function getTxTitle(tx: TxRecord): string {
   const netName = NETWORKS.find(n => n.id === tx.network)?.name ?? tx.network;
-  if (tx.type === 'airtime') {
-    const amt = tx.amount % 1 === 0 ? tx.amount.toFixed(0) : tx.amount.toFixed(2);
-    return `${netName} Airtime`;
-  }
+  if (tx.type === 'airtime') return `${netName} Airtime`;
   if (tx.bundle) return `${netName} ${tx.bundle}`;
   return `${netName} ${SVC_LABELS[tx.type] ?? tx.type}`;
 }
@@ -157,15 +147,25 @@ export default function HistoryScreen() {
   const toast = useToast();
   const [selected, setSelected] = useState<TxRecord | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const { query, setQuery, filter, setFilter, page, setPage, filtered, paged, groups, activeFilterCount, stats, resetFilter } = useHistoryFilter();
+  const { query, setQuery, filter, setFilter, source, setSource, loadMore, loading, txPage, groups, activeFilterCount, stats, resetFilter } = useHistoryFilter();
 
   const exportCsv = useCallback(async () => {
     try {
-      const csv = [CSV_HEADER, ...filtered.map(tx => buildCsvRow(tx, USER))].join('\n');
-      const path = FileSystem.cacheDirectory + `mpay_txns_${Date.now()}.csv`;
-      await FileSystem.writeAsStringAsync(path, csv, {
-        encoding: FileSystem.EncodingType.UTF8,
+      toast.show('Preparing export\u2026', 'success');
+      const rows = await apiExportTransactions({
+        source,
+        search: query || undefined,
+        referenceId: filter.ref || undefined,
+        phoneNumber: filter.phone || undefined,
+        dateFrom: filter.dateFrom || undefined,
+        dateTo: filter.dateTo || undefined,
+        amountFrom: filter.amtMin ? parseFloat(filter.amtMin) : undefined,
+        amountTo: filter.amtMax ? parseFloat(filter.amtMax) : undefined,
       });
+      if (!rows.length) { toast.show('No transactions to export.', 'error'); return; }
+      const csv = [API_CSV_HEADER, ...rows.map(buildApiCsvRow)].join('\n');
+      const path = FileSystem.cacheDirectory + `mpay_txns_${Date.now()}.csv`;
+      await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
       await Sharing.shareAsync(path, {
         mimeType: 'text/csv',
         dialogTitle: 'Export Transactions',
@@ -174,10 +174,32 @@ export default function HistoryScreen() {
     } catch {
       toast.show('Could not export transactions. Please try again.', 'error');
     }
-  }, [filtered, toast]);
+  }, [source, query, filter, toast]);
 
   const handleSelect = useCallback((tx: TxRecord) => setSelected(tx), []);
   const handleBack = useCallback(() => setSelected(null), []);
+
+  type Group = { label: string; items: TxRecord[] };
+  const renderGroup = useCallback(({ item: group }: { item: Group }) => (
+    <View style={hs.groupWrapper}>
+      <View style={hs.dateLabelRow}>
+        <Calendar size={12} color={C.muted} strokeWidth={2} />
+        <Text style={hs.dateLabel}>{group.label}</Text>
+        <View style={hs.dateLabelLine} />
+        <Text style={hs.dateCount}>{group.items.length} txns</Text>
+      </View>
+      <View style={hs.txCard}>
+        {group.items.map((tx, i) => (
+          <TxRow
+            key={`${tx.id}-${i}`}
+            tx={tx}
+            isLast={i === group.items.length - 1}
+            onPress={handleSelect}
+          />
+        ))}
+      </View>
+    </View>
+  ), [handleSelect]);
 
   if (selected) {
     return <TxDetail tx={selected} onBack={handleBack} />;
@@ -187,31 +209,38 @@ export default function HistoryScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <GradHdr title="Transactions" />
 
+      {/* ── Source tabs ── */}
+      <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4, gap: 8 }}>
+        {(['recent', 'history'] as const).map(s => (
+          <TouchableOpacity
+            key={s}
+            onPress={() => setSource(s)}
+            activeOpacity={0.8}
+            style={{
+              flex: 1, paddingVertical: 9, borderRadius: 11,
+              alignItems: 'center',
+              backgroundColor: source === s ? C.blue : C.white,
+              borderWidth: 1.5,
+              borderColor: source === s ? C.blue : C.border,
+            }}
+          >
+            <Text style={{
+              fontSize: 13,
+              fontFamily: source === s ? F.bold : F.medium,
+              color: source === s ? '#fff' : C.muted,
+            }}>
+              {s === 'recent' ? 'Recent' : 'History'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <FlatList
         data={groups}
         keyExtractor={(g) => g.label}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        renderItem={({ item: group }) => (
-          <View style={hs.groupWrapper}>
-            <View style={hs.dateLabelRow}>
-              <Calendar size={12} color={C.muted} strokeWidth={2} />
-              <Text style={hs.dateLabel}>{group.label}</Text>
-              <View style={hs.dateLabelLine} />
-              <Text style={hs.dateCount}>{group.items.length} txns</Text>
-            </View>
-            <View style={hs.txCard}>
-              {group.items.map((tx, i) => (
-                <TxRow
-                  key={tx.id}
-                  tx={tx}
-                  isLast={i === group.items.length - 1}
-                  onPress={handleSelect}
-                />
-              ))}
-            </View>
-          </View>
-        )}
+        renderItem={renderGroup}
         ListHeaderComponent={<>
         {/* ── Stats strip ── */}
         <View style={hs.statsStrip}>
@@ -234,7 +263,7 @@ export default function HistoryScreen() {
             <Search size={14} color={C.pale} />
             <TextInput
               value={query}
-              onChangeText={v => { setQuery(v); setPage(1); }}
+              onChangeText={v => { setQuery(v); }}
               placeholder="Search phone, ref, network…"
               placeholderTextColor={C.pale}
               style={hs.searchInput}
@@ -297,7 +326,7 @@ export default function HistoryScreen() {
         {/* ── Results count ── */}
         <View style={hs.resultsRow}>
           <Text style={hs.resultsText}>
-            {filtered.length} transaction{filtered.length !== 1 ? 's' : ''}
+            {txPage?.pagination.total ?? 0} transaction{(txPage?.pagination.total ?? 0) !== 1 ? 's' : ''}
             {(query || activeFilterCount > 0) ? ' found' : ''}
           </Text>
         </View>
@@ -323,18 +352,29 @@ export default function HistoryScreen() {
         }
         ListFooterComponent={
           <View style={hs.listContent}>
-            {paged.length < filtered.length && (
-              <TouchableOpacity onPress={() => setPage(p => p + 1)}
-                style={hs.loadMoreBtn} activeOpacity={0.85}>
-                <Text style={hs.loadMoreText}>
-                  Load more · {filtered.length - paged.length} remaining
-                </Text>
+            {loading && (
+              <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                <ActivityIndicator size="small" color={C.blue} />
+              </View>
+            )}
+            {!loading && (txPage?.pagination.page ?? 0) < (txPage?.pagination.totalPages ?? 0) && (
+              <TouchableOpacity onPress={loadMore} style={hs.loadMoreBtn} activeOpacity={0.85}>
+                <Text style={hs.loadMoreText}>Load more</Text>
               </TouchableOpacity>
             )}
             <View style={{ height: 24 }} />
           </View>
         }
       />
+
+      {filterOpen && (
+        <FilterSheet
+          filter={filter}
+          setFilter={setFilter}
+          onApply={() => setFilterOpen(false)}
+          onClose={() => setFilterOpen(false)}
+        />
+      )}
     </View>
   );
 }

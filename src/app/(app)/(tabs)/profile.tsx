@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   TextInput, ActivityIndicator, Modal,
@@ -8,40 +8,103 @@ import { useRouter } from 'expo-router';
 import {
   Pencil, Key, Users, UserPlus, Trash2, ChevronRight,
   Bell, HelpCircle, FileText, LogOut, Eye, EyeOff,
-  CheckCircle2, Shield, ShieldCheck,
+  CheckCircle2, Shield, ShieldCheck, Package,
 } from 'lucide-react-native';
 import { GradHdr } from '@/components/services/GradHdr';
 import { PermMatrix } from '@/components/services/PermMatrix';
 import { C, F, G } from '@/theme';
-import { DASH, INIT_ASSISTANTS, makeEmptyPerms, PERM_SECTIONS } from '@/data';
+import { INIT_ASSISTANTS, makeEmptyPerms, PERM_SECTIONS } from '@/data';
 import type { ProfileView, Assistant, PermMap, PermKey } from '@/types';
 import { useAuth } from '@/store/auth.store';
-import { apiVerifyPassword, apiChangePassword } from '@/api';
+import { apiVerifyPassword, apiChangePassword, apiGetProfile, apiGetAssistantProfile, apiEditProfile, apiEditAssistantProfile, apiListAssistants, apiAddAssistant, apiEditAssistant, apiDeleteAssistant, apiGetAssistantPermissions, apiSaveAssistantPermissions } from '@/api';
+import type { ProfileProduct, ApiPermissions, ApiPermEntry } from '@/api';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+const ID_PROOF_LABELS: Record<string, string> = {
+  GHANA_CARD: 'Ghana Card', VOTERS_ID: "Voter's ID",
+  DRIVERS_LICENSE: "Driver's License", PASSPORT: 'Passport', SSNIT: 'SSNIT',
+};
+const ID_PROOF_TYPES = ['GHANA_CARD', 'VOTERS_ID', 'DRIVERS_LICENSE', 'PASSPORT', 'SSNIT'] as const;
+
+function mapApiAssistant(a: { assistantId: string; firstname: string; lastname: string; email: string; phoneNumber: string; idProofType?: string; idNumber?: string; status: string; created_at?: string; resellerId?: string }): Assistant {
+  return {
+    id: a.assistantId, assistantId: a.assistantId,
+    firstName: a.firstname ?? '', lastName: a.lastname ?? '',
+    phoneNumber: a.phoneNumber ?? '', email: a.email ?? '',
+    status: a.status === 'active' ? 'active' : 'inactive',
+    permissions: makeEmptyPerms(),
+    createdAt: a.created_at ?? new Date().toISOString(),
+    idProofType: a.idProofType, idNumber: a.idNumber,
+  };
+}
+
+function apiPermsToPermMap(apiPerms: ApiPermissions): PermMap {
+  const pm = makeEmptyPerms();
+  const get = (tab: string, mod: string) => apiPerms[tab]?.find(m => m.module === mod);
+  const row = (m: ReturnType<typeof get>) => ({
+    view: m?.can_view ?? false, create: m?.can_add ?? false,
+    approve: m?.can_edit ?? false, export: m?.can_export ?? false, delete: m?.can_delete ?? false,
+  });
+  const airtime = get('Web Topup', 'Airtime Topup');
+  const data    = get('Web Topup', 'Data Bundle');
+  const momo    = get('Web Topup', 'Mobile Money Services');
+  const reports = get('Reports', 'Transaction Report');
+  pm['Airtime:purchase'] = row(airtime); pm['Airtime:bulk'] = row(airtime);
+  pm['Data:purchase']    = row(data);    pm['Data:bulk']    = row(data);
+  pm['MoMo:send']        = row(momo);    pm['MoMo:withdraw'] = row(momo);
+  pm['Reports:transactions'] = row(reports); pm['Reports:sales'] = row(reports);
+  return pm;
+}
+
+function permMapToApiPerms(perms: PermMap): ApiPermEntry[] {
+  const e = (tab: string, module: string, key: string): ApiPermEntry => {
+    const p = key ? perms[key] : null;
+    return { tab, module, can_view: p?.view ?? false, can_add: p?.create ?? false,
+      can_edit: p?.approve ?? false, can_delete: p?.delete ?? false, can_import: false, can_export: p?.export ?? false };
+  };
+  return [
+    e('General', 'Dashboard', ''),      e('General', 'My Profile', ''), e('General', 'Product Information', ''),
+    e('Web Topup', 'Airtime Topup', 'Airtime:purchase'), e('Web Topup', 'Data Bundle', 'Data:purchase'),
+    e('Web Topup', 'Fibre Bundle', ''),  e('Web Topup', 'Bulk Topup', 'Airtime:bulk'),
+    e('Web Topup', 'Mobile Money Services', 'MoMo:send'),
+    e('API Topup', 'Airtime Topup', ''), e('API Topup', 'Data Bundle', ''),
+    e('API Topup', 'Fibre Bundle', ''),  e('API Topup', 'Mobile Money Services', ''),
+    e('Reports', 'Transaction Report', 'Reports:transactions'),
+  ];
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main ProfileScreen — state machine
 // ─────────────────────────────────────────────────────────────────────────────
 function ProfileScreen({ onLogout }: { onLogout: () => void }) {
   const { user, updateUser } = useAuth();
+  const isAsst = user?.accountType?.toLowerCase() === 'assistant';
+
   const [view,          setView]          = useState<ProfileView>('home');
   const [assistants,    setAssistants]    = useState<Assistant[]>(INIT_ASSISTANTS);
   const [editingAsst,   setEditingAsst]   = useState<Assistant | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
-  const totalSales =
-    DASH.airtimeSales + DASH.databundleSales + DASH.mobileMoneyTransfers;
+  const [products,      setProducts]      = useState<ProfileProduct[]>([]);
+  const [canEdit,       setCanEdit]       = useState(true);
 
   // ── Edit Profile state ─────────────────────────────────────────────────────
   const [editForm, setEditForm] = useState({
-    accountName:     "John's Business",
-    companyName:     'JM Enterprises Ltd',
-    firstName:       user?.name.split(' ')[0] ?? 'John',
-    lastName:        user?.name.split(' ')[1] ?? 'Mensah',
+    resellerid:      '',
+    accountName:     '',
+    companyName:     '',
+    firstName:       user?.name?.split(' ')[0] ?? '',
+    lastName:        user?.name?.split(' ').slice(1).join(' ') ?? '',
     phoneNumber:     user?.phone ?? '',
-    email:           user?.email ?? '',
-    address:         '123 Independence Ave, Accra',
-    ghanaCardNumber: 'GHA-123456789-0',
-    taxId:           'TIN987654321',
+    email:           user?.email ?? user?.username ?? '',
+    address:         '',
+    ghanaCardNumber: '',
+    taxId:           '',
+    salesExecutive:  '',
+    category:        'personal',
+    status:          'active',
+    createdAt:       '',
   });
   const [editSaving, setEditSaving] = useState(false);
   const [editDone,   setEditDone]   = useState(false);
@@ -60,9 +123,82 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
   const [pwdDone,        setPwdDone]        = useState(false);
 
   // ── Assistant form state ───────────────────────────────────────────────────
-  const [asstForm,   setAsstForm]   = useState({ firstName: '', lastName: '', phoneNumber: '', email: '' });
+  const [asstForm,   setAsstForm]   = useState({ firstName: '', lastName: '', phoneNumber: '', email: '', idProofType: 'GHANA_CARD', idNumber: '' });
   const [asstPerms,  setAsstPerms]  = useState<PermMap>(makeEmptyPerms());
   const [asstSaving, setAsstSaving] = useState(false);
+  const [asstError,  setAsstError]  = useState('');
+  const [assistantsLoading, setAssistantsLoading] = useState(false);
+  const [assistantsSearch,  setAssistantsSearch]  = useState('');
+
+  const loadAssistants = useCallback(async (search?: string) => {
+    if (isAsst) return;
+    setAssistantsLoading(true);
+    try {
+      const { assistants: list } = await apiListAssistants(1, 50, search || undefined);
+      setAssistants(list.map(mapApiAssistant));
+    } catch {
+      // gracefully fail — keep previous list
+    } finally {
+      setAssistantsLoading(false);
+    }
+  }, [isAsst]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        if (isAsst) {
+          const email = user?.email ?? user?.username ?? '';
+          const { profile: p, products: prods } = await apiGetAssistantProfile(email);
+          if (cancelled) return;
+          setCanEdit(false);
+          setEditForm(prev => ({
+            ...prev,
+            resellerid:  p.resellerId,
+            firstName:   p.firstName ?? '',
+            lastName:    p.lastname ?? '',
+            phoneNumber: p.phoneNumber ?? '',
+            email:       p.email ?? '',
+            status:      p.status ?? 'active',
+            createdAt:   p.createdAt ?? '',
+          }));
+          setProducts(prods.filter(pr => pr.prodCode !== 'MMONEYDB'));
+        } else {
+          const { profile: p, products: prods } = await apiGetProfile();
+          if (cancelled) return;
+          setEditForm(prev => ({
+            ...prev,
+            resellerid:      p.resellerid ?? '',
+            accountName:     p.accountName ?? '',
+            companyName:     p.companyName ?? '',
+            firstName:       p.firstName ?? '',
+            lastName:        p.lastName ?? '',
+            phoneNumber:     p.phoneNumber ?? '',
+            email:           p.email ?? '',
+            address:         p.address ?? '',
+            ghanaCardNumber: p.ghanaCardNum ?? '',
+            taxId:           p.taxId ?? '',
+            salesExecutive:  p.salesExecutiveId ?? '',
+            category:        p.category ?? 'personal',
+            status:          p.status ?? 'active',
+            createdAt:       p.createdAt ?? '',
+          }));
+          setProducts(prods.filter(pr => pr.prodCode !== 'MMONEYDB'));
+        }
+      } catch {
+        // gracefully fall back to auth-store values
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [isAsst, user?.email, user?.username]);
+
+  // debounced assistant search
+  useEffect(() => {
+    if (view !== 'assistants') return;
+    const t = setTimeout(() => loadAssistants(assistantsSearch), 500);
+    return () => clearTimeout(t);
+  }, [assistantsSearch]);
 
   const resetPwd = () => {
     setOldPwd(''); setOldPwdVerified(false); setOldPwdError('');
@@ -86,13 +222,13 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               style={home.avatar}
             >
               <Text style={home.avatarText}>
-                {(user?.name ?? 'U').split(' ').map((n: string) => n[0]).join('')}
+                {(user?.name ?? user?.username ?? 'U').split(' ').map((n: string) => n[0]).join('')}
               </Text>
             </LinearGradient>
 
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={home.userName}>{user?.name ?? ''}</Text>
-              <Text style={home.userEmail} numberOfLines={1}>{user?.email ?? ''}</Text>
+              <Text style={home.userName}>{user?.name ?? user?.username ?? ''}</Text>
+              <Text style={home.userEmail} numberOfLines={1}>{user?.email ?? user?.username ?? ''}</Text>
               <View style={home.accountBadge}>
                 <View style={home.onlineDot} />
                 <Text style={home.accountBadgeText}>{user?.accountId ?? ''}</Text>
@@ -112,9 +248,9 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         {/* ── Stats strip ── */}
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
           {[
-            { label: "Today's Sales", value: `GH\u20B5${totalSales.toFixed(2)}`,                   color: C.blue  },
-            { label: 'e Top-Up',      value: `GH\u20B5${(user?.eTopupBalance ?? 0).toFixed(2)}`, color: C.blue  },
-            { label: 'MoMo',          value: `GH\u20B5${(user?.momoBalance ?? 0).toFixed(2)}`,   color: C.green },
+            { label: 'e Top-Up',  value: `GH\u20B5${Number(user?.eTopupBalance ?? 0).toFixed(2)}`, color: C.blue  },
+            { label: 'MoMo',      value: `GH\u20B5${Number(user?.momoBalance ?? 0).toFixed(2)}`,   color: C.green },
+            { label: 'Status',    value: editForm.status || '—',                              color: editForm.status === 'active' ? C.green : editForm.status === 'suspended' ? C.red : C.orange },
           ].map(s => (
             <View key={s.label} style={home.statCard}>
               <Text style={[home.statValue, { color: s.color }]}>{s.value}</Text>
@@ -133,6 +269,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               label:   'Edit Profile',
               sub:     'Update your account info',
               onPress: () => setView('edit'),
+              hidden:  !canEdit,
             },
             {
               Icon:    Key,
@@ -141,6 +278,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               label:   'Change Password',
               sub:     'Update your login password',
               onPress: () => { resetPwd(); setView('password'); },
+              hidden:  false,
             },
             {
               Icon:    Users,
@@ -148,9 +286,10 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               color:   C.green,
               label:   'Assistant Accounts',
               sub:     `${assistants.length} assistant${assistants.length !== 1 ? 's' : ''}`,
-              onPress: () => setView('assistants'),
+              onPress: () => { loadAssistants(''); setAssistantsSearch(''); setView('assistants'); },
+              hidden:  isAsst,
             },
-          ].map((row, i) => (
+          ].filter(r => !r.hidden).map((row, i, arr) => (
             <View key={row.label}>
               <TouchableOpacity
                 onPress={row.onPress}
@@ -166,10 +305,38 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
                 </View>
                 <ChevronRight size={14} color={C.pale} />
               </TouchableOpacity>
-              {i < 2 && <View style={home.menuDivider} />}
+              {i < arr.length - 1 && <View style={home.menuDivider} />}
             </View>
           ))}
         </View>
+
+        {/* ── Products & Services ── */}
+        {products.filter(p => p.status === 'active').length > 0 && (
+          <View style={[home.menuCard, { marginBottom: 16 }]}>
+            <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+              <Package size={13} color={C.blue} />
+              <Text style={{ fontFamily: F.bold, fontSize: 12, color: C.muted, letterSpacing: 0.5 }}>PRODUCTS & SERVICES</Text>
+            </View>
+            {products.filter(p => p.status === 'active').map((p, i, arr) => (
+              <View key={p.prodCode}>
+                <View style={[home.menuRow, { paddingVertical: 11 }]}>
+                  <View style={[home.menuIcon, { backgroundColor: 'rgba(13,168,112,0.08)' }]}>
+                    <Package size={13} color={C.green} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={home.menuLabel}>{p.description}</Text>
+                    <Text style={home.menuSub}>{p.prodCode}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(13,168,112,0.08)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
+                    <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: C.green }} />
+                    <Text style={{ fontSize: 10, fontFamily: F.bold, color: C.green }}>Active</Text>
+                  </View>
+                </View>
+                {i < arr.length - 1 && <View style={home.menuDivider} />}
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* ── Settings menu ── */}
         <View style={[home.menuCard, { marginBottom: 14 }]}>
@@ -234,26 +401,49 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
           contentContainerStyle={ep.content}
           showsVerticalScrollIndicator={false}
         >
-          <EF label="ACCOUNT NAME"       field="accountName"     />
-          <EF label="COMPANY NAME"       field="companyName"     />
+          {!isAsst && <EF label="ACCOUNT NAME" field="accountName" />}
+          {!isAsst && editForm.category === 'business' && <EF label="COMPANY NAME" field="companyName" />}
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <EF label="FIRST NAME"       field="firstName"       />
-            <EF label="LAST NAME"        field="lastName"        />
+            <EF label="FIRST NAME" field="firstName" />
+            <EF label="LAST NAME"  field="lastName"  />
           </View>
-          <EF label="PHONE NUMBER"       field="phoneNumber"     kbt="phone-pad"    />
-          <EF label="EMAIL ADDRESS"      field="email"           disabled kbt="email-address" />
-          <EF label="ADDRESS"            field="address"         />
-          <EF label="GHANA CARD NUMBER"  field="ghanaCardNumber" />
-          <EF label="TAX ID"             field="taxId"           />
+          <EF label="PHONE NUMBER"  field="phoneNumber" kbt="phone-pad" />
+          <EF label="EMAIL ADDRESS" field="email" disabled kbt="email-address" />
+          {!isAsst && editForm.category === 'business' && <EF label="ADDRESS" field="address" />}
+          {!isAsst && <EF label="GHANA CARD NUMBER" field="ghanaCardNumber" />}
+          {!isAsst && <EF label="TAX ID" field="taxId" />}
 
           <TouchableOpacity
             onPress={async () => {
               setEditSaving(true);
               try {
-                await updateUser({
-                  name: `${editForm.firstName} ${editForm.lastName}`.trim(),
-                  phone: editForm.phoneNumber,
-                });
+                if (isAsst) {
+                  await apiEditAssistantProfile({
+                    id:          editForm.resellerid,
+                    firstName:   editForm.firstName,
+                    lastName:    editForm.lastName,
+                    phoneNumber: editForm.phoneNumber,
+                    email:       editForm.email,
+                  });
+                } else {
+                  await apiEditProfile({
+                    id:              editForm.resellerid,
+                    accountName:     editForm.accountName,
+                    companyName:     editForm.companyName,
+                    firstName:       editForm.firstName,
+                    lastName:        editForm.lastName,
+                    phoneNumber:     editForm.phoneNumber,
+                    email:           editForm.email,
+                    address:         editForm.address,
+                    ghanaCardNumber: editForm.ghanaCardNumber,
+                    taxId:           editForm.taxId,
+                    salesExecutive:  editForm.salesExecutive,
+                    category:        editForm.category,
+                    status:          editForm.status,
+                  });
+                }
+                // best-effort local name sync
+                try { await updateUser({ name: `${editForm.firstName} ${editForm.lastName}`.trim(), phone: editForm.phoneNumber }); } catch {}
                 setEditDone(true);
                 setTimeout(() => { setEditDone(false); setView('home'); }, 1500);
               } catch {
@@ -379,7 +569,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
                 if (!user) return;
                 setVerifying(true);
                 try {
-                  const ok = await apiVerifyPassword(user.id, oldPwd);
+                  const ok = await apiVerifyPassword(oldPwd);
                   if (ok) {
                     setOldPwdVerified(true);
                   } else {
@@ -499,7 +689,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
                   if (!user) return;
                   setPwdSaving(true);
                   try {
-                    await apiChangePassword(user.id, oldPwd, newPwd);
+                    await apiChangePassword(newPwd);
                     setPwdDone(true);
                     setTimeout(() => { resetPwd(); setView('home'); }, 1600);
                   } catch {
@@ -560,8 +750,9 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         right={
           <TouchableOpacity
             onPress={() => {
-              setAsstForm({ firstName: '', lastName: '', phoneNumber: '', email: '' });
+              setAsstForm({ firstName: '', lastName: '', phoneNumber: '', email: '', idProofType: 'GHANA_CARD', idNumber: '' });
               setAsstPerms(makeEmptyPerms());
+              setAsstError('');
               setView('add-asst');
             }}
             style={al.headerBtn}
@@ -576,7 +767,20 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         contentContainerStyle={al.content}
         showsVerticalScrollIndicator={false}
       >
-        {assistants.length === 0 && (
+        {/* Search */}
+        <View style={{ paddingHorizontal: 16, paddingBottom: 10 }}>
+          <TextInput
+            value={assistantsSearch}
+            onChangeText={setAssistantsSearch}
+            placeholder="Search assistants…"
+            placeholderTextColor={C.pale}
+            style={{ backgroundColor: C.white, borderWidth: 1, borderColor: C.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontFamily: F.regular, fontSize: 14, color: C.navy }}
+          />
+        </View>
+
+        {assistantsLoading ? (
+          <View style={{ alignItems: 'center', paddingVertical: 32 }}><ActivityIndicator size="small" color={C.blue} /></View>
+        ) : assistants.length === 0 ? (
           <View style={al.empty}>
             <View style={al.emptyIconWrap}>
               <Users size={24} color={C.pale} />
@@ -587,8 +791,9 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
             </Text>
             <TouchableOpacity
               onPress={() => {
-                setAsstForm({ firstName: '', lastName: '', phoneNumber: '', email: '' });
+                setAsstForm({ firstName: '', lastName: '', phoneNumber: '', email: '', idProofType: 'GHANA_CARD', idNumber: '' });
                 setAsstPerms(makeEmptyPerms());
+                setAsstError('');
                 setView('add-asst');
               }}
               activeOpacity={0.85}
@@ -604,9 +809,9 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               </LinearGradient>
             </TouchableOpacity>
           </View>
-        )}
+        ) : null}
 
-        {assistants.map(asst => {
+        {!assistantsLoading && assistants.map(asst => {
           const permSections = PERM_SECTIONS.filter(sec =>
             sec.modules.some(mod =>
               sec.cols.some(col =>
@@ -650,10 +855,24 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'row', gap: 7 }}>
-                    <TouchableOpacity
-                      onPress={() => {
+            <TouchableOpacity
+                      onPress={async () => {
                         setEditingAsst(asst);
-                        setAsstPerms({ ...asst.permissions });
+                        setAsstForm({
+                          firstName:   asst.firstName,
+                          lastName:    asst.lastName,
+                          phoneNumber: asst.phoneNumber,
+                          email:       asst.email,
+                          idProofType: asst.idProofType ?? 'GHANA_CARD',
+                          idNumber:    asst.idNumber ?? '',
+                        });
+                        try {
+                          const apiPerms = await apiGetAssistantPermissions(asst.assistantId ?? asst.id);
+                          setAsstPerms(apiPermsToPermMap(apiPerms));
+                        } catch {
+                          setAsstPerms(makeEmptyPerms());
+                        }
+                        setAsstError('');
                         setView('edit-asst');
                       }}
                       style={al.editBtn}
@@ -716,7 +935,10 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               <Text style={al.deleteCancelText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => {
+              onPress={async () => {
+                try {
+                  await apiDeleteAssistant(deleteConfirm!);
+                } catch {}
                 setAssistants(p => p.filter(a => a.id !== deleteConfirm));
                 setDeleteConfirm(null);
               }}
@@ -776,6 +998,35 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
                 />
               </View>
             ))}
+            {/* ID proof type selector */}
+            <View style={{ marginBottom: 12 }}>
+              <Text style={asf.label}>ID TYPE</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 6 }}>
+                {ID_PROOF_TYPES.map(t => (
+                  <TouchableOpacity
+                    key={t}
+                    onPress={() => setAsstForm(p => ({ ...p, idProofType: t }))}
+                    activeOpacity={0.8}
+                    style={{ paddingHorizontal: 11, paddingVertical: 7, borderRadius: 8, borderWidth: 1.5,
+                      backgroundColor: asstForm.idProofType === t ? C.blue : C.white,
+                      borderColor: asstForm.idProofType === t ? C.blue : C.border }}
+                  >
+                    <Text style={{ fontSize: 12, fontFamily: F.medium, color: asstForm.idProofType === t ? '#fff' : C.muted }}>
+                      {ID_PROOF_LABELS[t]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={asf.label}>ID NUMBER</Text>
+              <TextInput
+                value={asstForm.idNumber}
+                onChangeText={v => setAsstForm(p => ({ ...p, idNumber: v }))}
+                style={asf.input}
+                autoCapitalize="characters"
+              />
+            </View>
             <View style={asf.divider} />
           </>
         )}
@@ -824,32 +1075,50 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
 
         <View style={{ height: 18 }} />
 
+        {asstError ? (
+          <View style={{ backgroundColor: 'rgba(232,51,74,0.08)', borderRadius: 10, padding: 12, marginBottom: 12 }}>
+            <Text style={{ color: C.red, fontFamily: F.medium, fontSize: 13 }}>{asstError}</Text>
+          </View>
+        ) : null}
+
         <TouchableOpacity
           onPress={async () => {
             setAsstSaving(true);
-            await new Promise(r => setTimeout(r, 900));
-            if (isEdit && editingAsst) {
-              setAssistants(prev =>
-                prev.map(a =>
-                  a.id === editingAsst.id
-                    ? { ...editingAsst, permissions: asstPerms }
-                    : a
-                )
-              );
-            } else {
-              setAssistants(prev => [
-                ...prev,
-                {
-                  id:          `AST${String(Date.now()).slice(-4)}`,
-                  ...asstForm,
-                  status:      'active' as const,
-                  permissions: asstPerms,
-                  createdAt:   new Date().toISOString(),
-                },
-              ]);
+            setAsstError('');
+            try {
+              let savedId: string;
+              if (isEdit && editingAsst) {
+                await apiEditAssistant({
+                  assistantId: editingAsst.assistantId ?? editingAsst.id,
+                  firstname:   editingAsst.firstName,
+                  lastname:    editingAsst.lastName,
+                  email:       editingAsst.email,
+                  phoneNumber: editingAsst.phoneNumber,
+                  idProofType: editingAsst.idProofType,
+                  idNumber:    editingAsst.idNumber,
+                  status:      editingAsst.status,
+                });
+                savedId = editingAsst.assistantId ?? editingAsst.id;
+              } else {
+                const res = await apiAddAssistant({
+                  resellerId:  editForm.resellerid || user?.accountId || '',
+                  firstname:   asstForm.firstName,
+                  lastname:    asstForm.lastName,
+                  email:       asstForm.email,
+                  phoneNumber: asstForm.phoneNumber,
+                  idProofType: asstForm.idProofType,
+                  idNumber:    asstForm.idNumber,
+                });
+                savedId = res.assistantId;
+              }
+              await apiSaveAssistantPermissions(savedId, permMapToApiPerms(asstPerms));
+              await loadAssistants(assistantsSearch);
+              setView('assistants');
+            } catch (err: any) {
+              setAsstError(err.message ?? 'Failed to save assistant. Please try again.');
+            } finally {
+              setAsstSaving(false);
             }
-            setAsstSaving(false);
-            setView('assistants');
           }}
           disabled={asstSaving}
           activeOpacity={0.85}
