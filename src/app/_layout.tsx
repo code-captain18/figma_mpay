@@ -1,4 +1,10 @@
 import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from "@expo-google-fonts/plus-jakarta-sans";
+import {
   Urbanist_400Regular,
   Urbanist_500Medium,
   Urbanist_600SemiBold,
@@ -6,23 +12,31 @@ import {
   Urbanist_800ExtraBold,
   useFonts,
 } from "@expo-google-fonts/urbanist";
-import {
-  PlusJakartaSans_400Regular,
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_700Bold,
-  PlusJakartaSans_800ExtraBold,
-} from "@expo-google-fonts/plus-jakarta-sans";
+import { QueryClient, QueryClientProvider, focusManager } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { View } from "react-native";
+import { AppState, AppStateStatus, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+// React Query doesn't hook into AppState by default in React Native
+AppState.addEventListener('change', (status: AppStateStatus) => {
+  focusManager.setFocused(status === 'active');
+});
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2,
+      retry: 1,
+    },
+  },
+});
+
+import { registerForPushNotificationsAsync, setupNotificationListeners } from "@/notifications";
 import { AuthProvider, useAuth } from "@/store/auth.store";
 import { ToastProvider } from "@/store/toast.store";
-import { registerForPushNotificationsAsync, setupNotificationListeners } from "@/notifications";
-import { Colors } from "@/theme";
 import Constants from "expo-constants";
 import "../../global.css";
 
@@ -92,12 +106,14 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <ToastProvider>
-          <RootLayoutContent />
-        </ToastProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <RootLayoutContent />
+          </ToastProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </QueryClientProvider>
   );
 }

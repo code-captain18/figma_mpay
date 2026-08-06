@@ -1,6 +1,6 @@
 import type { AuthUser } from "@/api";
 import { apiLogin, apiLogout, apiRefreshSession, apiUpdateUser } from "@/api";
-import { setLogoutHandler } from "@/api/client";
+import { setLogoutHandler, setUserUpdateHandler } from "@/api/client";
 import { clearTokens, getRefreshToken, setTokens } from "@/utils/tokenStorage";
 import React, {
   createContext,
@@ -40,6 +40,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setLogoutHandler(performLogout);
+    setUserUpdateHandler((user) =>
+      setState(prev => ({ ...prev, user: user as AuthUser }))
+    );
   }, [performLogout]);
 
   useEffect(() => {

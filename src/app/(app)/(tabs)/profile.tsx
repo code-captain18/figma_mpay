@@ -1,11 +1,13 @@
 import type { ApiPermEntry, ApiPermissions, ProfileProduct } from '@/api';
-import { apiAddAssistant, apiChangePassword, apiDeleteAssistant, apiEditAssistant, apiEditAssistantProfile, apiEditProfile, apiGetAssistantPermissions, apiGetAssistantProfile, apiGetProfile, apiListAssistants, apiSaveAssistantPermissions, apiVerifyPassword } from '@/api';
+import { apiAddAssistant, apiChangePassword, apiDeleteAssistant, apiEditAssistant, apiEditAssistantProfile, apiEditProfile, apiGetAssistantPermissions, apiSaveAssistantPermissions, apiVerifyPassword } from '@/api';
 import { GradHdr } from '@/components/services/GradHdr';
 import { PermMatrix } from '@/components/services/PermMatrix';
 import { INIT_ASSISTANTS, makeEmptyPerms, PERM_SECTIONS } from '@/data';
+import { QK, useAssistantsList, useProfileData } from '@/hooks/useAppQueries';
 import { useAuth } from '@/store/auth.store';
 import { C, F, G } from '@/theme';
 import type { Assistant, PermKey, PermMap, ProfileView } from '@/types';
+import { useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
@@ -24,10 +26,10 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Modal,
-  ScrollView, StyleSheet,
+  ActivityIndicator, KeyboardAvoidingView, Modal, Platform,
+  ScrollView, StatusBar, StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -144,78 +146,56 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
   const [asstPerms, setAsstPerms] = useState<PermMap>(makeEmptyPerms());
   const [asstSaving, setAsstSaving] = useState(false);
   const [asstError, setAsstError] = useState('');
-  const [assistantsLoading, setAssistantsLoading] = useState(false);
   const [assistantsSearch, setAssistantsSearch] = useState('');
 
-  const loadAssistants = useCallback(async (search?: string) => {
-    if (isAsst) return;
-    setAssistantsLoading(true);
-    try {
-      const { assistants: list } = await apiListAssistants(1, 50, search || undefined);
-      setAssistants(list.map(mapApiAssistant));
-    } catch {
-      // gracefully fail — keep previous list
-    } finally {
-      setAssistantsLoading(false);
+  const queryClient = useQueryClient();
+
+  // ── TanStack Query: profile data ───────────────────────────────────────────
+  const { data: profileData } = useProfileData();
+
+  useEffect(() => {
+    if (!profileData) return;
+    const { profile: p, products: prods } = profileData as any;
+    if (isAsst) {
+      setCanEdit(false);
+      setEditForm(prev => ({
+        ...prev,
+        resellerid: p.resellerId ?? '',
+        firstName: p.firstName ?? '',
+        lastName: p.lastname ?? '',
+        phoneNumber: p.phoneNumber ?? '',
+        email: p.email ?? '',
+        status: p.status ?? 'active',
+        createdAt: p.createdAt ?? '',
+      }));
+    } else {
+      setEditForm(prev => ({
+        ...prev,
+        resellerid: p.resellerid ?? '',
+        accountName: p.accountName ?? '',
+        companyName: p.companyName ?? '',
+        firstName: p.firstName ?? '',
+        lastName: p.lastName ?? '',
+        phoneNumber: p.phoneNumber ?? '',
+        email: p.email ?? '',
+        address: p.address ?? '',
+        ghanaCardNumber: p.ghanaCardNum ?? '',
+        taxId: p.taxId ?? '',
+        salesExecutive: p.salesExecutiveId ?? '',
+        category: p.category ?? 'personal',
+        status: p.status ?? 'active',
+        createdAt: p.createdAt ?? '',
+      }));
     }
-  }, [isAsst]);
+    setProducts((prods as ProfileProduct[]).filter(pr => pr.prodCode !== 'MMONEYDB'));
+  }, [profileData, isAsst]);
+
+  // ── TanStack Query: assistants list ───────────────────────────────────────
+  const { data: queriedAssistants, isFetching: assistantsLoading } = useAssistantsList(assistantsSearch);
 
   useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        if (isAsst) {
-          const email = user?.email ?? user?.username ?? '';
-          const { profile: p, products: prods } = await apiGetAssistantProfile(email);
-          if (cancelled) return;
-          setCanEdit(false);
-          setEditForm(prev => ({
-            ...prev,
-            resellerid: p.resellerId,
-            firstName: p.firstName ?? '',
-            lastName: p.lastname ?? '',
-            phoneNumber: p.phoneNumber ?? '',
-            email: p.email ?? '',
-            status: p.status ?? 'active',
-            createdAt: p.createdAt ?? '',
-          }));
-          setProducts(prods.filter(pr => pr.prodCode !== 'MMONEYDB'));
-        } else {
-          const { profile: p, products: prods } = await apiGetProfile();
-          if (cancelled) return;
-          setEditForm(prev => ({
-            ...prev,
-            resellerid: p.resellerid ?? '',
-            accountName: p.accountName ?? '',
-            companyName: p.companyName ?? '',
-            firstName: p.firstName ?? '',
-            lastName: p.lastName ?? '',
-            phoneNumber: p.phoneNumber ?? '',
-            email: p.email ?? '',
-            address: p.address ?? '',
-            ghanaCardNumber: p.ghanaCardNum ?? '',
-            taxId: p.taxId ?? '',
-            salesExecutive: p.salesExecutiveId ?? '',
-            category: p.category ?? 'personal',
-            status: p.status ?? 'active',
-            createdAt: p.createdAt ?? '',
-          }));
-          setProducts(prods.filter(pr => pr.prodCode !== 'MMONEYDB'));
-        }
-      } catch {
-        // gracefully fall back to auth-store values
-      }
-    };
-    load();
-    return () => { cancelled = true; };
-  }, [isAsst, user?.email, user?.username]);
-
-  // debounced assistant search
-  useEffect(() => {
-    if (view !== 'assistants') return;
-    const t = setTimeout(() => loadAssistants(assistantsSearch), 500);
-    return () => clearTimeout(t);
-  }, [assistantsSearch]);
+    if (queriedAssistants) setAssistants(queriedAssistants);
+  }, [queriedAssistants]);
 
   const resetPwd = () => {
     setOldPwd(''); setOldPwdVerified(false); setOldPwdError('');
@@ -265,8 +245,8 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         {/* ── Stats strip ── */}
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
           {[
-            { label: 'e Top-Up', value: `GH\u20B5${Number(user?.eTopupBalance ?? 0).toFixed(2)}`, color: C.blue },
-            { label: 'MoMo', value: `GH\u20B5${Number(user?.momoBalance ?? 0).toFixed(2)}`, color: C.green },
+            { label: 'e Top-Up', value: `GHS ${Number(user?.eTopupBalance ?? 0).toFixed(2)}`, color: C.blue },
+            { label: 'MoMo', value: `GHS ${Number(user?.momoBalance ?? 0).toFixed(2)}`, color: C.green },
             { label: 'Status', value: editForm.status || '—', color: editForm.status === 'active' ? C.green : editForm.status === 'suspended' ? C.red : C.orange },
           ].map(s => (
             <View key={s.label} style={home.statCard}>
@@ -303,7 +283,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               color: C.green,
               label: 'Assistant Accounts',
               sub: `${assistants.length} assistant${assistants.length !== 1 ? 's' : ''}`,
-              onPress: () => { loadAssistants(''); setAssistantsSearch(''); setView('assistants'); },
+              onPress: () => { setAssistantsSearch(''); setView('assistants'); },
               hidden: isAsst,
             },
           ].filter(r => !r.hidden).map((row, i, arr) => (
@@ -412,7 +392,10 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
     );
 
     return (
-      <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: C.bg }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <GradHdr title="Edit Profile" onBack={() => setView('home')} />
         <ScrollView
           contentContainerStyle={ep.content}
@@ -495,7 +478,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
             )}
           </TouchableOpacity>
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -519,7 +502,10 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
     const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][strength];
 
     return (
-      <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: C.bg }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <GradHdr
           title="Change Password"
           onBack={() => { resetPwd(); setView('home'); }}
@@ -754,7 +740,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
             </>
           )}
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -976,7 +962,10 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
   const isEdit = view === 'edit-asst';
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: C.bg }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <GradHdr
         title={isEdit
           ? `${editingAsst?.firstName} ${editingAsst?.lastName}`
@@ -1133,7 +1122,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
                 savedId = res.assistantId;
               }
               await apiSaveAssistantPermissions(savedId, permMapToApiPerms(asstPerms));
-              await loadAssistants(assistantsSearch);
+              queryClient.invalidateQueries({ queryKey: QK.assistants(assistantsSearch) });
               setView('assistants');
             } catch (err: any) {
               setAsstError(err.message ?? 'Failed to save assistant. Please try again.');
@@ -1166,7 +1155,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -1182,7 +1171,12 @@ export default function ProfileRoute() {
     router.replace('/(auth)/login');
   };
 
-  return <ProfileScreen onLogout={handleLogout} />;
+  return (
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="#4BAEE8" />
+      <ProfileScreen onLogout={handleLogout} />
+    </>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

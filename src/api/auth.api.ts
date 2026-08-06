@@ -31,7 +31,7 @@ export interface LoginResponse extends AuthTokens {
 
 export async function apiLogin(username: string, password: string): Promise<LoginResponse> {
   try {
-    const { data } = await axios.post<LoginResponse>(`${config.apiBaseUrl}/auth/login-mobile`, { username, password });
+    const { data } = await axios.post<LoginResponse>(`${config.apiBaseUrl}/auth/login-mobile`, { username, password }, { timeout: 30_000 });
     return data;
   } catch (err: any) {
     throw new ApiError(err.response?.status ?? 0, err.response?.data?.message ?? 'Invalid username or password.');
@@ -40,7 +40,7 @@ export async function apiLogin(username: string, password: string): Promise<Logi
 
 export async function apiRefreshSession(refreshToken: string): Promise<LoginResponse> {
   try {
-    const { data } = await axios.post<LoginResponse>(`${config.apiBaseUrl}/auth/refresh-token-mobile`, { refreshToken });
+    const { data } = await axios.post<LoginResponse>(`${config.apiBaseUrl}/auth/refresh-token-mobile`, { refreshToken }, { timeout: 30_000 });
     return data;
   } catch (err: any) {
     throw new ApiError(err.response?.status ?? 0, 'Session expired.');
@@ -54,8 +54,8 @@ export async function apiLogout(refreshToken: string): Promise<void> {
 
 export async function apiVerifyPassword(password: string): Promise<boolean> {
   try {
-    const { data } = await apiClient.post<{ success: boolean }>('auth/verify-password', { password });
-    return Boolean(data.success);
+    const { data } = await apiClient.post<{ valid: boolean }>('auth/verify-password', { password });
+    return Boolean(data.valid);
   } catch {
     return false;
   }

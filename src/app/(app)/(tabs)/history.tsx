@@ -28,6 +28,7 @@ import {
   ActivityIndicator,
   FlatList,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -200,6 +201,7 @@ export default function HistoryScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <StatusBar barStyle="light-content" backgroundColor="#4BAEE8" />
       <GradHdr title="Transactions" />
 
       {/* ── Source tabs ── */}

@@ -1,11 +1,11 @@
-import type { DashboardData } from '@/api';
-import { apiGetDashboardData } from '@/api';
 import { Icon } from "@/components/ui/Icon";
+import { useDashboardData } from "@/hooks/useAppQueries";
 import { useAuth } from "@/store/auth.store";
 import { Colors, shadowStyle } from "@/theme";
 import { LinearGradient } from "expo-linear-gradient";
+import { useFocusEffect, useRouter } from "expo-router";
 import { RefreshCw } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -22,24 +22,19 @@ const getMonthRange = () => {
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const router = useRouter();
   const [hidden, setHidden] = useState(false);
-  const [dash, setDash] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
 
-  const { start: startDate, end: endDate } = useMemo(getMonthRange, []);
+  const [{ start: startDate, end: endDate }, setRange] = useState(getMonthRange);
 
-  const fetchDash = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await apiGetDashboardData(startDate, endDate);
-      setDash(data);
-    } catch { /* silently fail */ } finally {
-      setLoading(false);
-    }
-  }, [startDate, endDate]);
+  const { data: dash, isLoading: loading, refetch: fetchDash } = useDashboardData(startDate, endDate);
 
-  useEffect(() => { fetchDash(); }, [fetchDash]);
+  // Recompute today's date and refetch every time the tab is focused
+  useFocusEffect(useCallback(() => {
+    setRange(getMonthRange());
+    fetchDash();
+  }, [fetchDash]));
 
   const displayName = user?.name?.split(" ")[0] ?? user?.username?.split('@')[0] ?? "there";
   const initials = displayName[0]?.toUpperCase() ?? "U";
@@ -141,7 +136,7 @@ export default function HomeScreen() {
           </View>
 
           <Text style={{ fontSize: 36, color: "#fff", fontFamily: "Urbanist_800ExtraBold", letterSpacing: -0.5, marginBottom: 2 }}>
-            {hidden ? "••••••" : `GH₵${totalSales.toFixed(2)}`}
+            {hidden ? "••••••" : `GHS ${totalSales.toFixed(2)}`}
           </Text>
           <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 20, fontFamily: "Urbanist_500Medium" }}>
             Airtime · Data Bundle · Mobile Money
@@ -168,19 +163,9 @@ export default function HomeScreen() {
 
       {/* ── Buy: Quick actions ──────────────────────────────────── */}
       <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 13 }}>
-          <View>
-            <Text style={{ fontSize: 15, color: C.navy, fontFamily: "Urbanist_700Bold" }}>Buy</Text>
-            <Text style={{ fontSize: 11, color: C.muted, fontFamily: "Urbanist_400Regular", marginTop: 1 }}>Quick top-up &amp; transfers</Text>
-          </View>
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel="See all services"
-            style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(24,120,206,0.08)", borderRadius: 8, paddingVertical: 5, paddingHorizontal: 10, borderWidth: 1, borderColor: "rgba(24,120,206,0.14)" }}
-          >
-            <Text style={{ fontSize: 11, fontFamily: "Urbanist_600SemiBold", color: C.blue }}>See all</Text>
-            <Icon name="arrow-right" size={11} color={C.blue} />
-          </TouchableOpacity>
+        <View style={{ marginBottom: 13 }}>
+          <Text style={{ fontSize: 15, color: C.navy, fontFamily: "Urbanist_700Bold" }}>Buy</Text>
+          <Text style={{ fontSize: 11, color: C.muted, fontFamily: "Urbanist_400Regular", marginTop: 1 }}>Quick top-up &amp; transfers</Text>
         </View>
         <View style={{ flexDirection: "row", gap: 8 }}>
           {([
@@ -194,6 +179,11 @@ export default function HomeScreen() {
               activeOpacity={0.82}
               accessibilityRole="button"
               accessibilityLabel={link.label}
+              onPress={() =>
+                link.id === 'more'
+                  ? router.push('/(app)/(tabs)/services')
+                  : router.push({ pathname: '/(app)/(tabs)/services', params: { open: link.id } })
+              }
               style={{
                 flex: 1, alignItems: "center", gap: 8,
                 backgroundColor: C.white,
@@ -221,7 +211,7 @@ export default function HomeScreen() {
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <Text style={{ fontSize: 15, color: C.navy, fontFamily: "Urbanist_700Bold" }}>Sales Breakdown</Text>
           <TouchableOpacity
-            onPress={fetchDash}
+            onPress={() => { fetchDash(); }}
             disabled={loading}
             style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
             accessibilityRole="button"
@@ -269,7 +259,7 @@ export default function HomeScreen() {
                   )}
                 </View>
                 <Text style={{ fontSize: 18, fontFamily: "Urbanist_800ExtraBold", color: hasData ? C.navy : C.pale, marginBottom: 2 }}>
-                  {hasData ? `GH₵${s.amount.toFixed(2)}` : "GH₵0.00"}
+                  {hasData ? `GHS ${s.amount.toFixed(2)}` : "GHS 0.00"}
                 </Text>
                 <Text style={{ fontSize: 11, fontFamily: "Urbanist_600SemiBold", color: C.muted, marginBottom: 10 }}>{s.label}</Text>
                 <View style={{ height: 4, borderRadius: 99, backgroundColor: "rgba(24,120,206,0.08)", overflow: "hidden" }}>
@@ -277,7 +267,7 @@ export default function HomeScreen() {
                 </View>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 5 }}>
                   <Text style={{ fontSize: 10, color: C.pale, fontFamily: "Urbanist_500Medium" }}>Last month</Text>
-                  <Text style={{ fontSize: 10, fontFamily: "Urbanist_700Bold", color: C.light }}>GH₵{s.last.toFixed(2)}</Text>
+                  <Text style={{ fontSize: 10, fontFamily: "Urbanist_700Bold", color: C.light }}>GHS {s.last.toFixed(2)}</Text>
                 </View>
               </View>
             );
@@ -349,7 +339,7 @@ export default function HomeScreen() {
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <Text style={{ fontSize: 15, color: C.navy, fontFamily: "Urbanist_700Bold" }}>Sales by Channel</Text>
           <Text style={{ fontSize: 11, color: C.muted, fontFamily: "Urbanist_600SemiBold" }}>
-            GH₵{channelTotal.toFixed(1)} total
+            GHS {channelTotal.toFixed(1)} total
           </Text>
         </View>
         <View style={{ flexDirection: "row", gap: 10 }}>
@@ -365,7 +355,7 @@ export default function HomeScreen() {
                   <Icon name={ch.icon} size={15} color={ch.color} />
                 </View>
                 <Text style={{ fontSize: 14, fontFamily: "Urbanist_800ExtraBold", color: ch.amount > 0 ? C.navy : C.pale, marginBottom: 1 }}>
-                  {ch.amount > 0 ? `GH₵${ch.amount.toFixed(2)}` : "—"}
+                  {ch.amount > 0 ? `GHS ${ch.amount.toFixed(2)}` : "—"}
                 </Text>
                 <Text style={{ fontSize: 11, fontFamily: "Urbanist_600SemiBold", color: C.muted, marginBottom: 8 }}>{ch.label}</Text>
                 <View style={{ height: 3, borderRadius: 99, backgroundColor: C.divider, overflow: "hidden" }}>

@@ -21,7 +21,7 @@ export function BundleGrid({ bundles, selected, accent = Colors.primary, onSelec
             onPress={() => onSelect(b)}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel={`${b.label} – GH₵${b.price.toFixed(2)}`}
+            accessibilityLabel={`${b.label} – GHS ${b.price.toFixed(2)}`}
             style={[
               styles.card,
               active && { borderColor: accent, backgroundColor: accent + '12' },
@@ -34,7 +34,7 @@ export function BundleGrid({ bundles, selected, accent = Colors.primary, onSelec
             )}
             <Text style={[styles.label, active && { color: accent }]}>{b.label}</Text>
             <Text style={[styles.price, active && { color: accent }]}>
-              GH₵{b.price.toFixed(2)}
+              GHS {b.price.toFixed(2)}
             </Text>
           </TouchableOpacity>
         );

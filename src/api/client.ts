@@ -1,5 +1,5 @@
 import { config } from '@/utils/config';
-import { clearTokens, getAccessToken, getRefreshToken, setTokens } from '@/utils/tokenStorage';
+import { clearTokens, getCachedAccessToken, getRefreshToken, setTokens } from '@/utils/tokenStorage';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import axios from 'axios';
 
@@ -20,9 +20,14 @@ export async function mockRequest<T>(factory: () => T): Promise<T> {
 
 // --- Real HTTP client ---
 let logoutHandler: (() => void) | null = null;
+let userUpdateHandler: ((user: unknown) => void) | null = null;
 
 export function setLogoutHandler(fn: () => void): void {
   logoutHandler = fn;
+}
+
+export function setUserUpdateHandler(fn: (user: unknown) => void): void {
+  userUpdateHandler = fn;
 }
 
 let pendingRefresh: Promise<string | null> | null = null;
@@ -33,6 +38,7 @@ async function refreshAccessToken(): Promise<string | null> {
   try {
     const { data } = await axios.post(`${config.apiBaseUrl}/auth/refresh-token-mobile`, { refreshToken: refresh });
     await setTokens(data.accessToken, data.refreshToken ?? refresh);
+    if (data.user) userUpdateHandler?.(data.user);
     return data.accessToken as string;
   } catch {
     await clearTokens();
@@ -44,10 +50,11 @@ async function refreshAccessToken(): Promise<string | null> {
 export const apiClient: AxiosInstance = axios.create({
   baseURL: config.apiBaseUrl,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 30_000,
 });
 
-apiClient.interceptors.request.use(async (reqConfig) => {
-  const token = await getAccessToken();
+apiClient.interceptors.request.use((reqConfig) => {
+  const token = getCachedAccessToken();
   if (token) reqConfig.headers.Authorization = `Bearer ${token}`;
   return reqConfig;
 });

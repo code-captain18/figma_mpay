@@ -5,15 +5,15 @@ export function useProfileForms() {
   const { user, updateUser } = useAuth();
 
   const [editForm, setEditForm] = useState({
-    accountName: "John's Business",
-    companyName: 'JM Enterprises Ltd',
+    accountName: '',
+    companyName: '',
     firstName: user?.name?.split(' ')[0] ?? '',
-    lastName: user?.name?.split(' ')[1] ?? '',
+    lastName: user?.name?.split(' ').slice(1).join(' ') ?? '',
     phoneNumber: user?.phone ?? '',
     email: user?.email ?? user?.username ?? '',
-    address: '123 Independence Ave, Accra',
-    ghanaCardNumber: 'GHA-123456789-0',
-    taxId: 'TIN987654321',
+    address: '',
+    ghanaCardNumber: '',
+    taxId: '',
   });
   const [editSaving, setEditSaving] = useState(false);
   const [editDone, setEditDone] = useState(false);

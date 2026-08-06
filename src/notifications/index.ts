@@ -69,10 +69,10 @@ export async function scheduleTransactionNotification(tx: TxRecord): Promise<voi
   const title = STATUS_TITLES[tx.status] ?? 'Transaction Update';
   const body =
     tx.status === 'success'
-      ? `${svc} of GH₵${tx.amount.toFixed(2)} to ${tx.phone} was successful.`
+      ? `${svc} of GHS ${tx.amount.toFixed(2)} to ${tx.phone} was successful.`
       : tx.status === 'failed'
-        ? `${svc} of GH₵${tx.amount.toFixed(2)} to ${tx.phone} failed. Please try again.`
-        : `${svc} of GH₵${tx.amount.toFixed(2)} is being processed.`;
+        ? `${svc} of GHS ${tx.amount.toFixed(2)} to ${tx.phone} failed. Please try again.`
+        : `${svc} of GHS ${tx.amount.toFixed(2)} is being processed.`;
 
   await N.scheduleNotificationAsync({
     content: { title, body, data: { txId: tx.id } },

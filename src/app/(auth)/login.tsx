@@ -1,9 +1,12 @@
 import { useAuth } from '@/store/auth.store';
 import { BTN, C, F, G } from '@/theme';
+import { loginSchema, LoginFormValues } from '@/features/auth/schemas/auth.schema';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import {
   ActivityIndicator,
   Animated,
@@ -26,14 +29,17 @@ export default function LoginScreen() {
   const { login } = useAuth();
 
   // ── Form state ─────────────────────────────────────────────────────────────
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const { control, handleSubmit: rhfSubmit, formState: { errors } } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { username: '', password: '' },
+  });
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [userFocus, setUserFocus] = useState(false);
   const [passFocus, setPassFocus] = useState(false);
+  const passwordRef = useRef<any>(null);
 
   // ── Animation refs ─────────────────────────────────────────────────────────
   const cardSlide = useRef(new Animated.Value(60)).current;
@@ -76,23 +82,12 @@ export default function LoginScreen() {
   };
 
   // ── Submit handler ─────────────────────────────────────────────────────────
-  const handleSubmit = async () => {
-    if (!username.trim()) {
-      setError('Please enter your username or account ID.');
-      shake();
-      return;
-    }
-    if (!password) {
-      setError('Please enter your password.');
-      shake();
-      return;
-    }
-
+  const handleSubmit = rhfSubmit(async (values: LoginFormValues) => {
     setError('');
     setLoading(true);
 
     try {
-      await login(username.trim(), password);
+      await login(values.username, values.password);
       setLoading(false);
       setSuccess(true);
       await new Promise(r => setTimeout(r, 700));
@@ -102,7 +97,8 @@ export default function LoginScreen() {
       setError(err?.message ?? 'Invalid username or password. Please try again.');
       shake();
     }
-  };
+  });
+
 
   // ─────────────────────────────────────────────────────────────────────────
   // Render
@@ -121,7 +117,7 @@ export default function LoginScreen() {
       <View style={s.deco4} />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView
@@ -190,74 +186,91 @@ export default function LoginScreen() {
             <Text style={s.cardSub}>Sign in to your account to continue</Text>
 
             {/* ── Error banner ── */}
-            {error ? (
+            {(error || errors.username?.message || errors.password?.message) ? (
               <View style={s.errorBanner}>
                 <AlertCircle size={14} color={C.red} />
-                <Text style={s.errorText}>{error}</Text>
+                <Text style={s.errorText}>
+                  {error || errors.username?.message || errors.password?.message}
+                </Text>
               </View>
             ) : null}
 
             {/* ── Username field ── */}
             <View style={s.fieldWrap}>
-              <Text style={s.fieldLabel}>EMAIL</Text>
-              <View style={[
-                s.inputWrap,
-                userFocus && s.inputWrapFocus,
-                !!(error && !username) && s.inputWrapError,
-              ]}>
-                <TextInput
-                  value={username}
-                  onChangeText={v => { setUsername(v); setError(''); }}
-                  onFocus={() => setUserFocus(true)}
-                  onBlur={() => setUserFocus(false)}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoComplete="username"
-                  returnKeyType="next"
-                  placeholder="Enter username or account ID"
-                  placeholderTextColor={C.pale}
-                  style={s.input}
-                  editable={!loading && !success}
-                />
-                {username.length > 0 && !error && (
-                  <CheckCircle2 size={15} color={C.green} style={{ marginRight: 12 }} />
+              <Text style={s.fieldLabel}>USERNAME</Text>
+              <Controller
+                control={control}
+                name="username"
+                render={({ field: { onChange, value, ref } }) => (
+                  <View style={[
+                    s.inputWrap,
+                    userFocus && s.inputWrapFocus,
+                    !!errors.username && s.inputWrapError,
+                  ]}>
+                    <TextInput
+                      ref={ref}
+                      value={value}
+                      onChangeText={v => { onChange(v); setError(''); }}
+                      onFocus={() => setUserFocus(true)}
+                      onBlur={() => setUserFocus(false)}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      autoComplete="username"
+                      returnKeyType="next"
+                      onSubmitEditing={() => passwordRef.current?.focus()}
+                      placeholder="Enter username or account ID"
+                      placeholderTextColor={C.pale}
+                      style={s.input}
+                      editable={!loading && !success}
+                    />
+                    {value.length > 0 && !errors.username && (
+                      <CheckCircle2 size={15} color={C.green} style={{ marginRight: 12 }} />
+                    )}
+                  </View>
                 )}
-              </View>
+              />
             </View>
 
             {/* ── Password field ── */}
             <View style={[s.fieldWrap, { marginBottom: 8 }]}>
               <Text style={s.fieldLabel}>PASSWORD</Text>
-              <View style={[
-                s.inputWrap,
-                passFocus && s.inputWrapFocus,
-                !!(error && !password) && s.inputWrapError,
-              ]}>
-                <TextInput
-                  value={password}
-                  onChangeText={v => { setPassword(v); setError(''); }}
-                  onFocus={() => setPassFocus(true)}
-                  onBlur={() => setPassFocus(false)}
-                  secureTextEntry={!showPwd}
-                  autoComplete="password"
-                  returnKeyType="done"
-                  onSubmitEditing={handleSubmit}
-                  placeholder="Enter your password"
-                  placeholderTextColor={C.pale}
-                  style={[s.input, { paddingRight: 48 }]}
-                  editable={!loading && !success}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPwd(p => !p)}
-                  style={s.eyeBtn}
-                  activeOpacity={0.7}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  {showPwd
-                    ? <EyeOff size={16} color={C.pale} />
-                    : <Eye size={16} color={C.pale} />}
-                </TouchableOpacity>
-              </View>
+              <Controller
+                control={control}
+                name="password"
+                render={({ field: { onChange, value } }) => (
+                  <View style={[
+                    s.inputWrap,
+                    passFocus && s.inputWrapFocus,
+                    !!errors.password && s.inputWrapError,
+                  ]}>
+                    <TextInput
+                      ref={passwordRef}
+                      value={value}
+                      onChangeText={v => { onChange(v); setError(''); }}
+                      onFocus={() => setPassFocus(true)}
+                      onBlur={() => setPassFocus(false)}
+                      secureTextEntry={!showPwd}
+                      autoComplete="current-password"
+                      returnKeyType="go"
+                      onSubmitEditing={handleSubmit}
+                      placeholder="Enter your password"
+                      placeholderTextColor={C.pale}
+                      style={[s.input, { paddingRight: 48 }]}
+                      editable={!loading && !success}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPwd(p => !p)}
+                      style={s.eyeBtn}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      {showPwd
+                        ? <EyeOff size={16} color={C.pale} />
+                        : <Eye size={16} color={C.pale} />}
+                    </TouchableOpacity>
+                  </View>
+                )}
+              />
             </View>
 
             {/* ── Forgot password ── */}

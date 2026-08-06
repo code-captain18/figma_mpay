@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { GradientDef } from '@/constants/services';
 
 const DEFAULT_GRAD: GradientDef = {
@@ -18,12 +19,13 @@ interface GradHdrProps {
 }
 
 export function GradHdr({ title, onBack, right, gradient = DEFAULT_GRAD }: GradHdrProps) {
+  const insets = useSafeAreaInsets();
   return (
     <LinearGradient
       colors={gradient.colors}
       start={gradient.start}
       end={gradient.end}
-      style={styles.wrap}
+      style={[styles.wrap, { paddingTop: insets.top + 14 }]}
     >
       <View style={styles.decoCircle} />
       <View style={styles.row}>
@@ -50,9 +52,10 @@ export function GradHdr({ title, onBack, right, gradient = DEFAULT_GRAD }: GradH
 const styles = StyleSheet.create({
   wrap: {
     paddingHorizontal: 20,
-    paddingTop: 14,
     paddingBottom: 20,
     overflow: 'hidden',
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
   },
   decoCircle: {
     position: 'absolute',

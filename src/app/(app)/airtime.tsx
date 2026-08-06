@@ -1,16 +1,23 @@
+import { apiPurchaseAirtime } from "@/api";
 import { NetworkLogo } from "@/components/svg/NetworkLogo";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { ReceiptRows } from "@/components/ui/ReceiptRows";
 import { NETWORKS, PRESET_AMOUNTS } from "@/constants/networks";
+import { useResellerProducts } from "@/hooks/useAppQueries";
 import { scheduleTransactionNotification } from "@/notifications";
+import { useAuth } from "@/store/auth.store";
+import { useToast } from "@/store/toast.store";
 import { Colors, Shadows, T } from "@/theme";
 import { formatGHS } from "@/utils/format";
 import { ghanaPhoneSchema } from "@/utils/phone";
+import { pollTransactionStatus } from "@/utils/pollStatus";
+import { genMsRef } from "@/utils/ref";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Check, PhoneCall } from "lucide-react-native";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -21,18 +28,28 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type Step = "form" | "confirm" | "success";
+type Step = "form" | "confirm" | "processing" | "success";
 type Recipient = "self" | "other";
 
 export default function AirtimeScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const toast = useToast();
+  const { data: products = [] } = useResellerProducts();
+  const isAssistant = user?.accountType?.toLowerCase() === 'assistant';
   const [step, setStep] = useState<Step>("form");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [txRef] = useState(genMsRef);
   const [network, setNetwork] = useState(NETWORKS[0]);
   const [recipient, setRecipient] = useState<Recipient>("self");
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [amount, setAmount] = useState("");
+
+  const apiProduct = products.find(
+    p => p.network.toUpperCase() === network.id.toUpperCase() && p.Type === 'Airtime'
+  );
+  const prodCode = apiProduct?.prodCode ?? `${network.id.toUpperCase()}AIRTIME`;
 
   const parsed = parseFloat(amount) || 0;
   const fee = parseFloat((parsed * 0.01).toFixed(2));
@@ -47,22 +64,40 @@ export default function AirtimeScreen() {
     { label: "Total", value: formatGHS(total), green: true },
   ];
 
-  const handleConfirmPurchase = () => {
+  const handleConfirmPurchase = async () => {
     if (isProcessing) return;
     setIsProcessing(true);
-    setTimeout(() => {
+    try {
+      await apiPurchaseAirtime({
+        amount: parsed,
+        phoneNumber: phone,
+        product: prodCode,
+        referenceId: txRef,
+        transactionDescription: `Airtime for ${prodCode}`,
+        ...(isAssistant && user?.accountId && {
+          reselleraccountId: user.accountId,
+          resellerAccountId: user.accountId,
+          resellerId: user.accountId,
+          resellerid: user.accountId,
+        }),
+      });
+      setStep("processing");
+      await pollTransactionStatus(txRef);
       setStep("success");
-      setIsProcessing(false);
       scheduleTransactionNotification({
-        id: `airtime-${Date.now()}`,
+        id: txRef,
         type: 'airtime',
         status: 'success',
         amount: total,
-        phone: phone,
+        phone,
         network: network.id,
         createdAt: new Date().toISOString(),
       } as any);
-    }, 900);
+    } catch (err: any) {
+      toast.show(err?.message ?? 'Airtime top-up failed. Please try again.', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -471,6 +506,18 @@ export default function AirtimeScreen() {
               <Text style={{ ...T.bodyMD, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted }}>Edit Details</Text>
             </TouchableOpacity>
           </ScrollView>
+        )}
+
+        {step === "processing" && (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+            <ActivityIndicator size="large" color={Colors.gradientStart} />
+            <Text style={{ ...T.bodyMD, color: Colors.textMuted, fontFamily: 'Urbanist_600SemiBold' }}>
+              Processing transaction…
+            </Text>
+            <Text style={{ ...T.bodySM, color: Colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
+              Please keep the app open. This may take up to 2 minutes.
+            </Text>
+          </View>
         )}
 
         {step === "success" && (

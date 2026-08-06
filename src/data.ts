@@ -168,7 +168,7 @@ export function fmtAgo(iso: string): string {
 }
 
 export const CSV_HEADER =
-  'Reference,Date,Status,Type,Network,Phone,Amount (GH₵),Fee (GH₵),Net Amount (GH₵),Agent ID';
+  'Reference,Date,Status,Type,Network,Phone,Amount (GHS),Fee (GHS),Net Amount (GHS),Agent ID';
 
 export function buildCsvRow(tx: TxRecord, user: typeof USER): string {
   return [

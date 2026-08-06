@@ -1,17 +1,24 @@
+import { apiPurchaseData } from "@/api";
 import { NetworkLogo } from "@/components/svg/NetworkLogo";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { ReceiptRows } from "@/components/ui/ReceiptRows";
 import { BUNDLE_DURATIONS, DATA_BUNDLES } from "@/constants/bundles";
 import { NETWORKS } from "@/constants/networks";
+import { useResellerProducts } from "@/hooks/useAppQueries";
+import { useAuth } from "@/store/auth.store";
+import { useToast } from "@/store/toast.store";
 import { Colors, Shadows, T } from "@/theme";
 import type { Bundle, BundleDuration } from "@/types";
 import { formatGHS } from "@/utils/format";
 import { ghanaPhoneSchema } from "@/utils/phone";
+import { pollTransactionStatus } from "@/utils/pollStatus";
+import { genMsRef } from "@/utils/ref";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Check, Wifi } from "lucide-react-native";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -22,13 +29,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type Step = "form" | "confirm" | "success";
+type Step = "form" | "confirm" | "processing" | "success";
 type Recipient = "self" | "other";
 
 export default function DataBundleScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const toast = useToast();
+  const { data: products = [] } = useResellerProducts();
   const [step, setStep] = useState<Step>("form");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [txRef] = useState(genMsRef);
   const [network, setNetwork] = useState(NETWORKS[0]);
   const [recipient, setRecipient] = useState<Recipient>("self");
   const [phone, setPhone] = useState("");
@@ -36,7 +47,21 @@ export default function DataBundleScreen() {
   const [duration, setDuration] = useState<BundleDuration>("Daily");
   const [selected, setSelected] = useState<Bundle | null>(null);
 
-  const bundles = DATA_BUNDLES[duration] ?? [];
+  // Prefer real API bundles; fall back to local constants if products not loaded yet
+  const apiProduct = products.find(
+    p => p.network.toUpperCase() === network.id.toUpperCase() && p.Type === 'Data'
+  );
+  const bundles: Bundle[] = apiProduct?.bundles?.length
+    ? apiProduct.bundles.map(b => ({
+      id: b.BundleCode,
+      size: b.BundleName,
+      validity: b.Validity ?? '',
+      price: b.Amount ?? 0,
+      bundleCode: b.BundleCode,
+      bundleType: b.BundleType,
+      prodCode: apiProduct.prodCode,
+    }))
+    : (DATA_BUNDLES[duration] ?? []);
   const canProceed = network && ghanaPhoneSchema.safeParse(phone.trim()).success && selected !== null;
 
   const receiptRows = selected
@@ -48,14 +73,34 @@ export default function DataBundleScreen() {
     ]
     : [];
 
-  const handleConfirmActivation = () => {
-    if (isProcessing) return;
+  const handleConfirmActivation = async () => {
+    if (isProcessing || !selected) return;
     setIsProcessing(true);
-    // Simulate processing window to prevent accidental duplicate submissions.
-    setTimeout(() => {
+    const prodCode = selected.prodCode ?? apiProduct?.prodCode ?? `${network.id.toUpperCase()}DATA`;
+    try {
+      await apiPurchaseData({
+        amount: selected.price,
+        phoneNumber: phone,
+        product: prodCode,
+        bundleType: selected.bundleType ?? 'data_bundle',
+        bundleCode: selected.bundleCode ?? selected.id,
+        referenceId: txRef,
+        transactionDescription: `Data bundle for ${prodCode}`,
+        ...(user?.accountId && {
+          reselleraccountId: user.accountId,
+          resellerAccountId: user.accountId,
+          resellerId: user.accountId,
+          resellerid: user.accountId,
+        }),
+      });
+      setStep("processing");
+      await pollTransactionStatus(txRef);
       setStep("success");
+    } catch (err: any) {
+      toast.show(err?.message ?? 'Data bundle purchase failed. Please try again.', 'error');
+    } finally {
       setIsProcessing(false);
-    }, 900);
+    }
   };
 
   return (
@@ -509,6 +554,18 @@ export default function DataBundleScreen() {
               <Text style={{ ...T.bodyMD, fontFamily: "Urbanist_600SemiBold", color: Colors.textMuted }}>Edit Details</Text>
             </TouchableOpacity>
           </ScrollView>
+        )}
+
+        {step === "processing" && (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+            <ActivityIndicator size="large" color={Colors.gradientStart} />
+            <Text style={{ ...T.bodyMD, color: Colors.textMuted, fontFamily: 'Urbanist_600SemiBold' }}>
+              Processing transaction…
+            </Text>
+            <Text style={{ ...T.bodySM, color: Colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
+              Please keep the app open. This may take up to 2 minutes.
+            </Text>
+          </View>
         )}
 
         {step === "success" && selected && (

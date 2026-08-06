@@ -50,7 +50,7 @@ export async function apiGetWalletBalances(): Promise<WalletBalances> {
 
 
 export async function apiLoadWalletFromWallet(payload: LoadWalletPayload): Promise<LoadWalletResult> {
-  // Step 1: Credit from MoMo wallet
+  // Step 1: credit MoMo → e-TopUp
   try {
     await apiClient.post('core/credit', {
       amount: payload.amount,
@@ -62,7 +62,8 @@ export async function apiLoadWalletFromWallet(payload: LoadWalletPayload): Promi
   } catch (err: any) {
     throw new ApiError(err.response?.status ?? 0, err.response?.data?.message ?? 'Credit transaction failed.');
   }
-  // Step 2: Debit to e Top-Up (replace WB → WC)
+
+  // Step 2: debit e-TopUp balance (credit already committed above)
   const debitRef = payload.referenceId.replace(/^WB/, 'WC');
   try {
     const { data } = await apiClient.post<LoadWalletResult>('core/debit', {
@@ -74,7 +75,11 @@ export async function apiLoadWalletFromWallet(payload: LoadWalletPayload): Promi
     });
     return data;
   } catch (err: any) {
-    throw new ApiError(err.response?.status ?? 0, err.response?.data?.message ?? 'Debit transaction failed.');
+    // Credit succeeded but debit failed — surface ref so support can reconcile
+    throw new ApiError(
+      err.response?.status ?? 0,
+      `Wallet load incomplete. Your MoMo may have been deducted. Please contact support with reference: ${payload.referenceId}`,
+    );
   }
 }
 
@@ -109,6 +114,21 @@ export async function apiSendMoMo(payload: LoadWalletPayload): Promise<LoadWalle
     return data;
   } catch (err: any) {
     throw new ApiError(err.response?.status ?? 0, err.response?.data?.message ?? 'Transfer failed.');
+  }
+}
+
+export async function apiLoadWalletMoMo(payload: LoadWalletPayload): Promise<LoadWalletResult> {
+  try {
+    const { data } = await apiClient.post<LoadWalletResult>('core/debit', {
+      amount: payload.amount,
+      phoneNumber: payload.phoneNumber,
+      referenceId: payload.referenceId,
+      product: payload.product,
+      accountId: payload.accountId,
+    });
+    return data;
+  } catch (err: any) {
+    throw new ApiError(err.response?.status ?? 0, err.response?.data?.message ?? 'MoMo wallet load failed.');
   }
 }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/theme';
 import type { GradientDef } from '@/constants/services';
@@ -17,9 +17,10 @@ interface ConfirmCardProps {
   gradient: GradientDef;
   onCancel: () => void;
   onConfirm: () => void;
+  loading?: boolean;
 }
 
-export function ConfirmCard({ title, rows, amount, gradient, onCancel, onConfirm }: ConfirmCardProps) {
+export function ConfirmCard({ title, rows, amount, gradient, onCancel, onConfirm, loading = false }: ConfirmCardProps) {
   return (
     <View style={styles.container}>
       {/* Amount banner */}
@@ -60,19 +61,23 @@ export function ConfirmCard({ title, rows, amount, gradient, onCancel, onConfirm
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={onConfirm}
+          onPress={loading ? undefined : onConfirm}
           activeOpacity={0.85}
           style={styles.confirmWrap}
           accessibilityRole="button"
           accessibilityLabel="Confirm transaction"
+          accessibilityState={{ disabled: loading }}
         >
           <LinearGradient
             colors={gradient.colors}
             start={gradient.start}
             end={gradient.end}
-            style={styles.confirmBtn}
+            style={[styles.confirmBtn, loading && { opacity: 0.7 }]}
           >
-            <Text style={styles.confirmText}>Confirm</Text>
+            {loading
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Text style={styles.confirmText}>Confirm</Text>
+            }
           </LinearGradient>
         </TouchableOpacity>
       </View>

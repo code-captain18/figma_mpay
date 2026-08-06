@@ -1,10 +1,11 @@
 import { apiGetTransactions } from '@/api';
-import type { TxFilters, TxPage } from '@/api/transactions.api';
+import type { TxFilters } from '@/api/transactions.api';
 import { EMPTY_FILTER } from '@/components/history/FilterSheet';
 import { groupByDate } from '@/data';
 import { useAuth } from '@/store/auth.store';
 import type { FilterState } from '@/types';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useCallback, useDeferredValue, useMemo, useState } from 'react';
 
 const PAGE_SIZE = 20;
 
@@ -21,92 +22,84 @@ export function useHistoryFilter() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<FilterState>(EMPTY_FILTER);
   const [source, setSource] = useState<'recent' | 'history'>('recent');
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [txPage, setTxPage] = useState<TxPage | null>(null);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Debounce search/filter changes via React's useDeferredValue
+  const deferredQuery = useDeferredValue(query);
+  const deferredFilter = useDeferredValue(filter);
 
-  const fetchPage = useCallback(async (
-    q: string, f: FilterState, src: 'recent' | 'history', pg: number
-  ) => {
-    setLoading(true);
-    try {
+  const {
+    data,
+    isFetching: loading,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['transactions', deferredQuery, deferredFilter, source, isAssistant],
+    queryFn: ({ pageParam = 1 }) => {
       const filters: TxFilters = {
-        source: src,
-        page: pg,
+        source,
+        page: pageParam as number,
         pageSize: PAGE_SIZE,
-        search: q || undefined,
-        referenceId: f.ref || undefined,
-        phoneNumber: f.phone || undefined,
-        status: f.status ? TO_API_STATUS[f.status] : undefined,
-        dateFrom: f.dateFrom || undefined,
-        dateTo: f.dateTo || undefined,
-        amountFrom: f.amtMin ? parseFloat(f.amtMin) : undefined,
-        amountTo: f.amtMax ? parseFloat(f.amtMax) : undefined,
+        search: deferredQuery || undefined,
+        referenceId: deferredFilter.ref || undefined,
+        phoneNumber: deferredFilter.phone || undefined,
+        status: deferredFilter.status ? TO_API_STATUS[deferredFilter.status] : undefined,
+        dateFrom: deferredFilter.dateFrom || undefined,
+        dateTo: deferredFilter.dateTo || undefined,
+        amountFrom: deferredFilter.amtMin ? parseFloat(deferredFilter.amtMin) : undefined,
+        amountTo: deferredFilter.amtMax ? parseFloat(deferredFilter.amtMax) : undefined,
       };
-      const result = await apiGetTransactions(filters, isAssistant);
-      setTxPage(prev =>
-        pg === 1
-          ? result
-          : prev
-            ? { ...result, data: [...prev.data, ...result.data], raw: [...prev.raw, ...result.raw] }
-            : result
-      );
-    } catch { /* keep existing data on error */ } finally {
-      setLoading(false);
-    }
-  }, [isAssistant]);
+      return apiGetTransactions(filters, isAssistant);
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const { page: pg, totalPages } = lastPage.pagination;
+      return pg < totalPages ? pg + 1 : undefined;
+    },
+  });
 
-  // Debounce filter/query/source changes; always reset to page 1
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setPage(1);
-      fetchPage(query, filter, source, 1);
-    }, 400);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [query, filter, source, fetchPage]);
-
-  // Load additional pages — only fires when page increments above 1 via loadMore
-  useEffect(() => {
-    if (page > 1) fetchPage(query, filter, source, page);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]); // intentionally narrow: only react to explicit loadMore calls
+  const allTxRecords = useMemo(
+    () => data?.pages.flatMap(p => p.data) ?? [],
+    [data],
+  );
 
   const loadMore = useCallback(() => {
-    const total = txPage?.pagination.totalPages ?? 0;
-    if (!loading && page < total) setPage(p => p + 1);
-  }, [loading, page, txPage]);
+    if (!loading && hasNextPage) fetchNextPage();
+  }, [loading, hasNextPage, fetchNextPage]);
 
-  const groups = useMemo(() => groupByDate(txPage?.data ?? []), [txPage]);
+  const groups = useMemo(() => groupByDate(allTxRecords), [allTxRecords]);
 
   const activeFilterCount = useMemo(
     () => Object.values(filter).filter(Boolean).length,
-    [filter]
+    [filter],
   );
 
   const stats = useMemo(() => {
-    const items = txPage?.data ?? [];
+    const total = data?.pages[data.pages.length - 1]?.pagination.total ?? 0;
     return {
-      total: txPage?.pagination.total ?? 0,
-      success: items.filter(t => t.status === 'success').length,
-      failed: items.filter(t => t.status === 'failed').length,
-      amount: items.reduce((s, t) => s + t.amount, 0),
+      total,
+      success: allTxRecords.filter(t => t.status === 'success').length,
+      failed: allTxRecords.filter(t => t.status === 'failed').length,
+      amount: allTxRecords.reduce((s, t) => s + t.amount, 0),
     };
-  }, [txPage]);
+  }, [data, allTxRecords]);
 
   const resetFilter = useCallback(() => {
     setFilter(EMPTY_FILTER);
     setQuery('');
-    setPage(1);
   }, []);
+
+  // txPage-compatible shape for consumers that read pagination
+  const txPage = useMemo(() => {
+    const lastPage = data?.pages[data.pages.length - 1];
+    if (!lastPage) return null;
+    return { ...lastPage, data: allTxRecords };
+  }, [data, allTxRecords]);
 
   return {
     query, setQuery,
     filter, setFilter,
     source, setSource,
-    page, loadMore,
+    loadMore,
     loading,
     txPage,
     groups,

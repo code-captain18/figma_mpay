@@ -1,28 +1,29 @@
 import {
   apiCheckTransactionStatus,
-  apiGetWalletBalances,
   apiLoadWalletFromWallet,
   apiLoadWalletMoMo,
   apiSendMoMo,
 } from '@/api';
+import { GradHdr } from '@/components/services/GradHdr';
+import { useWalletBalances, QK } from '@/hooks/useAppQueries';
 import { useAuth } from '@/store/auth.store';
 import { useToast } from '@/store/toast.store';
 import { C } from '@/theme';
 import { genWalletRef } from '@/utils/ref';
+import { useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   AlertCircle,
-  ArrowUpRight,
   CheckCircle2,
   ChevronDown,
-  ChevronLeft, ChevronRight,
+  ChevronRight,
   CreditCard,
   Hash, Phone,
   RefreshCw,
   Smartphone,
   User
 } from 'lucide-react-native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react'; // useEffect used in WalletForm component
 import {
   ActivityIndicator,
   Animated,
@@ -31,12 +32,12 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /* ─── Shadow helper ──────────────────────────────────────────────────────────── */
 const sd = (size: number, color: string, opacity: number) =>
@@ -260,49 +261,6 @@ function SelectSheet({
   );
 }
 
-/* Gradient header */
-function GradHdr({
-  title, onBack, colors,
-}: {
-  title: string;
-  onBack?: () => void;
-  colors?: readonly [string, string, string];
-}) {
-  return (
-    <LinearGradient
-      colors={colors ?? [C.gradientStart, C.blue, C.gradientEnd]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{
-        paddingHorizontal: 20, paddingTop: 14, paddingBottom: 18,
-        borderBottomLeftRadius: 22, borderBottomRightRadius: 22,
-      }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        {onBack && (
-          <TouchableOpacity
-            onPress={onBack}
-            activeOpacity={0.8}
-            style={{
-              width: 44, height: 44, borderRadius: 22,
-              backgroundColor: 'rgba(255,255,255,0.15)',
-              alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <ChevronLeft size={18} color="#fff" />
-          </TouchableOpacity>
-        )}
-        <Text style={{
-          fontSize: 16, fontWeight: '800', color: '#fff',
-          fontFamily: 'Urbanist_800ExtraBold',
-        }}>
-          {title}
-        </Text>
-      </View>
-    </LinearGradient>
-  );
-}
-
 /* ══════════════════════════════════════════════════════════════════════════════
    WALLET HOME
 ══════════════════════════════════════════════════════════════════════════════ */
@@ -320,7 +278,6 @@ function WalletHome({
   const both = (user?.hasETopup ?? true) && (user?.hasMoMo ?? true);
   const perms = user?.permissions;
   const canLoadMoMo = !perms || perms['MoMo:withdraw']?.create !== false;
-  const canSendMoMo = !perms || perms['MoMo:send']?.create !== false;
 
   return (
     <ScrollView
@@ -403,7 +360,7 @@ function WalletHome({
               color: '#fff', letterSpacing: -0.5, marginBottom: 2,
               fontFamily: 'Urbanist_800ExtraBold',
             }}>
-              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GH\u20B5${topup.toFixed(2)}`}
+              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GHS ${topup.toFixed(2)}`}
             </Text>
             <Text style={{
               fontSize: 9, color: 'rgba(255,255,255,0.4)',
@@ -450,7 +407,7 @@ function WalletHome({
               color: '#fff', letterSpacing: -0.5, marginBottom: 2,
               fontFamily: 'Urbanist_800ExtraBold',
             }}>
-              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GH\u20B5${momo.toFixed(2)}`}
+              {hidden ? '\u2022\u2022\u2022\u2022\u2022\u2022' : `GHS ${momo.toFixed(2)}`}
             </Text>
             <Text style={{
               fontSize: 9, color: 'rgba(255,255,255,0.4)',
@@ -502,49 +459,14 @@ function WalletHome({
                     fontSize: 11, color: C.muted,
                     fontFamily: 'Urbanist_500Medium',
                   }}>
-                    {hidden ? 'Balance hidden' : `Balance: GH\u20B5${momo.toFixed(2)}`}
+                    {hidden ? 'Balance hidden' : `Balance: GHS ${momo.toFixed(2)}`}
                   </Text>
                 </View>
                 <ChevronRight size={15} color={C.pale} />
               </TouchableOpacity>
             )}
 
-            {canSendMoMo && (
-              <TouchableOpacity
-                onPress={() => onSelect('momo-send')}
-                activeOpacity={0.8}
-                style={{
-                  flexDirection: 'row', alignItems: 'center', gap: 14,
-                  borderRadius: 18, padding: 16,
-                  backgroundColor: C.white,
-                  borderWidth: 1.5, borderColor: C.border,
-                  ...sd(6, C.navy, 0.05),
-                }}
-              >
-                <View style={{
-                  width: 44, height: 44, borderRadius: 14,
-                  backgroundColor: 'rgba(13,168,112,0.1)',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <ArrowUpRight size={20} color={C.green} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{
-                    fontSize: 13, fontWeight: '700', color: C.navy,
-                    marginBottom: 2, fontFamily: 'Urbanist_700Bold',
-                  }}>
-                    Cash Disbursement
-                  </Text>
-                  <Text style={{
-                    fontSize: 11, color: C.muted,
-                    fontFamily: 'Urbanist_500Medium',
-                  }}>
-                    Cash disbursement to any phone
-                  </Text>
-                </View>
-                <ChevronRight size={15} color={C.pale} />
-              </TouchableOpacity>
-            )}
+
           </>
         )}
 
@@ -578,7 +500,7 @@ function WalletHome({
                 fontSize: 11, color: C.muted,
                 fontFamily: 'Urbanist_500Medium',
               }}>
-                {hidden ? 'Balance hidden' : `Balance: GH\u20B5${topup.toFixed(2)}`}
+                {hidden ? 'Balance hidden' : `Balance: GHS ${topup.toFixed(2)}`}
               </Text>
             </View>
             <ChevronRight size={15} color={C.pale} />
@@ -647,7 +569,7 @@ function WalletForm({
     if (!isMoMo && !form.product)
       e.product = 'Select a product';
     if (!form.amount || isNaN(+form.amount) || +form.amount < 0.10)
-      e.amount = 'Minimum amount is GH\u20B50.10';
+      e.amount = 'Minimum amount is GHS 0.10';
     if (showPhone && !form.phoneNumber.trim())
       e.phoneNumber = 'Phone number is required';
     if (showPhone && form.phoneNumber &&
@@ -663,9 +585,7 @@ function WalletForm({
     if (!Object.keys(ev).length) onSubmit(form);
   };
 
-  const btnGrad: readonly [string, string] = isMoMo
-    ? ['#12C47E', '#0A9260']
-    : [C.gradientStart, C.blue];
+  const btnGrad: readonly [string, string] = [C.gradientStart, C.blue];
 
   return (
     <KeyboardAvoidingView
@@ -767,7 +687,7 @@ function WalletForm({
                 { value: 'MOMOWALLET', label: 'Mobile Money Wallet' },
                 { value: 'MMONEYDB', label: 'MTN Mobile Money (MoMo)' },
               ]}
-              placeholder="Select product\u2026"
+              placeholder="Select product"
               error={!!(touched.product && errs.product)}
             />
           </Field>
@@ -797,7 +717,7 @@ function WalletForm({
               fontSize: 13, fontWeight: '700', color: C.muted,
               fontFamily: 'Urbanist_700Bold', marginRight: 4,
             }}>
-              GH\u20B5
+              GHS
             </Text>
             <TextInput
               value={form.amount}
@@ -912,7 +832,7 @@ function WalletConfirm({
     { label: 'Wallet', value: walletType === 'etopup-form' ? 'e Top-Up Wallet' : 'Mobile Money Wallet' },
     { label: 'Product', value: productLabel },
     { label: 'Account ID', value: formData.accountId },
-    { label: 'Amount', value: `GH\u20B5${Number(formData.amount).toFixed(2)}` },
+    { label: 'Amount', value: `GHS ${Number(formData.amount).toFixed(2)}` },
     ...(formData.phoneNumber ? [{ label: 'Phone', value: formData.phoneNumber }] : []),
     { label: 'Reference', value: formData.referenceId, mono: true },
   ];
@@ -974,7 +894,7 @@ function WalletConfirm({
           {walletType === 'momo-send' ? 'You are sending' : 'You are loading'}
         </Text>
         <Text style={{ fontSize: 28, fontWeight: '800', color: C.blue, fontFamily: 'Urbanist_800ExtraBold' }}>
-          GH\u20B5{Number(formData.amount).toFixed(2)}
+          GHS {Number(formData.amount).toFixed(2)}
         </Text>
         <Text style={{ fontSize: 11, color: C.muted, marginTop: 2, fontFamily: 'Urbanist_500Medium' }}>
           {walletType === 'momo-send' ? 'to recipient' : 'into your wallet'}
@@ -1122,26 +1042,15 @@ function WalletSuccess({
    WALLET SCREEN  (main export — manages sub-navigation)
 ══════════════════════════════════════════════════════════════════════════════ */
 export default function WalletScreen() {
-  const insets = useSafeAreaInsets();
   const [view, setView] = useState<WalletView>('home');
   const [from, setFrom] = useState<WalletView>('etopup-form');
   const [formData, setFormData] = useState<WFState | null>(null);
   const [loading, setLoading] = useState(false);
-  const [balances, setBalances] = useState({ topup: 0, momo: 0 });
-  const [balanceLoading, setBalanceLoading] = useState(false);
   const toast = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchBalances = useCallback(async () => {
-    setBalanceLoading(true);
-    try {
-      const b = await apiGetWalletBalances();
-      setBalances({ topup: b.topup, momo: b.momo });
-    } catch { /* silently fail */ } finally {
-      setBalanceLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchBalances(); }, [fetchBalances]);
+  const { data: balancesData, isFetching: balanceLoading, refetch: fetchBalances } = useWalletBalances();
+  const balances = balancesData ?? { topup: 0, momo: 0 };
 
   const titles: Record<WalletView, string> = {
     home: 'Wallet',
@@ -1155,15 +1064,11 @@ export default function WalletScreen() {
     home: 'home', 'etopup-form': 'home',
     'momo-form': 'home', 'momo-send': 'home', confirm: from, success: 'home',
   };
-  const headerColors: Record<WalletView, readonly [string, string, string]> = {
-    home: [C.gradientStart, C.blue, C.gradientEnd],
-    'etopup-form': [C.gradientStart, C.blue, C.gradientEnd],
-    'momo-form': ['#12C47E', '#0A9260', '#065C3D'],
-    'momo-send': ['#12C47E', '#0A9260', '#065C3D'],
-    confirm: [C.gradientStart, C.blue, C.gradientEnd],
-    success: [C.gradientStart, C.blue, C.gradientEnd],
+  const BLUE_GRAD = { colors: [C.gradientStart, C.blue, C.gradientEnd] as [string, string, string], start: { x: 0, y: 0 }, end: { x: 1, y: 1 } };
+  const headerGrads = {
+    home: BLUE_GRAD, 'etopup-form': BLUE_GRAD, 'momo-form': BLUE_GRAD,
+    'momo-send': BLUE_GRAD, confirm: BLUE_GRAD, success: BLUE_GRAD,
   };
-
   const handleConfirm = useCallback(async () => {
     if (!formData) return;
     setLoading(true);
@@ -1215,6 +1120,7 @@ export default function WalletScreen() {
       setLoading(false);
       setView('success');
       fetchBalances();
+      queryClient.invalidateQueries({ queryKey: QK.walletBalances });
     } catch (err: any) {
       setLoading(false);
       // Regenerate ref ID — failed ref must never be reused
@@ -1225,12 +1131,13 @@ export default function WalletScreen() {
   const reset = () => { setView('home'); setFormData(null); };
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <StatusBar barStyle="light-content" backgroundColor="#4BAEE8" />
       {view !== 'success' && (
         <GradHdr
           title={titles[view]}
           onBack={view !== 'home' ? () => setView(backTo[view]) : undefined}
-          colors={headerColors[view]}
+          gradient={headerGrads[view]}
         />
       )}
 
@@ -1267,7 +1174,7 @@ export default function WalletScreen() {
 
       {view === 'success' && formData && (
         <WalletSuccess
-          amount={`GH\u20B5${Number(formData.amount).toFixed(2)}`}
+          amount={`GHS ${Number(formData.amount).toFixed(2)}`}
           reference={formData.referenceId}
           title={formData.product === 'MOMOCASHIN' ? 'Money Sent!' : 'Wallet Loaded!'}
           onDone={reset}

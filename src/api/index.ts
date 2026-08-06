@@ -1,5 +1,5 @@
-export { apiPurchaseAirtime, apiPurchaseData } from './airtime.api';
-export type { AirtimePayload, DataPayload, PurchaseResult } from './airtime.api';
+export { apiGetResellerProducts, apiPurchaseAirtime, apiPurchaseData, apiBulkUpload } from './airtime.api';
+export type { ApiProduct, ApiBundle, AirtimePayload, DataPayload, TxSubmitResult, BulkTxItem, BulkTxResult, BulkUploadResult } from './airtime.api';
 export { apiChangePassword, apiLogin, apiLogout, apiRefreshSession, apiUpdateUser, apiVerifyPassword } from './auth.api';
 export type { AuthTokens, AuthUser, LoginResponse } from './auth.api';
 export { ApiError, apiClient, mockRequest, setLogoutHandler } from './client';

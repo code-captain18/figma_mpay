@@ -52,6 +52,9 @@ export interface Bundle {
   validity: string;
   price: number;
   tag?: string;
+  bundleCode?: string;
+  bundleType?: string;
+  prodCode?: string;
 }
 
 export type BundleDuration = "Daily" | "Weekly" | "Monthly";
@@ -134,6 +137,9 @@ export interface SvcBundle {
   label: string;
   price: number;
   tag?: string;
+  bundleCode?: string;
+  bundleType?: string;
+  product?: string;
 }
 
 export interface SFState {

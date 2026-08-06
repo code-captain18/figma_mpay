@@ -81,12 +81,17 @@ function mapStatus(code: string): 'success' | 'pending' | 'failed' {
   return 'failed';
 }
 
-function mapSysModule(mod: string): SvcType {
-  const m = (mod ?? '').toLowerCase();
-  if (m.includes('data')) return 'data';
-  if (m.includes('airtime')) return 'airtime';
-  if (m.includes('money') || m.includes('momo')) return 'momo';
-  return 'data';
+function mapSysModule(r: ApiTxRecord): SvcType {
+  // Prefer prodCode which reliably encodes type (e.g. MTNAIRTIME, MTNDATA, MTNFIBRE)
+  const code = (r.prodCode ?? r.product ?? r.apiProduct ?? '').toLowerCase();
+  const mod  = (r.sysModule ?? r.serviceType ?? r.transactionType ?? '').toLowerCase();
+  const combined = `${code} ${mod}`;
+  if (combined.includes('fibre')) return 'fibre';
+  if (combined.includes('bulk'))  return 'bulk';
+  if (combined.includes('airtime')) return 'airtime';
+  if (combined.includes('data'))  return 'data';
+  if (combined.includes('money') || combined.includes('momo') || combined.includes('wallet')) return 'momo';
+  return 'airtime'; // safer default — airtime is most common; unknown won't mislead as data
 }
 
 export function mapApiTxRecord(r: ApiTxRecord): TxRecord {
@@ -95,7 +100,7 @@ export function mapApiTxRecord(r: ApiTxRecord): TxRecord {
     ref: r.referenceId || r.txReference || '',
     createdAt: r.requestTime || r.inputDate || r.transactionDate || new Date().toISOString(),
     status: mapStatus(r.ResponseCode),
-    type: mapSysModule(r.sysModule || r.serviceType),
+    type: mapSysModule(r),
     network: r.network || r.apiProduct || '',
     phone: r.phoneNumber || r.fromAni || '',
     amount: Number(r.sellAmount ?? r.amount ?? 0) || 0,

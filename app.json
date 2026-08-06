@@ -16,7 +16,6 @@
     },
     "android": {
       "permissions": [],
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
@@ -39,6 +38,7 @@
       ],
       "expo-font",
       "expo-secure-store",
+      "expo-notifications",
       [
         "expo-splash-screen",
         {
