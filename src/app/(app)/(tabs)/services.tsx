@@ -52,6 +52,8 @@ import { genBtRef, genMsRef } from '@/utils/ref';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+const saneStr = (v: string | null | undefined) => (v && v !== 'undefined' && v !== 'null' ? v : '');
+
 // ─── Theme shortcuts ──────────────────────────────────────────────────────────
 const C = Colors;
 const G = GRADIENTS;
@@ -367,7 +369,7 @@ function BulkForm({
     if (!prod?.bundles?.length) return SVC_DATA_BUNDLES;
     return prod.bundles.map(b => ({
       id: b.BundleCode,
-      label: `${b.BundleName}${b.Validity ? ` \u00b7 ${b.Validity}` : ''}`,
+      label: [saneStr(b.BundleName), saneStr(b.Validity)].filter(Boolean).join(' \u00b7 '),
       price: b.Amount ?? 0,
       bundleCode: b.BundleCode,
       bundleType: b.BundleType,
@@ -992,7 +994,7 @@ export default function ServicesScreen() {
     if (!prod?.bundles?.length) return SVC_DATA_BUNDLES;
     return prod.bundles.map(b => ({
       id: b.BundleCode,
-      label: `${b.BundleName}${b.Validity ? ` \u00b7 ${b.Validity}` : ''}`,
+      label: [saneStr(b.BundleName), saneStr(b.Validity)].filter(Boolean).join(' \u00b7 '),
       price: b.Amount ?? 0,
       bundleCode: b.BundleCode,
       bundleType: b.BundleType,
@@ -1005,7 +1007,7 @@ export default function ServicesScreen() {
     if (!prod?.bundles?.length) return FIBRE_BUNDLES;
     return prod.bundles.map(b => ({
       id: b.BundleCode,
-      label: `${b.BundleName}${b.Validity ? ` \u00b7 ${b.Validity}` : ''}`,
+      label: [saneStr(b.BundleName), saneStr(b.Validity)].filter(Boolean).join(' \u00b7 '),
       price: b.Amount ?? 0,
       bundleCode: b.BundleCode,
       bundleType: b.BundleType,

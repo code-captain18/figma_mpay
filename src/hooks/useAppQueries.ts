@@ -31,6 +31,10 @@ export function useWalletBalances() {
   return useQuery({
     queryKey: QK.walletBalances,
     queryFn: apiGetWalletBalances,
+    staleTime: 0,
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 }
 

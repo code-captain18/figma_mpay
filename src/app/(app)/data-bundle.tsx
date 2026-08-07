@@ -51,11 +51,14 @@ export default function DataBundleScreen() {
   const apiProduct = products.find(
     p => p.network.toUpperCase() === network.id.toUpperCase() && p.Type === 'Data'
   );
+  const sanitize = (v: string | null | undefined) =>
+    v && v !== 'undefined' && v !== 'null' ? v : '';
+
   const bundles: Bundle[] = apiProduct?.bundles?.length
     ? apiProduct.bundles.map(b => ({
       id: b.BundleCode,
-      size: b.BundleName,
-      validity: b.Validity ?? '',
+      size: sanitize(b.BundleName),
+      validity: sanitize(b.Validity),
       price: b.Amount ?? 0,
       bundleCode: b.BundleCode,
       bundleType: b.BundleType,

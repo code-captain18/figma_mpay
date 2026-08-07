@@ -5,25 +5,27 @@ import {
   apiSendMoMo,
 } from '@/api';
 import { GradHdr } from '@/components/services/GradHdr';
-import { useWalletBalances, QK } from '@/hooks/useAppQueries';
+import { QK, useWalletBalances } from '@/hooks/useAppQueries';
 import { useAuth } from '@/store/auth.store';
 import { useToast } from '@/store/toast.store';
 import { C } from '@/theme';
 import { genWalletRef } from '@/utils/ref';
 import { useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from 'expo-router';
 import {
   AlertCircle,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   CreditCard,
+  FileText,
   Hash, Phone,
   RefreshCw,
   Smartphone,
   User
 } from 'lucide-react-native';
-import React, { useCallback, useEffect, useRef, useState } from 'react'; // useEffect used in WalletForm component
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -52,7 +54,7 @@ const sd = (size: number, color: string, opacity: number) =>
   }) ?? {};
 
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
-type WalletView = 'home' | 'etopup-form' | 'momo-form' | 'momo-send' | 'confirm' | 'success';
+type WalletView = 'home' | 'etopup-form' | 'momo-form' | 'momo-send' | 'confirm' | 'processing' | 'success';
 
 interface WFState {
   product: string;
@@ -1039,6 +1041,93 @@ function WalletSuccess({
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
+   PROCESSING SCREEN  (MMONEYDB — waiting for user to approve on phone)
+══════════════════════════════════════════════════════════════════════════════ */
+function WalletProcessing({ referenceId }: { referenceId: string }) {
+  return (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{
+        flexGrow: 1, paddingHorizontal: 28,
+        paddingTop: 40, paddingBottom: 40, alignItems: 'center',
+      }}
+    >
+      <ActivityIndicator size="large" color={C.blue} style={{ marginBottom: 24 }} />
+
+      <Text style={{
+        fontSize: 20, fontWeight: '800', color: C.navy,
+        fontFamily: 'Urbanist_800ExtraBold', marginBottom: 10, textAlign: 'center',
+      }}>
+        Processing transaction
+      </Text>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+        <FileText size={13} color={C.muted} />
+        <Text style={{ fontSize: 12, color: C.muted, fontFamily: 'Urbanist_500Medium' }}>
+          Reference Id #{referenceId}
+        </Text>
+      </View>
+
+      <Text style={{
+        fontSize: 12, color: C.mid, textAlign: 'center',
+        fontFamily: 'Urbanist_400Regular', lineHeight: 18, marginBottom: 30,
+      }}>
+        Please wait while we process your Wallet Credit request...
+      </Text>
+
+      <View style={{ width: '100%', marginBottom: 24 }}>
+        <Text style={{
+          fontSize: 13, fontWeight: '700', color: C.blue,
+          fontFamily: 'Urbanist_700Bold', textAlign: 'center', marginBottom: 10,
+        }}>
+          Authorize Transaction via USSD
+        </Text>
+        {[
+          'Dial *170# on your phone.',
+          'Select 6 – My Wallet.',
+          'Select 3 – My Approvals.',
+          'Select 1 – My Approvals.',
+          'Enter your MoMo PIN to view pending transactions.',
+          'Select the pending transaction you want to approve.',
+          'Choose 1 to Approve.',
+        ].map((step, i) => (
+          <Text key={i} style={{
+            fontSize: 12, color: C.mid, textAlign: 'center',
+            fontFamily: 'Urbanist_400Regular', lineHeight: 22,
+          }}>
+            {step}
+          </Text>
+        ))}
+      </View>
+
+      <View style={{ width: '60%', height: 1, backgroundColor: C.divider, marginBottom: 24 }} />
+
+      <View style={{ width: '100%' }}>
+        <Text style={{
+          fontSize: 13, fontWeight: '700', color: C.blue,
+          fontFamily: 'Urbanist_700Bold', textAlign: 'center', marginBottom: 10,
+        }}>
+          Authorize Transaction via MTN App
+        </Text>
+        <Text style={{ fontSize: 12, color: C.mid, textAlign: 'center', fontFamily: 'Urbanist_400Regular', lineHeight: 22 }}>
+          Open the MTN MoMo App and sign in.
+        </Text>
+        <Text style={{ fontSize: 12, color: C.mid, textAlign: 'center', fontFamily: 'Urbanist_400Regular', lineHeight: 22 }}>
+          Tap <Text style={{ fontWeight: '700', fontFamily: 'Urbanist_700Bold', color: C.navy }}>Allow Cash Out.</Text>
+        </Text>
+        <Text style={{ fontSize: 12, color: C.mid, textAlign: 'center', fontFamily: 'Urbanist_400Regular', lineHeight: 22 }}>
+          Tap <Text style={{ fontWeight: '700', fontFamily: 'Urbanist_700Bold', color: C.navy }}>Go to Approvals.</Text>
+        </Text>
+        <Text style={{ fontSize: 12, color: C.mid, textAlign: 'center', fontFamily: 'Urbanist_400Regular', lineHeight: 22 }}>
+          Select the transaction you want to approve, then tap{' '}
+          <Text style={{ fontWeight: '700', fontFamily: 'Urbanist_700Bold', color: C.navy }}>Approve.</Text>
+        </Text>
+      </View>
+    </ScrollView>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
    WALLET SCREEN  (main export — manages sub-navigation)
 ══════════════════════════════════════════════════════════════════════════════ */
 export default function WalletScreen() {
@@ -1046,11 +1135,14 @@ export default function WalletScreen() {
   const [from, setFrom] = useState<WalletView>('etopup-form');
   const [formData, setFormData] = useState<WFState | null>(null);
   const [loading, setLoading] = useState(false);
+  const processingCancelledRef = useRef(false);
   const toast = useToast();
   const queryClient = useQueryClient();
 
   const { data: balancesData, isFetching: balanceLoading, refetch: fetchBalances } = useWalletBalances();
   const balances = balancesData ?? { topup: 0, momo: 0 };
+
+  useFocusEffect(useCallback(() => { fetchBalances(); }, [fetchBalances]));
 
   const titles: Record<WalletView, string> = {
     home: 'Wallet',
@@ -1058,23 +1150,27 @@ export default function WalletScreen() {
     'momo-form': 'Load Mobile Money',
     'momo-send': 'Cash Disbursement',
     confirm: 'Confirm Transaction',
+    processing: 'Processing Transaction',
     success: 'Success',
   };
   const backTo: Record<WalletView, WalletView> = {
     home: 'home', 'etopup-form': 'home',
-    'momo-form': 'home', 'momo-send': 'home', confirm: from, success: 'home',
+    'momo-form': 'home', 'momo-send': 'home', confirm: from, processing: 'confirm', success: 'home',
   };
   const BLUE_GRAD = { colors: [C.gradientStart, C.blue, C.gradientEnd] as [string, string, string], start: { x: 0, y: 0 }, end: { x: 1, y: 1 } };
   const headerGrads = {
     home: BLUE_GRAD, 'etopup-form': BLUE_GRAD, 'momo-form': BLUE_GRAD,
-    'momo-send': BLUE_GRAD, confirm: BLUE_GRAD, success: BLUE_GRAD,
+    'momo-send': BLUE_GRAD, confirm: BLUE_GRAD, processing: BLUE_GRAD, success: BLUE_GRAD,
   };
   const handleConfirm = useCallback(async () => {
     if (!formData) return;
     setLoading(true);
+    const capturedFrom = from;
     const amount = Number(formData.amount);
     const phone = formData.phoneNumber
-      ? '233' + formData.phoneNumber.replace(/^0/, '').replace(/\s/g, '')
+      ? formData.product === 'MMONEYDB'
+        ? formData.phoneNumber.replace(/\s/g, '')
+        : '233' + formData.phoneNumber.replace(/^0/, '').replace(/\s/g, '')
       : undefined;
     const payload = {
       amount,
@@ -1083,7 +1179,7 @@ export default function WalletScreen() {
       product: formData.product as 'MMONEYDB' | 'MOMOWALLET' | 'MOMOCASHOUT' | 'MOMOCASHIN',
       accountId: formData.accountId,
     };
-    const pollStatus = (refId: string): Promise<void> =>
+    const pollStatus = (refId: string, initialDelayMs = 0): Promise<void> =>
       new Promise((resolve, reject) => {
         const t0 = Date.now();
         const check = async () => {
@@ -1096,7 +1192,7 @@ export default function WalletScreen() {
           } catch { /* retry on network error */ }
           setTimeout(check, elapsed < 30_000 ? 1_000 : elapsed < 90_000 ? 2_000 : 5_000);
         };
-        check();
+        setTimeout(check, initialDelayMs);
       });
     // Pre-flight balance checks
     if (
@@ -1111,23 +1207,45 @@ export default function WalletScreen() {
     try {
       if (formData.product === 'MOMOWALLET') {
         await apiLoadWalletFromWallet(payload);
+        await pollStatus(formData.referenceId);
+        setLoading(false);
+        setView('success');
+        fetchBalances();
+        queryClient.invalidateQueries({ queryKey: QK.walletBalances });
       } else if (formData.product === 'MOMOCASHIN') {
         await apiSendMoMo(payload);
+        await pollStatus(formData.referenceId);
+        setLoading(false);
+        setView('success');
+        fetchBalances();
+        queryClient.invalidateQueries({ queryKey: QK.walletBalances });
       } else {
+        // MMONEYDB: initiate debit, then show processing screen while user approves on phone
         await apiLoadWalletMoMo(payload);
+        processingCancelledRef.current = false;
+        setLoading(false);
+        setView('processing');
+        pollStatus(formData.referenceId, 5_000)
+          .then(() => {
+            if (processingCancelledRef.current) return;
+            setView('success');
+            fetchBalances();
+            queryClient.invalidateQueries({ queryKey: QK.walletBalances });
+          })
+          .catch((pollErr: any) => {
+            if (processingCancelledRef.current) return;
+            setFormData(p => p ? { ...p, referenceId: genWalletRef() } : p);
+            toast.show(pollErr.message ?? 'Transaction failed. Please try again.', 'error');
+            setView(capturedFrom);
+          });
       }
-      await pollStatus(formData.referenceId);
-      setLoading(false);
-      setView('success');
-      fetchBalances();
-      queryClient.invalidateQueries({ queryKey: QK.walletBalances });
     } catch (err: any) {
       setLoading(false);
       // Regenerate ref ID — failed ref must never be reused
       setFormData(p => p ? { ...p, referenceId: genWalletRef() } : p);
       toast.show(err.message ?? 'Transaction failed. Please try again.', 'error');
     }
-  }, [formData, fetchBalances, toast]);
+  }, [formData, from, fetchBalances, toast, queryClient]);
   const reset = () => { setView('home'); setFormData(null); };
 
   return (
@@ -1136,7 +1254,7 @@ export default function WalletScreen() {
       {view !== 'success' && (
         <GradHdr
           title={titles[view]}
-          onBack={view !== 'home' ? () => setView(backTo[view]) : undefined}
+          onBack={view !== 'home' && view !== 'processing' ? () => setView(backTo[view]) : undefined}
           gradient={headerGrads[view]}
         />
       )}
@@ -1170,6 +1288,10 @@ export default function WalletScreen() {
           onCancel={() => setView(from)}
           loading={loading}
         />
+      )}
+
+      {view === 'processing' && formData && (
+        <WalletProcessing referenceId={formData.referenceId} />
       )}
 
       {view === 'success' && formData && (

@@ -15,9 +15,10 @@ export function genRef(): string {
     );
 }
 
-/** Generates a wallet-load reference: WB{timestamp}{8 hex chars} */
+/** Generates a wallet-load reference: WB + 13-digit timestamp + 4-digit random */
 export function genWalletRef(): string {
-    return `WB${Date.now()}${randomHex(4)}`;
+    const rand = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    return `WB${Date.now()}${rand}`;
 }
 
 /** Generates a transaction reference for web-transaction endpoints: MS{timestamp}{8 hex chars} */
