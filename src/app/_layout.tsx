@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/react-native';
 import {
   PlusJakartaSans_400Regular,
   PlusJakartaSans_500Medium,
@@ -13,6 +12,7 @@ import {
   Urbanist_800ExtraBold,
   useFonts,
 } from "@expo-google-fonts/urbanist";
+import * as Sentry from '@sentry/react-native';
 import { QueryClient, QueryClientProvider, focusManager } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -38,7 +38,6 @@ const queryClient = new QueryClient({
 import { registerForPushNotificationsAsync, setupNotificationListeners } from "@/notifications";
 import { AuthProvider, useAuth } from "@/store/auth.store";
 import { ToastProvider } from "@/store/toast.store";
-import Constants from 'expo-constants';
 import '../../global.css';
 
 const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
