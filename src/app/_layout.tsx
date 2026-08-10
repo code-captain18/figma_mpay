@@ -41,19 +41,9 @@ import { ToastProvider } from "@/store/toast.store";
 import Constants from 'expo-constants';
 import '../../global.css';
 
-const routingInstrumentation = Sentry.reactNavigationIntegration();
-
-Sentry.init({
-  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-  enabled: !__DEV__,
-  environment: Constants.expoConfig?.extra?.eas?.projectId ? 'production' : 'development',
-  tracesSampleRate: 0.2,
-  integrations: [routingInstrumentation],
-});
-
-SplashScreen.preventAutoHideAsync();
-if (Constants.appOwnership !== 'expo') {
-  SplashScreen.setOptions({ duration: 800, fade: true });
+const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
+if (SENTRY_DSN && !__DEV__) {
+  Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.2 });
 }
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
