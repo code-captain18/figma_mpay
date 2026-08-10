@@ -39,7 +39,7 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const [userFocus, setUserFocus] = useState(false);
   const [passFocus, setPassFocus] = useState(false);
-  const passwordRef = useRef<any>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   // ── Animation refs ─────────────────────────────────────────────────────────
   const cardSlide = useRef(new Animated.Value(60)).current;
@@ -273,11 +273,6 @@ export default function LoginScreen() {
               />
             </View>
 
-            {/* ── Forgot password ── */}
-            <TouchableOpacity style={s.forgotRow} activeOpacity={0.7}>
-              <Text style={s.forgotText}>Forgot password?</Text>
-            </TouchableOpacity>
-
             {/* ── Submit button ── */}
             <TouchableOpacity
               onPress={handleSubmit}
@@ -319,16 +314,6 @@ export default function LoginScreen() {
                 </LinearGradient>
               )}
             </TouchableOpacity>
-
-            {/* ── Demo hint ── */}
-            {/* <View style={s.hintBox}>
-              <Text style={s.hintText}>
-                Demo credentials:{' '}
-                <Text style={s.hintBold}>demo</Text>
-                {' '}·{' '}
-                <Text style={s.hintBold}>password123</Text>
-              </Text>
-            </View> */}
 
             {/* ── Footer ── */}
             <Text style={s.footer}>

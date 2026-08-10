@@ -1,13 +1,14 @@
+import { fmtAgo, fmtDateTime, NETWORKS } from '@/data';
+import { useAuth } from '@/store/auth.store';
+import { C, F, G } from '@/theme';
+import type { TxRecord } from '@/types';
+import { formatGHS } from '@/utils/format';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Check, CheckCircle2, ChevronLeft, Clock, Copy, XCircle } from 'lucide-react-native';
+import { CheckCircle2, ChevronLeft, Clock, Copy, XCircle } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, F, G } from '@/theme';
-import type { TxRecord } from '@/types';
-import { fmtAgo, fmtDateTime, NETWORKS, USER } from '@/data';
-import { formatGHS } from '@/utils/format';
 
 const SVC_LABELS: Record<string, string> = {
   airtime: 'Airtime',
@@ -28,6 +29,7 @@ const STATUS_COLORS: Record<string, string> = {
 // TxDetail — full transaction detail view
 // ─────────────────────────────────────────────────────────────────────────────
 export function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
+  const { user } = useAuth();
   const [refCopied, setRefCopied] = useState(false);
   const insets = useSafeAreaInsets();
 
@@ -36,7 +38,7 @@ export function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
     setRefCopied(true);
     setTimeout(() => setRefCopied(false), 2000);
   };
-  const net = NETWORKS.find(n => n.id === tx.network);
+  const net = NETWORKS.find(n => n.id === tx.network?.toLowerCase());
   const statusColor = STATUS_COLORS[tx.status] ?? C.mid;
   const isSuccess = tx.status === 'success';
   const isPending = tx.status === 'pending';
@@ -90,7 +92,7 @@ export function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
         { label: 'Service Type', value: SVC_LABELS[tx.type] ?? tx.type, mono: false },
         ...(tx.bundle ? [{ label: 'Bundle', value: tx.bundle, mono: false }] : []),
         ...(tx.momoType ? [{ label: 'MoMo Type', value: tx.momoType, mono: false }] : []),
-        { label: 'Network', value: tx.network, mono: false },
+        { label: 'Network', value: net?.name ?? tx.network, mono: false },
       ],
     },
     {
@@ -106,7 +108,7 @@ export function TxDetail({ tx, onBack }: { tx: TxRecord; onBack: () => void }) {
       rows: [
         { label: 'Phone', value: tx.phone, mono: false },
         ...(tx.accountId ? [{ label: 'Account ID', value: tx.accountId, mono: true }] : []),
-        { label: 'Agent ID', value: USER.accountId, mono: true },
+        { label: 'Agent ID', value: user?.accountId ?? '', mono: true },
       ],
     },
   ];

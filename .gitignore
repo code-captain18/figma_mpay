@@ -32,6 +32,7 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
 
 # Android signing — never commit real credentials
 android/keystore.properties

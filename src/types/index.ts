@@ -136,6 +136,9 @@ export interface SvcBundle {
   id: string;
   label: string;
   price: number;
+  priceLabel?: string;
+  priceMin?: number;
+  priceMax?: number;
   tag?: string;
   bundleCode?: string;
   bundleType?: string;

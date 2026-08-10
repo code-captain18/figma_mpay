@@ -2,11 +2,12 @@ import type { ApiPermEntry, ApiPermissions, ProfileProduct } from '@/api';
 import { apiAddAssistant, apiChangePassword, apiDeleteAssistant, apiEditAssistant, apiEditAssistantProfile, apiEditProfile, apiGetAssistantPermissions, apiSaveAssistantPermissions, apiVerifyPassword } from '@/api';
 import { GradHdr } from '@/components/services/GradHdr';
 import { PermMatrix } from '@/components/services/PermMatrix';
-import { INIT_ASSISTANTS, makeEmptyPerms, PERM_SECTIONS } from '@/data';
-import { QK, useAssistantsList, useProfileData } from '@/hooks/useAppQueries';
+import { makeEmptyPerms, PERM_SECTIONS } from '@/data';
+import { QK, useAssistantsList, useProfileData, useWalletBalances } from '@/hooks/useAppQueries';
 import { useAuth } from '@/store/auth.store';
 import { C, F, G } from '@/theme';
 import type { Assistant, PermKey, PermMap, ProfileView } from '@/types';
+import { mapApiAssistant } from '@/utils/mappers';
 import { useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -44,18 +45,6 @@ const ID_PROOF_LABELS: Record<string, string> = {
   DRIVERS_LICENSE: "Driver's License", PASSPORT: 'Passport', SSNIT: 'SSNIT',
 };
 const ID_PROOF_TYPES = ['GHANA_CARD', 'VOTERS_ID', 'DRIVERS_LICENSE', 'PASSPORT', 'SSNIT'] as const;
-
-function mapApiAssistant(a: { assistantId: string; firstname: string; lastname: string; email: string; phoneNumber: string; idProofType?: string; idNumber?: string; status: string; created_at?: string; resellerId?: string }): Assistant {
-  return {
-    id: a.assistantId, assistantId: a.assistantId,
-    firstName: a.firstname ?? '', lastName: a.lastname ?? '',
-    phoneNumber: a.phoneNumber ?? '', email: a.email ?? '',
-    status: a.status === 'active' ? 'active' : 'inactive',
-    permissions: makeEmptyPerms(),
-    createdAt: a.created_at ?? new Date().toISOString(),
-    idProofType: a.idProofType, idNumber: a.idNumber,
-  };
-}
 
 function apiPermsToPermMap(apiPerms: ApiPermissions): PermMap {
   const pm = makeEmptyPerms();
@@ -100,9 +89,10 @@ function permMapToApiPerms(perms: PermMap): ApiPermEntry[] {
 function ProfileScreen({ onLogout }: { onLogout: () => void }) {
   const { user, updateUser } = useAuth();
   const isAsst = user?.accountType?.toLowerCase() === 'assistant';
+  const { data: walletBalances } = useWalletBalances();
 
   const [view, setView] = useState<ProfileView>('home');
-  const [assistants, setAssistants] = useState<Assistant[]>(INIT_ASSISTANTS);
+  const [assistants, setAssistants] = useState<Assistant[]>([]);
   const [editingAsst, setEditingAsst] = useState<Assistant | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [products, setProducts] = useState<ProfileProduct[]>([]);
@@ -245,8 +235,8 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         {/* ── Stats strip ── */}
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
           {[
-            { label: 'e Top-Up', value: `GHS ${Number(user?.eTopupBalance ?? 0).toFixed(2)}`, color: C.blue },
-            { label: 'MoMo', value: `GHS ${Number(user?.momoBalance ?? 0).toFixed(2)}`, color: C.green },
+            { label: 'e Top-Up', value: `GHS ${Number(walletBalances?.topup ?? 0).toFixed(2)}`, color: C.blue },
+            { label: 'MoMo', value: `GHS ${Number(walletBalances?.momo ?? 0).toFixed(2)}`, color: C.green },
             { label: 'Status', value: editForm.status || '—', color: editForm.status === 'active' ? C.green : editForm.status === 'suspended' ? C.red : C.orange },
           ].map(s => (
             <View key={s.label} style={home.statCard}>

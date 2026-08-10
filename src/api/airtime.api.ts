@@ -2,10 +2,11 @@ import { apiClient, ApiError } from './client';
 
 export interface ApiBundle {
   BundleCode: string;
-  BundleName: string;
+  BundleName?: string;
   BundleType: string;
-  Amount: number | null;
-  Validity: string;
+  Amount?: number | null;
+  BundlePrice?: string;
+  Validity?: string;
 }
 
 export interface ApiProduct {

@@ -40,8 +40,6 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
-const PAGE_SIZE = 4;
-
 const STATUS_COLORS: Record<string, string> = {
   success: C.green,
   pending: C.orange,
@@ -141,7 +139,7 @@ export default function HistoryScreen() {
   const toast = useToast();
   const [selected, setSelected] = useState<TxRecord | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const { query, setQuery, filter, setFilter, source, setSource, loadMore, loading, txPage, groups, activeFilterCount, stats, resetFilter } = useHistoryFilter();
+  const { query, setQuery, filter, setFilter, source, setSource, loadMore, loading, isRefreshing, handleRefresh, txPage, groups, activeFilterCount, stats, resetFilter } = useHistoryFilter();
 
   const exportCsv = useCallback(async () => {
     try {
@@ -236,6 +234,8 @@ export default function HistoryScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         renderItem={renderGroup}
+        onRefresh={handleRefresh}
+        refreshing={isRefreshing}
         ListHeaderComponent={<>
           {/* ── Stats strip ── */}
           <View style={hs.statsStrip}>

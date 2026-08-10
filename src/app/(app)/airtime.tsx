@@ -3,7 +3,7 @@ import { NetworkLogo } from "@/components/svg/NetworkLogo";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { ReceiptRows } from "@/components/ui/ReceiptRows";
 import { NETWORKS, PRESET_AMOUNTS } from "@/constants/networks";
-import { useResellerProducts } from "@/hooks/useAppQueries";
+import { QK, useResellerProducts } from "@/hooks/useAppQueries";
 import { scheduleTransactionNotification } from "@/notifications";
 import { useAuth } from "@/store/auth.store";
 import { useToast } from "@/store/toast.store";
@@ -12,6 +12,7 @@ import { formatGHS } from "@/utils/format";
 import { ghanaPhoneSchema } from "@/utils/phone";
 import { pollTransactionStatus } from "@/utils/pollStatus";
 import { genMsRef } from "@/utils/ref";
+import { useQueryClient } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Check, PhoneCall } from "lucide-react-native";
@@ -35,6 +36,7 @@ export default function AirtimeScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const toast = useToast();
+  const queryClient = useQueryClient();
   const { data: products = [] } = useResellerProducts();
   const isAssistant = user?.accountType?.toLowerCase() === 'assistant';
   const [step, setStep] = useState<Step>("form");
@@ -84,6 +86,9 @@ export default function AirtimeScreen() {
       setStep("processing");
       await pollTransactionStatus(txRef);
       setStep("success");
+      queryClient.invalidateQueries({ queryKey: QK.walletBalances });
+      queryClient.invalidateQueries({ queryKey: QK.transactions });
+      queryClient.invalidateQueries({ queryKey: QK.recentTransactions(5) });
       scheduleTransactionNotification({
         id: txRef,
         type: 'airtime',

@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react-native';
 import {
   PlusJakartaSans_400Regular,
   PlusJakartaSans_500Medium,
@@ -21,15 +22,15 @@ import { AppState, AppStateStatus, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 // React Query doesn't hook into AppState by default in React Native
-AppState.addEventListener('change', (status: AppStateStatus) => {
-  focusManager.setFocused(status === 'active');
-});
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 2,
+      // keep cached data for 10 min — financial screens never show GHS 0 on reconnect
+      gcTime: 1000 * 60 * 10,
       retry: 1,
+      refetchOnReconnect: true,
     },
   },
 });
@@ -37,8 +38,18 @@ const queryClient = new QueryClient({
 import { registerForPushNotificationsAsync, setupNotificationListeners } from "@/notifications";
 import { AuthProvider, useAuth } from "@/store/auth.store";
 import { ToastProvider } from "@/store/toast.store";
-import Constants from "expo-constants";
-import "../../global.css";
+import Constants from 'expo-constants';
+import '../../global.css';
+
+const routingInstrumentation = Sentry.reactNavigationIntegration();
+
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  enabled: !__DEV__,
+  environment: Constants.expoConfig?.extra?.eas?.projectId ? 'production' : 'development',
+  tracesSampleRate: 0.2,
+  integrations: [routingInstrumentation],
+});
 
 SplashScreen.preventAutoHideAsync();
 if (Constants.appOwnership !== 'expo') {
@@ -80,6 +91,7 @@ function RootLayoutContent() {
 }
 
 export default function RootLayout() {
+  const router = useRouter();
   const [fontsLoaded] = useFonts({
     Urbanist_400Regular,
     Urbanist_500Medium,
@@ -96,9 +108,21 @@ export default function RootLayout() {
     if (fontsLoaded) {
       SplashScreen.hide();
     }
+    const appStateSub = AppState.addEventListener('change', (status: AppStateStatus) => {
+      focusManager.setFocused(status === 'active');
+    });
     registerForPushNotificationsAsync();
-    const cleanup = setupNotificationListeners();
-    return cleanup;
+    const cleanupNotifications = setupNotificationListeners(
+      undefined,
+      (response) => {
+        const txId = response.notification.request.content.data?.txId;
+        if (txId) router.push('/(app)/(tabs)/history');
+      },
+    );
+    return () => {
+      appStateSub.remove();
+      cleanupNotifications();
+    };
   }, [fontsLoaded]);
 
   if (!fontsLoaded) {

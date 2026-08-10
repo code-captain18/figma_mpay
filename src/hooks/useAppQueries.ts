@@ -18,6 +18,8 @@ export const QK = {
   resellerProducts: (isAssistant: boolean, accountId: string) =>
     ['resellerProducts', isAssistant, accountId] as const,
   assistants: (search: string) => ['assistants', search] as const,
+  recentTransactions: (limit: number) => ['recent-transactions', limit] as const,
+  transactions: ['transactions'] as const,
 };
 
 export function useDashboardData(startDate: string, endDate: string) {
@@ -32,9 +34,12 @@ export function useWalletBalances() {
     queryKey: QK.walletBalances,
     queryFn: apiGetWalletBalances,
     staleTime: 0,
-    refetchInterval: 10_000,
+    // keep last-known balance in cache for 10 min so offline never shows GHS 0
+    gcTime: 10 * 60 * 1000,
+    refetchInterval: 30_000,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }
 
@@ -83,7 +88,7 @@ export function useRecentTransactions(limit = 5) {
   const { user } = useAuth();
   const isAssistant = user?.accountType?.toLowerCase() === 'assistant';
   return useQuery({
-    queryKey: ['recent-transactions', limit],
+    queryKey: QK.recentTransactions(limit),
     queryFn: () => apiGetTransactions({ source: 'recent', page: 1, pageSize: limit }, isAssistant),
     enabled: !!user,
   });

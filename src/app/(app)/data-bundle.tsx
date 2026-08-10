@@ -4,7 +4,7 @@ import { GradientButton } from "@/components/ui/GradientButton";
 import { ReceiptRows } from "@/components/ui/ReceiptRows";
 import { BUNDLE_DURATIONS, DATA_BUNDLES } from "@/constants/bundles";
 import { NETWORKS } from "@/constants/networks";
-import { useResellerProducts } from "@/hooks/useAppQueries";
+import { QK, useResellerProducts } from "@/hooks/useAppQueries";
 import { useAuth } from "@/store/auth.store";
 import { useToast } from "@/store/toast.store";
 import { Colors, Shadows, T } from "@/theme";
@@ -13,6 +13,7 @@ import { formatGHS } from "@/utils/format";
 import { ghanaPhoneSchema } from "@/utils/phone";
 import { pollTransactionStatus } from "@/utils/pollStatus";
 import { genMsRef } from "@/utils/ref";
+import { useQueryClient } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Check, Wifi } from "lucide-react-native";
@@ -35,12 +36,14 @@ type Recipient = "self" | "other";
 export default function DataBundleScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const isAssistant = user?.accountType?.toLowerCase() === 'assistant';
   const toast = useToast();
+  const queryClient = useQueryClient();
   const { data: products = [] } = useResellerProducts();
   const [step, setStep] = useState<Step>("form");
   const [isProcessing, setIsProcessing] = useState(false);
   const [txRef] = useState(genMsRef);
-  const [network, setNetwork] = useState(NETWORKS[0]);
+  const network = NETWORKS[0];
   const [recipient, setRecipient] = useState<Recipient>("self");
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState("");
@@ -89,7 +92,7 @@ export default function DataBundleScreen() {
         bundleCode: selected.bundleCode ?? selected.id,
         referenceId: txRef,
         transactionDescription: `Data bundle for ${prodCode}`,
-        ...(user?.accountId && {
+        ...(isAssistant && user?.accountId && {
           reselleraccountId: user.accountId,
           resellerAccountId: user.accountId,
           resellerId: user.accountId,
@@ -99,6 +102,9 @@ export default function DataBundleScreen() {
       setStep("processing");
       await pollTransactionStatus(txRef);
       setStep("success");
+      queryClient.invalidateQueries({ queryKey: QK.walletBalances });
+      queryClient.invalidateQueries({ queryKey: QK.transactions });
+      queryClient.invalidateQueries({ queryKey: QK.recentTransactions(5) });
     } catch (err: any) {
       toast.show(err?.message ?? 'Data bundle purchase failed. Please try again.', 'error');
     } finally {
@@ -149,39 +155,16 @@ export default function DataBundleScreen() {
               </View>
             </View>
 
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              {NETWORKS.map((n) => {
-                const active = network.id === n.id;
-                return (
-                  <TouchableOpacity
-                    key={n.id}
-                    onPress={() => {
-                      setNetwork(n);
-                      setSelected(null);
-                    }}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: active }}
-                    accessibilityLabel={n.label}
-                    style={{
-                      flex: 1,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 8,
-                      paddingVertical: 14,
-                      borderRadius: 18,
-                      borderWidth: active ? 2 : 0,
-                      borderColor: active ? Colors.orange : "transparent",
-                      backgroundColor: active ? Colors.white : "rgba(255,255,255,0.14)",
-                    }}
-                  >
-                    <NetworkLogo id={n.id} size={26} />
-                    <Text style={{ fontSize: 11, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: active ? Colors.navy : "rgba(255,255,255,0.8)" }}>
-                      {n.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 }}>
+              <NetworkLogo id={network.id} size={32} />
+              <View>
+                <Text style={{ fontSize: 15, fontWeight: "800", fontFamily: "Urbanist_800ExtraBold", color: Colors.white }}>
+                  {network.label}
+                </Text>
+                <Text style={{ fontSize: 11, fontFamily: "Urbanist_400Regular", color: "rgba(255,255,255,0.65)" }}>
+                  Data bundles available
+                </Text>
+              </View>
             </View>
           </LinearGradient>
         ) : (

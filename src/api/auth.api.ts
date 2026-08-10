@@ -56,8 +56,11 @@ export async function apiVerifyPassword(password: string): Promise<boolean> {
   try {
     const { data } = await apiClient.post<{ valid: boolean }>('auth/verify-password', { password });
     return Boolean(data.valid);
-  } catch {
-    return false;
+  } catch (err: any) {
+    const status = err?.response?.status;
+    // 400/401 means wrong password; anything else is a network/server error
+    if (status === 400 || status === 401) return false;
+    throw new ApiError(status ?? 0, err?.response?.data?.message ?? 'Could not verify password. Check your connection and try again.');
   }
 }
 

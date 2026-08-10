@@ -2,6 +2,7 @@ import type { AuthUser } from "@/api";
 import { apiLogin, apiLogout, apiRefreshSession, apiUpdateUser } from "@/api";
 import { setLogoutHandler, setUserUpdateHandler } from "@/api/client";
 import { clearTokens, getRefreshToken, setTokens } from "@/utils/tokenStorage";
+import { useQueryClient } from "@tanstack/react-query";
 import React, {
   createContext,
   useCallback,
@@ -27,6 +28,7 @@ interface AuthContextValue extends AuthState {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [state, setState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
@@ -35,8 +37,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const performLogout = useCallback(async () => {
     await clearTokens();
+    queryClient.clear();
     setState({ user: null, isAuthenticated: false, isLoading: false });
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
     setLogoutHandler(performLogout);

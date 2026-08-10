@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { RefreshCw } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const C = Colors;
@@ -61,6 +61,8 @@ export default function HomeScreen() {
   const channelTotal = num(dash?.webSales) + num(dash?.apiSales) + num(dash?.mobileAppSales);
 
   return (
+    <>
+    <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
     <ScrollView
       showsVerticalScrollIndicator={false}
       style={{ flex: 1, backgroundColor: C.bg }}
@@ -370,6 +372,7 @@ export default function HomeScreen() {
         </View>
       </View>
     </ScrollView>
+    </>
   );
 }
 

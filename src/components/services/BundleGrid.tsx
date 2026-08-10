@@ -1,7 +1,6 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Colors } from '@/theme';
 import type { SvcBundle } from '@/types';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface BundleGridProps {
   bundles: SvcBundle[];
@@ -34,7 +33,7 @@ export function BundleGrid({ bundles, selected, accent = Colors.primary, onSelec
             )}
             <Text style={[styles.label, active && { color: accent }]}>{b.label}</Text>
             <Text style={[styles.price, active && { color: accent }]}>
-              GHS {b.price.toFixed(2)}
+              {b.priceLabel ?? `GHS ${b.price.toFixed(2)}`}
             </Text>
           </TouchableOpacity>
         );

@@ -47,14 +47,38 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+// Decode JWT exp without a library; returns expiry epoch seconds or 0 on failure
+function jwtExpiry(token: string): number {
+  try {
+    const payload = token.split('.')[1];
+    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    return decoded.exp ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 export const apiClient: AxiosInstance = axios.create({
   baseURL: config.apiBaseUrl,
   headers: { 'Content-Type': 'application/json' },
   timeout: 30_000,
 });
 
-apiClient.interceptors.request.use((reqConfig) => {
-  const token = getCachedAccessToken();
+apiClient.interceptors.request.use(async (reqConfig) => {
+  let token = getCachedAccessToken();
+
+  // Proactively refresh if token is expired or expires within 60 seconds
+  if (token) {
+    const exp = jwtExpiry(token);
+    const nowSec = Date.now() / 1000;
+    if (exp > 0 && exp - nowSec < 60) {
+      if (!pendingRefresh) {
+        pendingRefresh = refreshAccessToken().finally(() => { pendingRefresh = null; });
+      }
+      token = await pendingRefresh;
+    }
+  }
+
   if (token) reqConfig.headers.Authorization = `Bearer ${token}`;
   return reqConfig;
 });

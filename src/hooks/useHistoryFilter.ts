@@ -30,6 +30,7 @@ export function useHistoryFilter() {
   const {
     data,
     isFetching: loading,
+    refetch,
     fetchNextPage,
     hasNextPage,
   } = useInfiniteQuery({
@@ -61,6 +62,13 @@ export function useHistoryFilter() {
     () => data?.pages.flatMap(p => p.data) ?? [],
     [data],
   );
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try { await refetch(); } finally { setIsRefreshing(false); }
+  }, [refetch]);
 
   const loadMore = useCallback(() => {
     if (!loading && hasNextPage) fetchNextPage();
@@ -101,6 +109,8 @@ export function useHistoryFilter() {
     source, setSource,
     loadMore,
     loading,
+    refetch,
+    isRefreshing, handleRefresh,
     txPage,
     groups,
     activeFilterCount, stats,

@@ -67,6 +67,7 @@ export async function apiGetProfile(): Promise<{ profile: ResellerProfile; produ
     }
 }
 
+// TODO: request a dedicated /resellers/assistant/profile?email={email} endpoint to avoid page-100 ceiling
 export async function apiGetAssistantProfile(email: string): Promise<{ profile: AssistantProfile; products: ProfileProduct[] }> {
     try {
         const { data } = await apiClient.post<{ success: boolean; data: AssistantProfile[]; products: ProfileProduct[] }>('resellers/assistant/list', { page: 1, pageSize: 100 });

@@ -2,7 +2,7 @@ export { apiGetResellerProducts, apiPurchaseAirtime, apiPurchaseData, apiBulkUpl
 export type { ApiProduct, ApiBundle, AirtimePayload, DataPayload, TxSubmitResult, BulkTxItem, BulkTxResult, BulkUploadResult } from './airtime.api';
 export { apiChangePassword, apiLogin, apiLogout, apiRefreshSession, apiUpdateUser, apiVerifyPassword } from './auth.api';
 export type { AuthTokens, AuthUser, LoginResponse } from './auth.api';
-export { ApiError, apiClient, mockRequest, setLogoutHandler } from './client';
+export { ApiError, apiClient, setLogoutHandler } from './client';
 export { apiGetDashboardData } from './dashboard.api';
 export type { DashboardData } from './dashboard.api';
 export { apiAddAssistant, apiDeleteAssistant, apiEditAssistant, apiEditAssistantProfile, apiEditProfile, apiGetAssistantPermissions, apiGetAssistantProfile, apiGetProfile, apiListAssistants, apiSaveAssistantPermissions } from './profile.api';

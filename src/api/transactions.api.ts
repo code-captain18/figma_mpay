@@ -75,23 +75,39 @@ export interface TxPage {
   pagination: TxPagination;
 }
 
-function mapStatus(code: string): 'success' | 'pending' | 'failed' {
+function mapStatus(r: ApiTxRecord): 'success' | 'pending' | 'failed' {
+  const code = r.ResponseCode ?? '';
   if (code === '001') return 'success';
   if (code === '000') return 'pending';
+  // Fall back to text fields for non-standard codes
+  const txt = `${r.transactionStatus ?? ''} ${r.statusDescription ?? ''}`.toLowerCase();
+  if (txt.includes('success') || txt.includes('complet')) return 'success';
+  if (txt.includes('pending') || txt.includes('process')) return 'pending';
   return 'failed';
 }
 
 function mapSysModule(r: ApiTxRecord): SvcType {
   // Prefer prodCode which reliably encodes type (e.g. MTNAIRTIME, MTNDATA, MTNFIBRE)
   const code = (r.prodCode ?? r.product ?? r.apiProduct ?? '').toLowerCase();
-  const mod  = (r.sysModule ?? r.serviceType ?? r.transactionType ?? '').toLowerCase();
+  const mod = (r.sysModule ?? r.serviceType ?? r.transactionType ?? '').toLowerCase();
   const combined = `${code} ${mod}`;
   if (combined.includes('fibre')) return 'fibre';
-  if (combined.includes('bulk'))  return 'bulk';
+  if (combined.includes('bulk')) return 'bulk';
   if (combined.includes('airtime')) return 'airtime';
-  if (combined.includes('data'))  return 'data';
+  if (combined.includes('data')) return 'data';
   if (combined.includes('money') || combined.includes('momo') || combined.includes('wallet')) return 'momo';
   return 'airtime'; // safer default — airtime is most common; unknown won't mislead as data
+}
+
+function extractNetwork(r: ApiTxRecord): string {
+  const raw = (r.network || r.apiProduct || r.prodCode || r.product || '').toLowerCase();
+  if (raw.includes('telecel') || raw.includes('voda')) return 'telecel';
+  if (raw.includes('airteltigo') || raw.includes('airtel') || raw.includes('tigo')) return 'airteltigo';
+  if (raw.includes('mtn')) return 'mtn';
+  // Derive from bundle code prefix as last resort (RACT_/NACT_ are MTN-specific)
+  const bc = (r.bundleCode || r.BundleCode || '').toUpperCase();
+  if (bc.startsWith('RACT_') || bc.startsWith('NACT_')) return 'mtn';
+  return raw;
 }
 
 export function mapApiTxRecord(r: ApiTxRecord): TxRecord {
@@ -99,9 +115,9 @@ export function mapApiTxRecord(r: ApiTxRecord): TxRecord {
     id: r.referenceId || r.requestId || '',
     ref: r.referenceId || r.txReference || '',
     createdAt: r.requestTime || r.inputDate || r.transactionDate || new Date().toISOString(),
-    status: mapStatus(r.ResponseCode),
+    status: mapStatus(r),
     type: mapSysModule(r),
-    network: r.network || r.apiProduct || '',
+    network: extractNetwork(r),
     phone: r.phoneNumber || r.fromAni || '',
     amount: Number(r.sellAmount ?? r.amount ?? 0) || 0,
     fee: Number(r.commission ?? 0) || 0,

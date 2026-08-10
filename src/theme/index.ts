@@ -40,4 +40,9 @@ export const G = {
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },
+  momoGreen: {
+    colors: ['#12C47E', '#0A9260', '#065C3D'] as [string, string, string],
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
+  },
 } as const;
