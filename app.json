@@ -7,7 +7,6 @@
     "icon": "./assets/mpay_logooo.png",
     "scheme": "mpay",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "backgroundColor": "#EFF5FC",
     "ios": {
       "supportsTablet": false,
@@ -47,7 +46,8 @@
           "imageWidth": 200,
           "resizeMode": "contain"
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true
