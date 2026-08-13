@@ -1,10 +1,15 @@
 import { NetSelector } from '@/components/services/NetSelector';
 import { GradHdr } from '@/components/services/GradHdr';
+import { ContactPickerSheet } from '@/components/contacts/ContactPickerSheet';
+import { SaveFavoriteRow } from '@/components/contacts/SaveFavoriteRow';
+import { useContactPicker } from '@/features/contacts/hooks';
 import { GRADIENTS } from '@/constants/services';
 import { Colors } from '@/theme';
+import { ghanaPhoneSchema } from '@/utils/phone';
 import type { SFState } from '@/types';
-import React from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useCallback } from 'react';
+import { ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { UserRound } from 'lucide-react-native';
 import { FL, SubmitBtn, frm, shr } from './ServiceFormPrimitives';
 
 const C = Colors;
@@ -21,6 +26,13 @@ export function AirtimeForm({
   const set = (k: keyof SFState, v: SFState[keyof SFState]) =>
     setForm(p => ({ ...p, [k]: v }));
   const ok = !!form.phone && !!form.amount;
+  const { state: contactState, openPicker, dismiss, showPermissionAlert } = useContactPicker();
+
+  const handleContactPress = useCallback(() => {
+    if (contactState.phase === 'denied') showPermissionAlert();
+    else openPicker();
+  }, [contactState.phase, openPicker, showPermissionAlert]);
+  const phoneValid = ghanaPhoneSchema.safeParse(form.phone.trim()).success;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -35,14 +47,32 @@ export function AirtimeForm({
           <NetSelector selected={form.network} onSelect={v => set('network', v)} />
         </FL>
         <FL label="RECIPIENT PHONE NUMBER *">
-          <TextInput
-            keyboardType="phone-pad"
-            value={form.phone}
-            onChangeText={v => set('phone', v)}
-            placeholder="024XXXXXXX"
-            placeholderTextColor={C.pale}
-            style={shr.input}
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.border, borderRadius: 12, backgroundColor: C.bg }}>
+            <TextInput
+              keyboardType="phone-pad"
+              value={form.phone}
+              onChangeText={v => set('phone', v)}
+              placeholder="024XXXXXXX"
+              placeholderTextColor={C.pale}
+              style={[shr.input, { flex: 1, borderWidth: 0 }]}
+            />
+            <TouchableOpacity
+              onPress={handleContactPress}
+              activeOpacity={0.7}
+              style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}
+              accessibilityRole="button"
+              accessibilityLabel="Choose from contacts"
+            >
+              {contactState.phase === 'loading'
+                ? <ActivityIndicator size="small" color={C.blue} />
+                : <UserRound size={18} color={C.blue} />}
+            </TouchableOpacity>
+          </View>
+          {phoneValid && (
+            <View style={{ marginTop: 6 }}>
+              <SaveFavoriteRow phoneNumber={form.phone.trim()} />
+            </View>
+          )}
         </FL>
         <FL label="AMOUNT (GHS) *">
           <View style={{ position: 'relative' }}>
@@ -76,6 +106,12 @@ export function AirtimeForm({
         </View>
         <SubmitBtn label="Review & Confirm" gradient={G.wallet} disabled={!ok} onPress={onNext} />
       </ScrollView>
+      <ContactPickerSheet
+        visible={contactState.phase === 'ready'}
+        contacts={contactState.phase === 'ready' ? contactState.contacts : []}
+        onSelect={(num) => { set('phone', num); dismiss(); }}
+        onClose={dismiss}
+      />
     </View>
   );
 }

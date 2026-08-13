@@ -14,7 +14,9 @@
       "buildNumber": "1"
     },
     "android": {
-      "permissions": [],
+      "permissions": [
+        "android.permission.READ_CONTACTS"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
@@ -38,6 +40,7 @@
       "expo-font",
       "expo-secure-store",
       "expo-notifications",
+      "expo-contacts",
       [
         "expo-splash-screen",
         {
