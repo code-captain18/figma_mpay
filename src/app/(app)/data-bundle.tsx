@@ -1,9 +1,12 @@
 import { apiPurchaseData } from "@/api";
+import { ContactPickerSheet } from "@/components/contacts/ContactPickerSheet";
+import { SaveFavoriteRow } from "@/components/contacts/SaveFavoriteRow";
 import { NetworkLogo } from "@/components/svg/NetworkLogo";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { ReceiptRows } from "@/components/ui/ReceiptRows";
 import { BUNDLE_DURATIONS, DATA_BUNDLES } from "@/constants/bundles";
 import { NETWORKS } from "@/constants/networks";
+import { useContactPicker } from "@/features/contacts/hooks";
 import { QK, useResellerProducts } from "@/hooks/useAppQueries";
 import { useAuth } from "@/store/auth.store";
 import { useToast } from "@/store/toast.store";
@@ -16,8 +19,8 @@ import { genMsRef } from "@/utils/ref";
 import { useQueryClient } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Check, Wifi } from "lucide-react-native";
-import { useState } from "react";
+import { ArrowLeft, Check, UserRound, Wifi } from "lucide-react-native";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -49,6 +52,15 @@ export default function DataBundleScreen() {
   const [phoneError, setPhoneError] = useState("");
   const [duration, setDuration] = useState<BundleDuration>("Daily");
   const [selected, setSelected] = useState<Bundle | null>(null);
+  const { state: contactState, openPicker: openContactPicker, dismiss: dismissContacts, showPermissionAlert } = useContactPicker();
+
+  const handleContactPress = useCallback(() => {
+    if (contactState.phase === 'denied') {
+      showPermissionAlert();
+    } else {
+      openContactPicker();
+    }
+  }, [contactState.phase, openContactPicker, showPermissionAlert]);
 
   // Prefer real API bundles; fall back to local constants if products not loaded yet
   const apiProduct = products.find(
@@ -309,8 +321,7 @@ export default function DataBundleScreen() {
                 borderWidth: 1,
                 borderColor: "#E7EEF9",
                 backgroundColor: Colors.white,
-                overflow: "hidden",
-                marginBottom: 26,
+                marginBottom: 8,
                 ...Shadows.subtle,
               }}
             >
@@ -339,8 +350,25 @@ export default function DataBundleScreen() {
                 onBlur={() => { const r = ghanaPhoneSchema.safeParse(phone.trim()); if (!r.success) setPhoneError(r.error.errors[0].message); }}
                 accessibilityLabel="Phone number"
               />
+              <TouchableOpacity
+                onPress={handleContactPress}
+                activeOpacity={0.7}
+                style={{ width: 42, height: 42, alignItems: 'center', justifyContent: 'center', marginRight: 6 }}
+                accessibilityRole="button"
+                accessibilityLabel="Choose from contacts"
+              >
+                {contactState.phase === 'loading'
+                  ? <ActivityIndicator size="small" color={Colors.primary} />
+                  : <UserRound size={20} color={Colors.primary} />}
+              </TouchableOpacity>
             </View>
-            {phoneError ? <Text style={{ color: "#E8334A", fontSize: 12, marginTop: 4, marginLeft: 4 }}>{phoneError}</Text> : null}
+            {phoneError ? <Text style={{ color: "#E8334A", fontSize: 12, marginBottom: 4, marginLeft: 4 }}>{phoneError}</Text> : null}
+            {ghanaPhoneSchema.safeParse(phone.trim()).success && recipient === "other" && (
+              <View style={{ marginBottom: 14 }}>
+                <SaveFavoriteRow phoneNumber={phone.trim()} />
+              </View>
+            )}
+            {!ghanaPhoneSchema.safeParse(phone.trim()).success && <View style={{ marginBottom: 14 }} />}
 
             {/* Duration tabs */}
             <Text style={{ fontSize: 12, fontWeight: "700", fontFamily: "Urbanist_700Bold", color: Colors.textSecondary, marginBottom: 12 }}>
@@ -627,6 +655,12 @@ export default function DataBundleScreen() {
           </ScrollView>
         )}
       </KeyboardAvoidingView>
+      <ContactPickerSheet
+        visible={contactState.phase === 'ready'}
+        contacts={contactState.phase === 'ready' ? contactState.contacts : []}
+        onSelect={(num) => { setPhone(num); setPhoneError(''); dismissContacts(); }}
+        onClose={dismissContacts}
+      />
     </SafeAreaView>
   );
 }
