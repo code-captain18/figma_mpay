@@ -13,8 +13,8 @@ import { C } from '@/theme';
 import { genWalletRef } from '@/utils/ref';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useRef, useState } from 'react';
-import { Alert, StatusBar, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, BackHandler, StatusBar, View } from 'react-native';
 
 const BLUE_GRAD = { colors: [C.gradientStart, C.blue, C.gradientEnd] as [string, string, string], start: { x: 0, y: 0 }, end: { x: 1, y: 1 } };
 
@@ -33,6 +33,12 @@ export default function WalletScreen() {
   const balances = balancesData ?? { topup: 0, momo: 0 };
 
   useFocusEffect(useCallback(() => { fetchBalances(); }, [fetchBalances]));
+
+  // Block Android back press while an API call is in flight
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => loading);
+    return () => sub.remove();
+  }, [loading]);
 
   const titles: Record<WalletView, string> = {
     home: 'Wallet', 'etopup-form': 'Load e Top-Up Wallet',

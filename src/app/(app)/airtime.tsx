@@ -44,7 +44,7 @@ export default function AirtimeScreen() {
   const isAssistant = user?.accountType?.toLowerCase() === 'assistant';
   const [step, setStep] = useState<Step>("form");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [txRef] = useState(genMsRef);
+  const [txRef, setTxRef] = useState(genMsRef);
   const [network, setNetwork] = useState(NETWORKS[0]);
   const [recipient, setRecipient] = useState<Recipient>("self");
   const [phone, setPhone] = useState("");
@@ -103,14 +103,18 @@ export default function AirtimeScreen() {
       queryClient.invalidateQueries({ queryKey: QK.recentTransactions(5) });
       scheduleTransactionNotification({
         id: txRef,
+        ref: txRef,
         type: 'airtime',
         status: 'success',
         amount: total,
+        fee,
         phone,
         network: network.id,
         createdAt: new Date().toISOString(),
-      } as any);
+      });
     } catch (err: any) {
+      setTxRef(genMsRef());
+      setStep('confirm');
       toast.show(err?.message ?? 'Airtime top-up failed. Please try again.', 'error');
     } finally {
       setIsProcessing(false);
@@ -369,6 +373,7 @@ export default function AirtimeScreen() {
                 style={{ width: 42, height: 42, alignItems: 'center', justifyContent: 'center', marginRight: 6 }}
                 accessibilityRole="button"
                 accessibilityLabel="Choose from contacts"
+                accessibilityHint="Opens your contacts to pick a recipient phone number"
               >
                 {contactState.phase === 'loading'
                   ? <ActivityIndicator size="small" color={Colors.primary} />
@@ -529,6 +534,7 @@ export default function AirtimeScreen() {
               label={isProcessing ? "Processing..." : "Confirm & Buy"}
               disabled={isProcessing}
               onPress={handleConfirmPurchase}
+              accessibilityHint="Confirms and submits the airtime top-up"
             />
             <TouchableOpacity
               onPress={() => setStep("form")}

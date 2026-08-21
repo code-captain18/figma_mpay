@@ -48,6 +48,9 @@ export function WalletHome({
         </View>
         <TouchableOpacity
           onPress={() => setHidden(!hidden)}
+          accessibilityRole="button"
+          accessibilityLabel={hidden ? 'Show balances' : 'Hide balances'}
+          accessibilityHint="Toggles whether your wallet balances are visible"
           style={{ backgroundColor: 'rgba(24,120,206,0.07)', borderRadius: 99, paddingVertical: 4, paddingHorizontal: 10 }}
         >
           <Text style={{ fontSize: 11, fontWeight: '600', color: C.muted, fontFamily: 'Urbanist_600SemiBold' }}>

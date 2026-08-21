@@ -10,14 +10,6 @@ export class ApiError extends Error {
   }
 }
 
-// --- Mock infrastructure (for non-integrated endpoints) ---
-const LATENCY = { min: 300, max: 800 };
-export async function mockRequest<T>(factory: () => T): Promise<T> {
-  const delay = LATENCY.min + Math.random() * (LATENCY.max - LATENCY.min);
-  await new Promise<void>(r => setTimeout(r, delay));
-  return factory();
-}
-
 // --- Real HTTP client ---
 let logoutHandler: (() => void) | null = null;
 let userUpdateHandler: ((user: unknown) => void) | null = null;

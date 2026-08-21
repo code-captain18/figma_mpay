@@ -19,6 +19,7 @@ export function TransactionRow({ transaction: tx, onPress, showRelativeTime = fa
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={`${tx.label}, ${tx.amount > 0 ? "received" : "sent"} GHS${Math.abs(tx.amount).toFixed(2)}`}
+      accessibilityHint="Opens transaction details"
       style={[R.row, showRelativeTime ? R.rowCompact : R.rowFull]}
     >
       <View style={[R.iconWrap, { backgroundColor: tx.bg }, showRelativeTime ? R.iconWrapSm : R.iconWrapLg]}>

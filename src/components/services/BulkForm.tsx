@@ -1,16 +1,17 @@
+import type { ApiBundle, ApiProduct } from '@/api';
 import { BundleGrid } from '@/components/services/BundleGrid';
 import { GradHdr } from '@/components/services/GradHdr';
 import { NetSelector } from '@/components/services/NetSelector';
-import { SVC_DATA_BUNDLES, GRADIENTS } from '@/constants/services';
+import { GRADIENTS, SVC_DATA_BUNDLES } from '@/constants/services';
 import { useToast } from '@/store/toast.store';
 import { Colors } from '@/theme';
-import type { ApiProduct, BulkItem, SvcBundle } from '@/types';
+import type { BulkItem, SvcBundle } from '@/types';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { Plus, Trash2, Upload } from 'lucide-react-native';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { F, FL, SubmitBtn, frm, shr, saneStr } from './ServiceFormPrimitives';
+import { F, FL, SubmitBtn, frm, saneStr, shr } from './ServiceFormPrimitives';
 
 const C = Colors;
 const G = GRADIENTS;
@@ -43,7 +44,7 @@ export function BulkForm({
     const apiNet = sharedBundleNetwork.toUpperCase();
     const prod = products.find(p => p.network.toUpperCase() === apiNet && p.Type === 'Data');
     if (!prod?.bundles?.length) return SVC_DATA_BUNDLES;
-    return prod.bundles.map(b => ({
+    return prod.bundles.map((b: ApiBundle) => ({
       id: b.BundleCode,
       label: [saneStr(b.BundleName), saneStr(b.Validity)].filter(Boolean).join(' \u00b7 '),
       price: b.Amount ?? 0,

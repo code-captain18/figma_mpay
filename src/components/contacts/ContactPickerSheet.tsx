@@ -1,6 +1,6 @@
+import type { ContactPhoneNumber, NormalizedContact } from '@/features/contacts/types';
 import { useFavorites } from '@/features/favorites/hooks';
 import type { FavoriteRecipient } from '@/features/favorites/types';
-import type { NormalizedContact, ContactPhoneNumber } from '@/features/contacts/types';
 import { Colors, Radius, Shadows, T } from '@/theme';
 import { ghanaPhoneSchema } from '@/utils/phone';
 import {
@@ -335,7 +335,7 @@ export function ContactPickerSheet({
 const S = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: 'flex-end' },
   scrim: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(7,24,48,0.5)',
   },
   sheet: {

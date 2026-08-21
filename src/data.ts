@@ -85,7 +85,7 @@ export function fmtAgo(iso: string): string {
 export const CSV_HEADER =
   'Reference,Date,Status,Type,Network,Phone,Amount (GHS),Fee (GHS),Net Amount (GHS),Agent ID';
 
-export function buildCsvRow(tx: TxRecord, user: typeof USER): string {
+export function buildCsvRow(tx: TxRecord, user: { accountId: string }): string {
   return [
     tx.ref,
     fmtDateTime(tx.createdAt),

@@ -14,7 +14,6 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://188.34.191.227/api",
         "EXPO_PUBLIC_SENTRY_DSN": "https://6cd1bca6792180e70c133d9539ea9cd4@o4510240646103040.ingest.us.sentry.io/4511886741667840"
       }
     },
@@ -25,7 +24,6 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://188.34.191.227/api",
         "EXPO_PUBLIC_SENTRY_DSN": "https://6cd1bca6792180e70c133d9539ea9cd4@o4510240646103040.ingest.us.sentry.io/4511886741667840"
       }
     },
@@ -36,7 +34,6 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://188.34.191.227/api",
         "EXPO_PUBLIC_SENTRY_DSN": "https://6cd1bca6792180e70c133d9539ea9cd4@o4510240646103040.ingest.us.sentry.io/4511886741667840"
       }
     },

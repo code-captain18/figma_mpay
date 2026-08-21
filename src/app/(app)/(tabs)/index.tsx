@@ -131,6 +131,7 @@ export default function HomeScreen() {
                 onPress={() => setHidden(!hidden)}
                 accessibilityRole="button"
                 accessibilityLabel={hidden ? "Show balance" : "Hide balance"}
+                accessibilityHint="Toggles whether your balance amount is visible"
                 style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 99, paddingVertical: 4, paddingHorizontal: 10 }}
               >
                 <Icon name={hidden ? "eye-off" : "eye"} size={12} color="rgba(255,255,255,0.7)" />

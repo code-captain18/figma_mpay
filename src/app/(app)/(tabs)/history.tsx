@@ -163,6 +163,7 @@ export default function HistoryScreen() {
         dialogTitle: 'Export Transactions',
         UTI: 'public.comma-separated-values-text',
       });
+      await FileSystem.deleteAsync(path, { idempotent: true });
     } catch {
       toast.show('Could not export transactions. Please try again.', 'error');
     }

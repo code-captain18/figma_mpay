@@ -21,7 +21,7 @@ import { genBtRef, genMsRef, genWalletRef } from '@/utils/ref';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StatusBar, View } from 'react-native';
+import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, StatusBar, View } from 'react-native';
 
 const C = Colors;
 const G = GRADIENTS;
@@ -48,6 +48,12 @@ export default function ServicesScreen() {
 
   const { data: products = [] } = useResellerProducts();
   const queryClient = useQueryClient();
+
+  // Block Android back press while a transaction is submitting
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => submitting);
+    return () => sub.remove();
+  }, [submitting]);
 
   const findProduct = useCallback((network: string, type: string) =>
     products.find(p =>

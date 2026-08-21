@@ -1,6 +1,7 @@
 import type { AuthUser } from "@/api";
 import { apiLogin, apiLogout, apiRefreshSession, apiUpdateUser } from "@/api";
 import { setLogoutHandler, setUserUpdateHandler } from "@/api/client";
+import { clearFavorites } from "@/features/favorites/service";
 import { clearTokens, getRefreshToken, setTokens } from "@/utils/tokenStorage";
 import { useQueryClient } from "@tanstack/react-query";
 import React, {
@@ -36,16 +37,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const performLogout = useCallback(async () => {
-    await clearTokens();
+    queryClient.cancelQueries(); // abort in-flight queries before wiping cache
+    await Promise.all([clearTokens(), clearFavorites()]);
     queryClient.clear();
     setState({ user: null, isAuthenticated: false, isLoading: false });
   }, [queryClient]);
 
   useEffect(() => {
     setLogoutHandler(performLogout);
-    setUserUpdateHandler((user) =>
-      setState(prev => ({ ...prev, user: user as AuthUser }))
-    );
+    setUserUpdateHandler((updatedUser) => {
+      if (updatedUser && typeof updatedUser === 'object' && 'username' in updatedUser) {
+        setState(prev => ({ ...prev, user: updatedUser as AuthUser }));
+      }
+    });
   }, [performLogout]);
 
   useEffect(() => {

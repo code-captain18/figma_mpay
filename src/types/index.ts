@@ -1,4 +1,4 @@
-export type TransactionStatus = "success" | "pending";
+export type TransactionStatus = "success" | "pending" | "failed";
 
 export type TransactionCategory =
   | "Airtime"

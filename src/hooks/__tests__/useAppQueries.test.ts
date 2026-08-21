@@ -1,3 +1,10 @@
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  multiRemove: jest.fn(),
+}));
+
 import { QK } from '../useAppQueries';
 
 describe('QK — query key contract', () => {

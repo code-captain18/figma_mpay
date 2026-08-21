@@ -1,5 +1,16 @@
 import { Colors } from "@/theme";
+import type { GestureResponderEvent, StyleProp, ViewStyle } from 'react-native';
 import { Tabs } from "expo-router";
+
+interface TabButtonProps {
+  children?: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+  onPress?: (e: GestureResponderEvent) => void;
+  onLongPress?: ((e: GestureResponderEvent) => void) | null;
+  accessibilityState?: { selected?: boolean; disabled?: boolean };
+  accessibilityLabel?: string;
+  testID?: string;
+}
 import {
   FileText,
   Grid3x3,
@@ -18,7 +29,7 @@ function TabIcon({ icon, focused }: { icon: React.ReactNode; focused: boolean })
   );
 }
 
-function NoRippleTabButton({ children, style, onPress, onLongPress, accessibilityState, accessibilityLabel, testID }: any) {
+function NoRippleTabButton({ children, style, onPress, onLongPress, accessibilityState, accessibilityLabel, testID }: TabButtonProps) {
   return (
     <Pressable
       android_ripple={null}

@@ -253,7 +253,7 @@ const S = StyleSheet.create({
   savedText: { fontSize: 12, fontFamily: 'Urbanist_600SemiBold', color: Colors.warning },
 
   overlay: { flex: 1, justifyContent: 'flex-end', padding: 20 },
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(7,24,48,0.45)' },
+  scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(7,24,48,0.45)' },
   dialog: {
     backgroundColor: Colors.surface,
     borderRadius: Radius['2xl'],

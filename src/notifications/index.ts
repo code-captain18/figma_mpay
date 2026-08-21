@@ -58,7 +58,16 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
   if (finalStatus !== 'granted') return null;
 
-  return null; // Expo push token requires a physical device + project ID
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
+  if (!projectId) return null;
+
+  try {
+    const { data: token } = await N.getExpoPushTokenAsync({ projectId });
+    // TODO: POST token to backend push-token registration endpoint when available
+    return token;
+  } catch {
+    return null;
+  }
 }
 
 export async function scheduleTransactionNotification(tx: TxRecord): Promise<void> {

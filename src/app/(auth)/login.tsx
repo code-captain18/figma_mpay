@@ -1,6 +1,6 @@
+import { LoginFormValues, loginSchema } from '@/features/auth/schemas/auth.schema';
 import { useAuth } from '@/store/auth.store';
 import { BTN, C, F, G } from '@/theme';
-import { loginSchema, LoginFormValues } from '@/features/auth/schemas/auth.schema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -9,6 +9,7 @@ import React, { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Image,
   KeyboardAvoidingView, Platform, ScrollView,
@@ -313,6 +314,23 @@ export default function LoginScreen() {
                   </Text>
                 </LinearGradient>
               )}
+            </TouchableOpacity>
+
+            {/* ── Forgot password ── */}
+            <TouchableOpacity
+              onPress={() =>
+                Alert.alert(
+                  'Forgot Password?',
+                  'Password reset is not available in-app. Please contact your administrator or the M-Pay support team to reset your password.',
+                  [{ text: 'OK' }],
+                )
+              }
+              activeOpacity={0.7}
+              style={s.forgotRow}
+              accessibilityRole="button"
+              accessibilityLabel="Forgot password"
+            >
+              <Text style={s.forgotText}>Forgot password?</Text>
             </TouchableOpacity>
 
             {/* ── Footer ── */}

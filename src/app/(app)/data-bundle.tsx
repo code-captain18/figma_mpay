@@ -45,7 +45,7 @@ export default function DataBundleScreen() {
   const { data: products = [] } = useResellerProducts();
   const [step, setStep] = useState<Step>("form");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [txRef] = useState(genMsRef);
+  const [txRef, setTxRef] = useState(genMsRef);
   const network = NETWORKS[0];
   const [recipient, setRecipient] = useState<Recipient>("self");
   const [phone, setPhone] = useState("");
@@ -118,6 +118,8 @@ export default function DataBundleScreen() {
       queryClient.invalidateQueries({ queryKey: QK.transactions });
       queryClient.invalidateQueries({ queryKey: QK.recentTransactions(5) });
     } catch (err: any) {
+      setTxRef(genMsRef());
+      setStep('confirm');
       toast.show(err?.message ?? 'Data bundle purchase failed. Please try again.', 'error');
     } finally {
       setIsProcessing(false);
@@ -558,6 +560,7 @@ export default function DataBundleScreen() {
               label={isProcessing ? "Processing..." : "Confirm & Activate"}
               disabled={isProcessing}
               onPress={handleConfirmActivation}
+              accessibilityHint="Confirms and activates the selected data bundle"
             />
             <TouchableOpacity
               onPress={() => setStep("form")}

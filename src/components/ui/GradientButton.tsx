@@ -7,9 +7,10 @@ interface GradientButtonProps {
   onPress?: () => void;
   disabled?: boolean;
   loading?: boolean;
+  accessibilityHint?: string;
 }
 
-export function GradientButton({ label, onPress, disabled = false, loading = false }: GradientButtonProps) {
+export function GradientButton({ label, onPress, disabled = false, loading = false, accessibilityHint }: GradientButtonProps) {
   const isDisabled = disabled || loading;
 
   return (
@@ -17,6 +18,7 @@ export function GradientButton({ label, onPress, disabled = false, loading = fal
       onPress={isDisabled ? undefined : onPress}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled }}
+      accessibilityHint={accessibilityHint}
       style={styles.pressable}
     >
       {({ pressed }) => (

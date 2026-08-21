@@ -47,3 +47,7 @@ export async function updateFavorite(
     ),
   );
 }
+
+export async function clearFavorites(): Promise<void> {
+  await AsyncStorage.removeItem(KEY);
+}

@@ -34,7 +34,16 @@ export async function apiLogin(username: string, password: string): Promise<Logi
     const { data } = await axios.post<LoginResponse>(`${config.apiBaseUrl}/auth/login-mobile`, { username, password }, { timeout: 30_000 });
     return data;
   } catch (err: any) {
-    throw new ApiError(err.response?.status ?? 0, err.response?.data?.message ?? 'Invalid username or password.');
+    if (!err.response) {
+      if (err.code === 'ECONNABORTED' || err.code === 'ETIMEDOUT') {
+        throw new ApiError(0, 'The request timed out. Please try again.');
+      }
+      throw new ApiError(0, 'Unable to connect. Please check your internet connection and try again.');
+    }
+    const status: number = err.response.status;
+    if (status === 429) throw new ApiError(429, 'Too many login attempts. Please wait and try again.');
+    if (status >= 500) throw new ApiError(status, 'Service temporarily unavailable. Please try again later.');
+    throw new ApiError(status, err.response?.data?.message ?? 'Invalid username or password.');
   }
 }
 
