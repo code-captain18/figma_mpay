@@ -4,9 +4,10 @@ import { useAuth } from "@/store/auth.store";
 import { Colors, shadowStyle } from "@/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
+import { setStatusBarStyle } from "expo-status-bar";
 import { RefreshCw } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const C = Colors;
@@ -34,6 +35,7 @@ export default function HomeScreen() {
 
   // Recompute today's date and refetch every time the tab is focused
   useFocusEffect(useCallback(() => {
+    setStatusBarStyle('dark');
     setRange(getMonthRange());
     fetchDash();
     fetchBalances();
@@ -64,9 +66,7 @@ export default function HomeScreen() {
   const channelTotal = num(dash?.webSales) + num(dash?.apiSales) + num(dash?.mobileAppSales);
 
   return (
-    <>
-      <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
-      <ScrollView
+    <ScrollView
         showsVerticalScrollIndicator={false}
         style={{ flex: 1, backgroundColor: C.bg }}
         contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 24 }}
@@ -165,7 +165,7 @@ export default function HomeScreen() {
                   <Icon name="banknote" size={14} color="#FFD580" />
                 </View>
                 <View>
-                  <Text style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", fontFamily: "Urbanist_600SemiBold", letterSpacing: 0.5, textTransform: "uppercase" }}>MoMo</Text>
+                  <Text style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", fontFamily: "Urbanist_600SemiBold", letterSpacing: 0.5, textTransform: "uppercase" }}>mPay</Text>
                   <Text style={{ fontSize: 13, color: "#fff", fontFamily: "Urbanist_700Bold", marginTop: 1 }}>
                     {hidden ? "••••" : `GHS ${balances.momo.toFixed(2)}`}
                   </Text>
@@ -384,7 +384,6 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
-    </>
   );
 }
 

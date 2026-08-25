@@ -4,6 +4,7 @@ import { BTN, C, F, G } from '@/theme';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -111,6 +112,7 @@ export default function LoginScreen() {
       end={G.login.end}
       style={{ flex: 1 }}
     >
+      <StatusBar style="light" />
       {/* ── Background decorations ── */}
       <View style={[s.deco1, { top: insets.top + 10 }]} />
       <View style={s.deco2} />

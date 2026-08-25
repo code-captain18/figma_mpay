@@ -19,9 +19,10 @@ import type { BulkItem, SFState, SvcBundle, SvcType, SvcView } from '@/types';
 import { pollTransactionStatus } from '@/utils/pollStatus';
 import { genBtRef, genMsRef, genWalletRef } from '@/utils/ref';
 import { useQueryClient } from '@tanstack/react-query';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { setStatusBarStyle } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, StatusBar, View } from 'react-native';
+import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
 const C = Colors;
 const G = GRADIENTS;
@@ -48,6 +49,8 @@ export default function ServicesScreen() {
 
   const { data: products = [] } = useResellerProducts();
   const queryClient = useQueryClient();
+
+  useFocusEffect(useCallback(() => { setStatusBarStyle('light'); }, []));
 
   // Block Android back press while a transaction is submitting
   useEffect(() => {
@@ -309,7 +312,6 @@ export default function ServicesScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <StatusBar barStyle="light-content" backgroundColor="#4BAEE8" />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         {content}
       </KeyboardAvoidingView>

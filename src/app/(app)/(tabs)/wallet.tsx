@@ -13,8 +13,9 @@ import { C } from '@/theme';
 import { genWalletRef } from '@/utils/ref';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, BackHandler, StatusBar, View } from 'react-native';
+import { setStatusBarStyle } from 'expo-status-bar';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, BackHandler, View } from 'react-native';
 
 const BLUE_GRAD = { colors: [C.gradientStart, C.blue, C.gradientEnd] as [string, string, string], start: { x: 0, y: 0 }, end: { x: 1, y: 1 } };
 
@@ -32,7 +33,7 @@ export default function WalletScreen() {
   const { data: balancesData, isFetching: balanceLoading, refetch: fetchBalances } = useWalletBalances();
   const balances = balancesData ?? { topup: 0, momo: 0 };
 
-  useFocusEffect(useCallback(() => { fetchBalances(); }, [fetchBalances]));
+  useFocusEffect(useCallback(() => { setStatusBarStyle('light'); fetchBalances(); }, [fetchBalances]));
 
   // Block Android back press while an API call is in flight
   useEffect(() => {
@@ -155,7 +156,6 @@ export default function WalletScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <StatusBar barStyle="light-content" backgroundColor="#4BAEE8" />
       {view !== 'success' && (
         <GradHdr
           title={titles[view]}

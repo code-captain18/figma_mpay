@@ -7,10 +7,10 @@ import { QK, useAssistantsList, useProfileData, useWalletBalances } from '@/hook
 import { useAuth } from '@/store/auth.store';
 import { C, F, G } from '@/theme';
 import type { Assistant, PermKey, PermMap, ProfileView } from '@/types';
-import { mapApiAssistant } from '@/utils/mappers';
 import { useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { setStatusBarStyle } from 'expo-status-bar';
 import {
   Bell,
   CheckCircle2,
@@ -27,10 +27,10 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator, KeyboardAvoidingView, Modal, Platform,
-  ScrollView, StatusBar, StyleSheet,
+  ScrollView, StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -236,7 +236,7 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
           {[
             { label: 'e Top-Up', value: `GHS ${Number(walletBalances?.topup ?? 0).toFixed(2)}`, color: C.blue },
-            { label: 'MoMo', value: `GHS ${Number(walletBalances?.momo ?? 0).toFixed(2)}`, color: C.green },
+            { label: 'mPay', value: `GHS ${Number(walletBalances?.momo ?? 0).toFixed(2)}`, color: C.green },
             { label: 'Status', value: editForm.status || '—', color: editForm.status === 'active' ? C.green : editForm.status === 'suspended' ? C.red : C.orange },
           ].map(s => (
             <View key={s.label} style={home.statCard}>
@@ -1156,17 +1156,14 @@ export default function ProfileRoute() {
   const { logout } = useAuth();
   const router = useRouter();
 
+  useFocusEffect(useCallback(() => { setStatusBarStyle('light'); }, []));
+
   const handleLogout = async () => {
     await logout();
     router.replace('/(auth)/login');
   };
 
-  return (
-    <>
-      <StatusBar barStyle="light-content" backgroundColor="#4BAEE8" />
-      <ProfileScreen onLogout={handleLogout} />
-    </>
-  );
+  return <ProfileScreen onLogout={handleLogout} />;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

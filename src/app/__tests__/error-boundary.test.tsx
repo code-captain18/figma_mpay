@@ -6,8 +6,8 @@
  *  - The recovery UI is displayed instead of blank screen
  *  - Sentry.captureException is called
  */
-import React from 'react';
 import { render } from '@testing-library/react-native';
+import React from 'react';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -26,7 +26,7 @@ jest.mock('expo-constants', () => ({
 // ── Component under test ──────────────────────────────────────────────────────
 
 // Re-implements AppErrorBoundary logic to validate the production pattern.
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 class AppErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -34,7 +34,7 @@ class AppErrorBoundary extends React.Component<
 > {
   state = { hasError: false };
 
-  static getDerivedStateFromError() {
+  static getDerivedStateFromError(_error: Error) {
     return { hasError: true };
   }
 

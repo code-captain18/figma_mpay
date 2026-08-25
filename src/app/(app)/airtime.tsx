@@ -18,6 +18,7 @@ import { genMsRef } from "@/utils/ref";
 import { useQueryClient } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, Check, PhoneCall, UserRound } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
@@ -123,6 +124,7 @@ export default function AirtimeScreen() {
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: Colors.bg }} edges={["top", "bottom"]}>
+      <StatusBar style="dark" />
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}

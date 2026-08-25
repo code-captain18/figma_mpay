@@ -19,6 +19,7 @@ import { genMsRef } from "@/utils/ref";
 import { useQueryClient } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, Check, UserRound, Wifi } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
@@ -128,6 +129,7 @@ export default function DataBundleScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={["top", "bottom"]}>
+      <StatusBar style="dark" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

@@ -61,7 +61,7 @@ class AppErrorBoundary extends React.Component<
 > {
   state = { hasError: false };
 
-  static getDerivedStateFromError() {
+  static getDerivedStateFromError(_error: Error) {
     return { hasError: true };
   }
 
@@ -111,12 +111,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 function RootLayoutContent() {
-  const segments = useSegments();
-  const inAuthGroup = segments[0] === "(auth)";
-
   return (
     <AuthGuard>
-      <StatusBar style={inAuthGroup ? "dark" : "auto"} />
+      <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }} />
     </AuthGuard>
   );

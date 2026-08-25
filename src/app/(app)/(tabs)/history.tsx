@@ -10,6 +10,8 @@ import type { FilterState, TxRecord } from '@/types';
 import { formatGHS } from '@/utils/format';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { useFocusEffect } from 'expo-router';
+import { setStatusBarStyle } from 'expo-status-bar';
 import {
   Calendar,
   CheckCircle2,
@@ -28,7 +30,6 @@ import {
   ActivityIndicator,
   FlatList,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -136,6 +137,7 @@ const TxRow = memo(function TxRow({ tx, isLast, onPress }: TxRowProps) {
 // Main HistoryScreen
 // ─────────────────────────────────────────────────────────────────────────────
 export default function HistoryScreen() {
+  useFocusEffect(useCallback(() => { setStatusBarStyle('light'); }, []));
   const toast = useToast();
   const [selected, setSelected] = useState<TxRecord | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -200,7 +202,6 @@ export default function HistoryScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <StatusBar barStyle="light-content" backgroundColor="#4BAEE8" />
       <GradHdr title="Transactions" />
 
       {/* ── Source tabs ── */}

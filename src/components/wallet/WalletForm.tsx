@@ -1,10 +1,10 @@
 import { useAuth } from '@/store/auth.store';
 import { C } from '@/theme';
 import { genWalletRef } from '@/utils/ref';
-import { AlertCircle, Hash, Phone, RefreshCw, User } from 'lucide-react-native';
-import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AlertCircle, Hash, Phone, RefreshCw, User } from 'lucide-react-native';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Field, SInput, SelectSheet } from './WalletFormPrimitives';
 import type { WFState } from './types';
 
@@ -86,7 +86,7 @@ export function WalletForm({
               value={form.product}
               onChange={v => { set('product', v); setTouch(p => ({ ...p, product: true })); if (v !== 'MMONEYDB') set('phoneNumber', ''); }}
               options={[
-                { value: 'MOMOWALLET', label: 'Mobile Money Wallet' },
+                { value: 'MOMOWALLET', label: 'mPay Wallet' },
                 { value: 'MMONEYDB', label: 'MTN Mobile Money (MoMo)' },
               ]}
               placeholder="Select product"

@@ -1,10 +1,10 @@
 import { useAuth } from '@/store/auth.store';
 import { C, G } from '@/theme';
-import type { WalletView } from './types';
-import { AlertCircle, ChevronRight, CreditCard, RefreshCw, Smartphone } from 'lucide-react-native';
-import React, { useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AlertCircle, ChevronRight, CreditCard, RefreshCw, Smartphone } from 'lucide-react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import type { WalletView } from './types';
 
 const sd = (size: number, color: string, opacity: number) =>
   Platform.select({
@@ -98,7 +98,7 @@ export function WalletHome({
                 <Smartphone size={12} color="#fff" />
               </View>
               <Text style={{ fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.75)', letterSpacing: 0.5, fontFamily: 'Urbanist_700Bold' }}>
-                {both ? 'Mobile Money' : 'Mobile Money Wallet'}
+                {both ? 'mPay' : 'Mobile Money Wallet'}
               </Text>
             </View>
             <Text style={{ fontSize: both ? 19 : 26, fontWeight: '800', color: '#fff', letterSpacing: -0.5, marginBottom: 2, fontFamily: 'Urbanist_800ExtraBold' }}>
@@ -127,7 +127,7 @@ export function WalletHome({
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 13, fontWeight: '700', color: C.navy, marginBottom: 2, fontFamily: 'Urbanist_700Bold' }}>
-                Load Mobile Money Wallet
+                Load mPay Wallet
               </Text>
               <Text style={{ fontSize: 11, color: C.muted, fontFamily: 'Urbanist_500Medium' }}>
                 {hidden ? 'Balance hidden' : `Balance: GHS ${momo.toFixed(2)}`}
