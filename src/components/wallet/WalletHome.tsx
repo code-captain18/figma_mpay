@@ -77,7 +77,7 @@ export function WalletHome({
               </Text>
             </View>
             <Text style={{ fontSize: both ? 19 : 26, fontWeight: '800', color: '#fff', letterSpacing: -0.5, marginBottom: 2, fontFamily: 'Urbanist_800ExtraBold' }}>
-              {hidden ? '••••••' : `GHS ${topup.toFixed(2)}`}
+              {hidden ? 'GHS ••••••' : `GHS ${topup.toFixed(2)}`}
             </Text>
             <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontFamily: 'Urbanist_400Regular' }}>
               {user?.accountId ?? ''}
@@ -102,7 +102,7 @@ export function WalletHome({
               </Text>
             </View>
             <Text style={{ fontSize: both ? 19 : 26, fontWeight: '800', color: '#fff', letterSpacing: -0.5, marginBottom: 2, fontFamily: 'Urbanist_800ExtraBold' }}>
-              {hidden ? '••••••' : `GHS ${momo.toFixed(2)}`}
+              {hidden ? 'GHS ••••••' : `GHS ${momo.toFixed(2)}`}
             </Text>
             <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontFamily: 'Urbanist_400Regular' }}>
               {user?.accountId ?? ''}
@@ -130,7 +130,7 @@ export function WalletHome({
                 Load mPay Wallet
               </Text>
               <Text style={{ fontSize: 11, color: C.muted, fontFamily: 'Urbanist_500Medium' }}>
-                {hidden ? 'Balance hidden' : `Balance: GHS ${momo.toFixed(2)}`}
+                {hidden ? 'Balance: GHS ••••••' : `Balance: GHS ${momo.toFixed(2)}`}
               </Text>
             </View>
             <ChevronRight size={15} color={C.pale} />
@@ -151,7 +151,7 @@ export function WalletHome({
                 Load e Top-Up Wallet
               </Text>
               <Text style={{ fontSize: 11, color: C.muted, fontFamily: 'Urbanist_500Medium' }}>
-                {hidden ? 'Balance hidden' : `Balance: GHS ${topup.toFixed(2)}`}
+                {hidden ? 'Balance: GHS ••••••' : `Balance: GHS ${topup.toFixed(2)}`}
               </Text>
             </View>
             <ChevronRight size={15} color={C.pale} />

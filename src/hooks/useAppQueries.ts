@@ -36,8 +36,6 @@ export function useWalletBalances() {
     staleTime: 0,
     // keep last-known balance in cache for 10 min so offline never shows GHS 0
     gcTime: 10 * 60 * 1000,
-    refetchInterval: 30_000,
-    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });

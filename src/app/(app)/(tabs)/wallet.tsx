@@ -43,7 +43,7 @@ export default function WalletScreen() {
 
   const titles: Record<WalletView, string> = {
     home: 'Wallet', 'etopup-form': 'Load e Top-Up Wallet',
-    'momo-form': 'Load Mobile Money', 'momo-send': 'Cash Disbursement',
+    'momo-form': 'Load mPay Wallet', 'momo-send': 'Cash Disbursement',
     confirm: 'Confirm Transaction', processing: 'Processing Transaction', success: 'Success',
   };
   const backTo: Record<WalletView, WalletView> = {
@@ -101,16 +101,19 @@ export default function WalletScreen() {
         const snapMomo = balances.momo;
         await apiLoadWalletFromWallet(payload);
         setLoading(false);
-        setView('success');
-        // Poll silently (no cache update) until both sides settle, then flush once
+        setView('processing');
         const t0 = Date.now();
         const pollBalances = () => {
           apiGetWalletBalances().then((b) => {
             const bothSettled = b.topup !== snapTopup && b.momo !== snapMomo;
-            if (bothSettled) { invalidate(); return; }
-            if (Date.now() - t0 < 30_000) setTimeout(pollBalances, 2000);
-            else invalidate();
-          }).catch(() => { if (Date.now() - t0 < 30_000) setTimeout(pollBalances, 2000); else invalidate(); });
+            if (bothSettled || Date.now() - t0 >= 30_000) {
+              // Write settled balances directly into cache — no extra round-trip
+              queryClient.setQueryData(QK.walletBalances, b);
+              setView('success');
+              return;
+            }
+            setTimeout(pollBalances, 2000);
+          }).catch(() => { if (Date.now() - t0 < 30_000) setTimeout(pollBalances, 2000); else { invalidate(); setView('success'); } });
         };
         setTimeout(pollBalances, 3000);
       } else if (formData.product === 'MOMOCASHIN') {
@@ -125,10 +128,13 @@ export default function WalletScreen() {
         setLoading(false);
         setView('processing');
         pollStatus(formData.referenceId, 5_000)
-          .then(() => {
+          .then(async () => {
             if (processingCancelledRef.current) return;
+            try {
+              const b = await apiGetWalletBalances();
+              queryClient.setQueryData(QK.walletBalances, b);
+            } catch { invalidate(); }
             setView('success');
-            invalidate();
           })
           .catch((pollErr: any) => {
             if (processingCancelledRef.current) return;
@@ -184,7 +190,7 @@ export default function WalletScreen() {
       )}
 
       {view === 'processing' && formData && (
-        <WalletProcessing referenceId={formData.referenceId} />
+        <WalletProcessing referenceId={formData.referenceId} walletToWallet={formData.product === 'MOMOWALLET'} />
       )}
 
       {view === 'success' && formData && (

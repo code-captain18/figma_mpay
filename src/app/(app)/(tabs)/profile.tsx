@@ -209,12 +209,12 @@ function ProfileScreen({ onLogout }: { onLogout: () => void }) {
               style={home.avatar}
             >
               <Text style={home.avatarText}>
-                {(user?.name ?? user?.username ?? 'U').split(' ').map((n: string) => n[0]).join('')}
+                {[editForm.firstName?.[0], editForm.lastName?.[0]].filter(Boolean).join('') || (user?.username ?? 'U')[0]}
               </Text>
             </LinearGradient>
 
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={home.userName}>{user?.name ?? user?.username ?? ''}</Text>
+              <Text style={home.userName}>{editForm.firstName && editForm.lastName ? `${editForm.firstName.charAt(0).toUpperCase() + editForm.firstName.slice(1)} ${editForm.lastName.charAt(0).toUpperCase() + editForm.lastName.slice(1)}` : (user?.name ?? user?.username ?? '')}</Text>
               <Text style={home.userEmail} numberOfLines={1}>{user?.email ?? user?.username ?? ''}</Text>
               <View style={home.accountBadge}>
                 <View style={home.onlineDot} />

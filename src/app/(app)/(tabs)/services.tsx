@@ -155,7 +155,7 @@ export default function ServicesScreen() {
           transactionDescription: `Airtime for ${form.network.toUpperCase()}`,
           ...assistantFields,
         });
-        txRef = result.referenceId;
+        if (result.referenceId) txRef = result.referenceId;
 
       } else if (svcType === 'data' || svcType === 'fibre') {
         const apiType = svcType === 'fibre' ? 'Fibre' : 'Data';

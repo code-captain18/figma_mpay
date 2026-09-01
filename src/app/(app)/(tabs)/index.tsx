@@ -1,5 +1,5 @@
 import { Icon } from "@/components/ui/Icon";
-import { useDashboardData, useWalletBalances } from "@/hooks/useAppQueries";
+import { useDashboardData, useProfileData, useWalletBalances } from "@/hooks/useAppQueries";
 import { useAuth } from "@/store/auth.store";
 import { Colors, shadowStyle } from "@/theme";
 import { LinearGradient } from "expo-linear-gradient";
@@ -32,6 +32,7 @@ export default function HomeScreen() {
   const { data: dash, isLoading: loading, refetch: fetchDash } = useDashboardData(startDate, endDate);
   const { data: balancesData, refetch: fetchBalances } = useWalletBalances();
   const balances = balancesData ?? { topup: 0, momo: 0 };
+  const { data: profileData } = useProfileData();
 
   // Recompute today's date and refetch every time the tab is focused
   useFocusEffect(useCallback(() => {
@@ -41,7 +42,9 @@ export default function HomeScreen() {
     fetchBalances();
   }, [fetchDash, fetchBalances]));
 
-  const displayName = user?.name?.split(" ")[0] ?? user?.username?.split('@')[0] ?? "there";
+  const cap = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  const profileFirstName = cap((profileData as any)?.profile?.firstName);
+  const displayName = profileFirstName ?? user?.name?.split(" ")[0] ?? user?.username?.split('@')[0] ?? "there";
   const initials = displayName[0]?.toUpperCase() ?? "U";
 
   const getGreeting = () => {
@@ -66,9 +69,10 @@ export default function HomeScreen() {
   const channelTotal = num(dash?.webSales) + num(dash?.apiSales) + num(dash?.mobileAppSales);
 
   return (
-    <ScrollView
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <ScrollView
         showsVerticalScrollIndicator={false}
-        style={{ flex: 1, backgroundColor: C.bg }}
+        style={{ flex: 1 }}
         contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 24 }}
       >
         {/* ── Header ─────────────────────────────────────────────── */}
@@ -78,7 +82,7 @@ export default function HomeScreen() {
               {getGreeting()}
             </Text>
             <Text style={{ fontSize: 17, color: C.navy, fontFamily: "Urbanist_700Bold" }}>
-              {displayName} 👋
+              {displayName}
             </Text>
           </View>
           <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
@@ -123,7 +127,7 @@ export default function HomeScreen() {
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontFamily: "Urbanist_600SemiBold" }}>
-                  Today's Total Sales
+                  Monthly Sales
                 </Text>
                 {loading && <ActivityIndicator size="small" color="rgba(255,255,255,0.5)" />}
               </View>
@@ -142,7 +146,7 @@ export default function HomeScreen() {
             </View>
 
             <Text style={{ fontSize: 36, color: "#fff", fontFamily: "Urbanist_800ExtraBold", letterSpacing: -0.5, marginBottom: 16 }}>
-              {hidden ? "••••••" : `GHS ${totalSales.toFixed(2)}`}
+              {hidden ? "GHS ••••••" : `GHS ${totalSales.toFixed(2)}`}
             </Text>
 
             <View style={{ height: 0.6, backgroundColor: "rgba(255,255,255,0.18)", marginBottom: 14 }} />
@@ -156,7 +160,7 @@ export default function HomeScreen() {
                 <View>
                   <Text style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", fontFamily: "Urbanist_600SemiBold", letterSpacing: 0.5, textTransform: "uppercase" }}>E-Top-Up</Text>
                   <Text style={{ fontSize: 13, color: "#fff", fontFamily: "Urbanist_700Bold", marginTop: 1 }}>
-                    {hidden ? "••••" : `GHS ${balances.topup.toFixed(2)}`}
+                    {hidden ? "GHS ••••" : `GHS ${balances.topup.toFixed(2)}`}
                   </Text>
                 </View>
               </View>
@@ -167,7 +171,7 @@ export default function HomeScreen() {
                 <View>
                   <Text style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", fontFamily: "Urbanist_600SemiBold", letterSpacing: 0.5, textTransform: "uppercase" }}>mPay</Text>
                   <Text style={{ fontSize: 13, color: "#fff", fontFamily: "Urbanist_700Bold", marginTop: 1 }}>
-                    {hidden ? "••••" : `GHS ${balances.momo.toFixed(2)}`}
+                    {hidden ? "GHS ••••" : `GHS ${balances.momo.toFixed(2)}`}
                   </Text>
                 </View>
               </View>
@@ -289,10 +293,10 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* ── Today's transactions ───────────────────────────────── */}
+        {/* ── Monthly transactions ────────────────────────────────── */}
         <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <Text style={{ fontSize: 15, color: C.navy, fontFamily: "Urbanist_700Bold" }}>{"Today's Transactions"}</Text>
+            <Text style={{ fontSize: 15, color: C.navy, fontFamily: "Urbanist_700Bold" }}>Monthly Transactions</Text>
             <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
               accessibilityRole="button" accessibilityLabel="View all transactions">
               <Text style={{ fontSize: 11, color: C.blue, fontFamily: "Urbanist_600SemiBold" }}>View all</Text>
@@ -321,7 +325,7 @@ export default function HomeScreen() {
                           <View style={{ width: `${(row.tx.successful / total) * 100}%`, height: 4, borderRadius: 99, backgroundColor: C.green }} />
                         </View>
                       ) : (
-                        <Text style={{ fontSize: 10, color: C.pale, fontFamily: "Urbanist_500Medium" }}>No transactions today</Text>
+                        <Text style={{ fontSize: 10, color: C.pale, fontFamily: "Urbanist_500Medium" }}>No transactions this month</Text>
                       )}
                     </View>
                     {hasActivity ? (
@@ -384,6 +388,9 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
+      {/* Mask content that scrolls into the status bar area */}
+      <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top, backgroundColor: C.bg }} />
+    </View>
   );
 }
 

@@ -1,7 +1,6 @@
 import { C } from '@/theme';
-import React from 'react';
-import { ActivityIndicator, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { sd } from './WalletFormPrimitives';
 import type { WFState, WalletView } from './types';
 
@@ -16,12 +15,12 @@ export function WalletConfirm({
 }) {
   const productLabel =
     formData.product === 'MMONEYDB' ? 'MTN Mobile Money (MoMo)' :
-      formData.product === 'MOMOWALLET' ? 'Mobile Money Wallet' :
+      formData.product === 'MOMOWALLET' ? 'mPay Wallet' :
         formData.product === 'MOMOCASHOUT' ? 'MTN MoMo Cashout' :
           formData.product === 'MOMOCASHIN' ? 'MTN MoMo Cashin' : '—';
 
   const rows: { label: string; value: string; mono?: boolean }[] = [
-    { label: 'Wallet', value: walletType === 'etopup-form' ? 'e Top-Up Wallet' : 'Mobile Money Wallet' },
+    { label: 'Wallet', value: walletType === 'etopup-form' ? 'e Top-Up Wallet' : 'mPay Wallet' },
     { label: 'Product', value: productLabel },
     { label: 'Account ID', value: formData.accountId },
     { label: 'Amount', value: `GHS ${Number(formData.amount).toFixed(2)}` },

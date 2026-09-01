@@ -28,6 +28,9 @@ export interface TransactionStatusEntry {
   Amount: number;
   PhoneNumber: string;
   TransactionDate: string;
+  ResponseCode?: string;
+  transactionStatus?: string;
+  statusDescription?: string;
 }
 
 export interface TransactionStatusResult {
@@ -76,11 +79,16 @@ export async function apiLoadWalletFromWallet(payload: LoadWalletPayload): Promi
   }
 }
 
-// Text-matching required because the API returns no structured status field
-function parseTxStatus(message: string): 'success' | 'failed' | 'pending' {
-  const msg = message.toLowerCase();
-  if (msg.includes('successfully')) return 'success';
-  if (msg.includes('failed') || msg.includes('could not')) return 'failed';
+function parseTxStatus(entry: TransactionStatusEntry): 'success' | 'failed' | 'pending' {
+  // Prefer structured ResponseCode — more reliable than text matching
+  if (entry.ResponseCode === '001') return 'success';
+  if (entry.ResponseCode === '000') return 'pending';
+  if (entry.ResponseCode) return 'failed';
+  // Fall back to text matching only when ResponseCode is absent
+  const txt = `${entry.transactionStatus ?? ''} ${entry.statusDescription ?? ''} ${entry.Message ?? ''}`.toLowerCase();
+  if (txt.includes('successfully') || txt.includes('complet')) return 'success';
+  if (txt.includes('pending') || txt.includes('process')) return 'pending';
+  if (txt.includes('failed') || txt.includes('could not')) return 'failed';
   return 'pending';
 }
 
@@ -92,7 +100,7 @@ export async function apiCheckTransactionStatus(referenceId: string): Promise<Tr
     );
     const entry = data.data?.[0];
     if (!entry) return { status: 'pending' };
-    return { status: parseTxStatus(entry.Message), entry };
+    return { status: parseTxStatus(entry), entry };
   } catch (err: any) {
     if (err.response?.status === 404) return { status: 'pending' };
     throw new ApiError(err.response?.status ?? 0, 'Failed to check transaction status.');
