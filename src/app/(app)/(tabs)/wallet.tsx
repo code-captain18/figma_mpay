@@ -128,7 +128,7 @@ export default function WalletScreen() {
         await pollStatus(formData.referenceId);
         setLoading(false);
         setView('success');
-        pollUntilSettled(b => b.momo !== snapMomo, () => {});
+        pollUntilSettled(b => b.momo !== snapMomo, () => { });
       } else {
         await apiLoadWalletMoMo(payload);
         processingCancelledRef.current = false;
