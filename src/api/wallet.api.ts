@@ -39,10 +39,16 @@ export interface TransactionStatusResult {
 }
 
 export interface UserProduct {
+  resellerId: number;
+  productId: number;
+  commission: string;
+  surcharge: string;
+  sysModule: string;
+  transType: 'DB' | 'CR';
+  description: string;
   prodCode: string;
-  prodName: string;
-  prodType: string;
-  enabled: boolean;
+  maxVal: number;
+  minVal: number;
 }
 
 export async function apiGetWalletBalances(): Promise<WalletBalances> {
@@ -83,12 +89,12 @@ function parseTxStatus(entry: TransactionStatusEntry): 'success' | 'failed' | 'p
   // Prefer structured ResponseCode — more reliable than text matching
   if (entry.ResponseCode === '001') return 'success';
   if (entry.ResponseCode === '000') return 'pending';
-  if (entry.ResponseCode) return 'failed';
-  // Fall back to text matching only when ResponseCode is absent
+  // Fall back to text matching for any other code — some processors use transient
+  // codes while still in flight, so don't treat an unrecognized code as failure
   const txt = `${entry.transactionStatus ?? ''} ${entry.statusDescription ?? ''} ${entry.Message ?? ''}`.toLowerCase();
   if (txt.includes('successfully') || txt.includes('complet')) return 'success';
-  if (txt.includes('pending') || txt.includes('process')) return 'pending';
-  if (txt.includes('failed') || txt.includes('could not')) return 'failed';
+  if (txt.includes('pending') || txt.includes('process') || txt.includes('progress')) return 'pending';
+  if (txt.includes('failed') || txt.includes('could not') || txt.includes('declin') || txt.includes('reject')) return 'failed';
   return 'pending';
 }
 

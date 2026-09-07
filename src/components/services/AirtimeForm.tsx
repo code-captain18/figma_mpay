@@ -1,15 +1,15 @@
-import { NetSelector } from '@/components/services/NetSelector';
-import { GradHdr } from '@/components/services/GradHdr';
 import { ContactPickerSheet } from '@/components/contacts/ContactPickerSheet';
 import { SaveFavoriteRow } from '@/components/contacts/SaveFavoriteRow';
-import { useContactPicker } from '@/features/contacts/hooks';
+import { GradHdr } from '@/components/services/GradHdr';
+import { NetSelector } from '@/components/services/NetSelector';
 import { GRADIENTS } from '@/constants/services';
+import { useContactPicker } from '@/features/contacts/hooks';
 import { Colors } from '@/theme';
-import { ghanaPhoneSchema } from '@/utils/phone';
 import type { SFState } from '@/types';
+import { ghanaPhoneSchema } from '@/utils/phone';
+import { UserRound } from 'lucide-react-native';
 import React, { useCallback } from 'react';
 import { ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { UserRound } from 'lucide-react-native';
 import { FL, SubmitBtn, frm, shr } from './ServiceFormPrimitives';
 
 const C = Colors;
@@ -25,7 +25,9 @@ export function AirtimeForm({
 }) {
   const set = (k: keyof SFState, v: SFState[keyof SFState]) =>
     setForm(p => ({ ...p, [k]: v }));
-  const ok = !!form.phone && !!form.amount;
+  const amountNum = parseFloat(form.amount);
+  const amountValid = form.amount !== '' && Number.isFinite(amountNum) && amountNum > 0;
+  const ok = !!form.phone && amountValid;
   const { state: contactState, openPicker, dismiss, showPermissionAlert } = useContactPicker();
 
   const handleContactPress = useCallback(() => {

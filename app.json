@@ -11,7 +11,10 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.mpay.app",
-      "buildNumber": "1"
+      "infoPlist": {
+        "NSContactsUsageDescription": "M-Pay uses your contacts so you can quickly select a recipient when sending airtime, data, or money.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "permissions": [

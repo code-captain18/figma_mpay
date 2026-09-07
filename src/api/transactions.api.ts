@@ -82,8 +82,10 @@ function mapStatus(r: ApiTxRecord): 'success' | 'pending' | 'failed' {
   // Fall back to text fields for non-standard codes
   const txt = `${r.transactionStatus ?? ''} ${r.statusDescription ?? ''}`.toLowerCase();
   if (txt.includes('success') || txt.includes('complet')) return 'success';
-  if (txt.includes('pending') || txt.includes('process')) return 'pending';
-  return 'failed';
+  if (txt.includes('pending') || txt.includes('process') || txt.includes('progress')) return 'pending';
+  if (txt.includes('fail') || txt.includes('declin') || txt.includes('reject') || txt.includes('error')) return 'failed';
+  // Unrecognized code with no clear signal — the record was likely just created, still processing
+  return 'pending';
 }
 
 function mapSysModule(r: ApiTxRecord): SvcType {

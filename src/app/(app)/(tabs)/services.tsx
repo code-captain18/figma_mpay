@@ -1,5 +1,5 @@
 import type { BulkTxItem, LoadWalletPayload } from '@/api';
-import { apiBulkUpload, apiLoadWalletMoMo, apiPurchaseAirtime, apiPurchaseData, apiSendMoMo } from '@/api';
+import { apiBulkUpload, apiGetTransactions, apiPurchaseAirtime, apiPurchaseData, apiSendMoMo } from '@/api';
 import { AirtimeForm } from '@/components/services/AirtimeForm';
 import { BulkForm } from '@/components/services/BulkForm';
 import { ConfirmCard } from '@/components/services/ConfirmCard';
@@ -7,11 +7,11 @@ import { DataForm } from '@/components/services/DataForm';
 import { FibreForm } from '@/components/services/FibreForm';
 import { GradHdr } from '@/components/services/GradHdr';
 import { MomoSvcForm } from '@/components/services/MomoSvcForm';
-import { saneStr } from '@/components/services/ServiceFormPrimitives';
+import { bundleCategoryLabel, saneStr } from '@/components/services/ServiceFormPrimitives';
 import { ServicesHome } from '@/components/services/ServicesHome';
 import { SuccessCard } from '@/components/services/SuccessCard';
 import { FIBRE_BUNDLES, FIBRE_PROVIDERS, GRADIENTS, SVC_DATA_BUNDLES } from '@/constants/services';
-import { QK, useResellerProducts } from '@/hooks/useAppQueries';
+import { QK, useResellerProducts, useUserProducts } from '@/hooks/useAppQueries';
 import { useAuth } from '@/store/auth.store';
 import { useToast } from '@/store/toast.store';
 import { Colors } from '@/theme';
@@ -29,7 +29,7 @@ const G = GRADIENTS;
 
 const mkInitSF = (): SFState => ({
   network: 'mtn', phone: '', amount: '', bundle: null,
-  reference: genMsRef(), momoType: 'send', provider: '', desc: '',
+  reference: genMsRef(), momoType: 'cashin', provider: '', desc: '',
 });
 
 export default function ServicesScreen() {
@@ -49,6 +49,11 @@ export default function ServicesScreen() {
 
   const { data: products = [] } = useResellerProducts();
   const queryClient = useQueryClient();
+
+  // Momo tile/route is only available when the account holder has the product assigned
+  const { data: userProducts } = useUserProducts();
+  const hasCashInProduct = !userProducts || userProducts.some(p => p.prodCode === 'MOMOCASHIN');
+  const canMomo = (user?.hasMoMo ?? true) && (user?.permissions?.['MoMo:send']?.view ?? true) && hasCashInProduct;
 
   useFocusEffect(useCallback(() => { setStatusBarStyle('light'); }, []));
 
@@ -84,13 +89,16 @@ export default function ServicesScreen() {
       } else {
         price = parseFloat(priceStr) || (b.Amount ?? 0);
       }
+      const category = bundleCategoryLabel(b.BundleName, b.BundleCode);
+      const label = isFlexi ? category : [category, saneStr(b.Validity)].filter(Boolean).join(' \u00b7 ');
       return {
         id: b.BundleCode,
-        label: b.BundleCode,
+        label,
         price,
         priceLabel,
         bundleCode: b.BundleCode,
         bundleType: b.BundleType,
+        category,
         product: prod.prodCode,
         priceMin,
         priceMax,
@@ -120,18 +128,60 @@ export default function ServicesScreen() {
     const VALID: SvcType[] = ['airtime', 'data', 'fibre', 'bulk', 'momo'];
     if (open && open !== handledOpen.current && VALID.includes(open as SvcType)) {
       handledOpen.current = open;
-      openSvc(open as SvcType);
+      if (open !== 'momo' || canMomo) openSvc(open as SvcType);
       router.setParams({ open: '' });
     }
-  }, [open]);
+  }, [open, canMomo]);
 
   const goHome = () => { setView('home'); setForm({ ...mkInitSF(), reference: genMsRef() }); };
-  const openSvc = (id: SvcType) => { setSvcType(id); setView(id); };
-  const toConfirm = (extra?: Record<string, unknown>) => { setPending(extra ?? null); setView('confirm'); };
+  const openSvc = (id: SvcType) => {
+    if (id === 'momo' && !canMomo) return;
+    setSvcType(id); setView(id);
+  };
+  const toConfirm = (extra?: Record<string, unknown>) => {
+    // momo uses a wallet-style reference, generated fresh so it matches the one submitted/shown on success
+    if (svcType === 'momo') setForm(p => ({ ...p, reference: genWalletRef() }));
+    setPending(extra ?? null);
+    setView('confirm');
+  };
 
   const gradFor: Record<SvcType, typeof G.wallet> = {
     airtime: G.wallet, data: G.green, fibre: G.purple, bulk: G.orange, momo: G.momo,
   };
+
+  // ServicesHome (recent activity list) is unmounted on the success screen, so a plain
+  // invalidateQueries only marks the cache stale without fetching. Force a refetch now via
+  // refetchType: 'all', then keep re-fetching the same recent-transactions cache key until
+  // the just-submitted reference leaves 'pending' (or we give up), so a delayed backend
+  // resolution still reaches the UI without needing another transaction to reveal it.
+  const pollTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => () => { pollTimersRef.current.forEach(clearTimeout); }, []);
+
+  const refreshTxData = useCallback((txRef?: string) => {
+    queryClient.invalidateQueries({ queryKey: QK.walletBalances });
+    queryClient.invalidateQueries({ queryKey: QK.transactions, refetchType: 'all' });
+
+    const t0 = Date.now();
+    const poll = async () => {
+      let page: Awaited<ReturnType<typeof apiGetTransactions>> | undefined;
+      try {
+        page = await queryClient.fetchQuery({
+          queryKey: QK.recentTransactions(5),
+          queryFn: () => apiGetTransactions({ source: 'recent', page: 1, pageSize: 5 }, isAssistant),
+          staleTime: 0, // force an actual network hit — the cached entry is rarely stale enough on its own
+        });
+      } catch {
+        // network hiccup — keep retrying within the timeout window
+      }
+      const entry = txRef ? page?.data.find(t => t.id === txRef || t.ref === txRef) : undefined;
+      const unresolved = !!txRef && (!entry || entry.status === 'pending');
+      const elapsed = Date.now() - t0;
+      if (unresolved && elapsed < 60_000) {
+        pollTimersRef.current.push(setTimeout(poll, elapsed < 20_000 ? 3_000 : 5_000));
+      }
+    };
+    poll();
+  }, [queryClient, isAssistant]);
 
   const handleConfirm = useCallback(async () => {
     setSubmitting(true);
@@ -180,7 +230,7 @@ export default function ServicesScreen() {
         const bulkType = (pending?.bulkType as 'airtime' | 'data') ?? 'airtime';
         const sharedBnd = pending?.sharedBundle as (SvcBundle | undefined);
         const batchTs = Math.floor(Date.now() / 1000);
-        const validRows = bulkRows.filter(r => r.phone && r.amount);
+        const validRows = bulkRows.filter(r => r.phone && r.amount && Number.isFinite(parseFloat(r.amount)) && parseFloat(r.amount) > 0);
         const transactions: BulkTxItem[] = validRows.map((row, i) => {
           let prodCode = sharedBnd?.product;
           if (!prodCode) {
@@ -200,9 +250,7 @@ export default function ServicesScreen() {
         txRef = `${result.successCount}/${validRows.length} processed`;
 
       } else if (svcType === 'momo') {
-        const isCashIn = form.momoType === 'cashin';
-        const product: LoadWalletPayload['product'] = isCashIn ? 'MOMOCASHOUT' : 'MOMOCASHIN';
-        const momoRef = genWalletRef();
+        const momoRef = form.reference;
         const phone = form.phone.replace(/\s/g, '');
         const acctFields = isAssistant && user?.accountId
           ? { reselleraccountId: user.accountId, resellerid: user.accountId, accountId: '' }
@@ -211,30 +259,25 @@ export default function ServicesScreen() {
           amount: parseFloat(form.amount),
           phoneNumber: phone,
           referenceId: momoRef,
-          product,
+          product: 'MOMOCASHIN',
           ...acctFields,
         };
-        if (isCashIn) {
-          await apiLoadWalletMoMo(payload);
-        } else {
-          await apiSendMoMo(payload);
-        }
+        await apiSendMoMo(payload);
         await pollTransactionStatus(momoRef);
         txRef = momoRef;
       }
 
       setRef(txRef);
       setView('success');
-      queryClient.invalidateQueries({ queryKey: QK.walletBalances });
-      queryClient.invalidateQueries({ queryKey: QK.transactions });
-      queryClient.invalidateQueries({ queryKey: QK.recentTransactions(5) });
+      // bulk's txRef is a "x/y processed" summary, not a single reference — nothing to poll for
+      refreshTxData(svcType === 'bulk' ? undefined : txRef);
     } catch (err: unknown) {
       const e = err as { message?: string };
       toast.show(e?.message ?? 'Transaction failed. Please try again.', 'error');
     } finally {
       setSubmitting(false);
     }
-  }, [svcType, form, pending, isAssistant, user, findProduct, toast]);
+  }, [svcType, form, pending, isAssistant, user, findProduct, toast, refreshTxData]);
 
   function renderConfirm() {
     const grad = gradFor[svcType];
@@ -259,7 +302,6 @@ export default function ServicesScreen() {
         { label: 'Network', value: form.network },
         { label: 'Phone', value: form.phone },
         ...(form.bundle ? [{ label: 'Bundle', value: form.bundle.label }] : []),
-        ...(svcType === 'momo' ? [{ label: 'Type', value: form.momoType }] : []),
         { label: 'Reference', value: form.reference, mono: true },
       ];
     return (
@@ -308,7 +350,7 @@ export default function ServicesScreen() {
             view === 'momo' ? <MomoSvcForm form={form} setForm={setForm} onNext={toConfirm} onBack={goHome} /> :
               view === 'confirm' ? renderConfirm() :
                 view === 'success' ? renderSuccess() :
-                  <ServicesHome onOpen={openSvc} />;
+                  <ServicesHome onOpen={openSvc} momoEnabled={canMomo} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>

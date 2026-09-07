@@ -5,7 +5,7 @@ import { useRecentTransactions } from '@/hooks/useAppQueries';
 import { Colors } from '@/theme';
 import type { SvcType, TxRecord } from '@/types';
 import { formatGHS } from '@/utils/format';
-import { Check, ChevronRight, CreditCard, Globe, Layers, Smartphone, Wifi, X } from 'lucide-react-native';
+import { Check, ChevronRight, Clock, CreditCard, Globe, Layers, Smartphone, Wifi, X } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable as RNPressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { F } from './ServiceFormPrimitives';
@@ -33,7 +33,7 @@ const SVC_TILES: {
     { id: 'data', label: 'Data Bundle', sub: 'All networks', Icon: Wifi, iconColor: C.green, iconBg: 'rgba(13,168,112,0.1)', grad: G.green, full: false },
     { id: 'fibre', label: 'Fibre Bundle', sub: 'Home & office', Icon: Globe, iconColor: C.purple, iconBg: 'rgba(124,92,252,0.1)', grad: G.purple, full: false },
     { id: 'bulk', label: 'Bulk Top-Up', sub: 'Multiple numbers', Icon: Layers, iconColor: C.orange, iconBg: 'rgba(233,145,10,0.1)', grad: G.orange, full: false },
-    { id: 'momo', label: 'Mobile Money Services', sub: 'Send · Withdraw', Icon: CreditCard, iconColor: C.green, iconBg: 'rgba(13,168,112,0.12)', grad: G.momo, full: true },
+    { id: 'momo', label: 'Disburse Cash', sub: 'Deposit to any wallet', Icon: CreditCard, iconColor: C.green, iconBg: 'rgba(13,168,112,0.12)', grad: G.momo, full: true },
   ];
 
 const TX_ICON_MAP: Record<string, { Icon: RecentDisplayItem['Icon']; iconBg: string; iconColor: string }> = {
@@ -47,6 +47,17 @@ const TX_ICON_MAP: Record<string, { Icon: RecentDisplayItem['Icon']; iconBg: str
 const SVC_LABELS: Record<string, string> = {
   airtime: 'Airtime', data: 'Data Bundle', fibre: 'Fibre', bulk: 'Bulk', momo: 'MoMo',
 };
+
+const STATUS_META: Record<string, { Icon: RecentDisplayItem['Icon']; color: string; badgeBg: string; label: string }> = {
+  success: { Icon: Check, color: C.green, badgeBg: 'rgba(13,168,112,0.12)', label: 'Success' },
+  pending: { Icon: Clock, color: C.warning, badgeBg: C.warningBg, label: 'Pending' },
+  failed: { Icon: X, color: C.red, badgeBg: 'rgba(232,51,74,0.12)', label: 'Failed' },
+};
+
+function DetailStatusIcon({ status }: { status: string }) {
+  const m = STATUS_META[status] ?? STATUS_META.failed;
+  return <m.Icon size={11} color={m.color} strokeWidth={3} />;
+}
 
 function toRecentItem(tx: TxRecord): RecentDisplayItem {
   const net = NETWORKS.find(n => n.id === tx.network)?.name ?? tx.network;
@@ -63,7 +74,7 @@ function toRecentItem(tx: TxRecord): RecentDisplayItem {
   };
 }
 
-export function ServicesHome({ onOpen }: { onOpen: (id: SvcType) => void }) {
+export function ServicesHome({ onOpen, momoEnabled = true }: { onOpen: (id: SvcType) => void; momoEnabled?: boolean }) {
   const gridTiles = SVC_TILES.filter(t => !t.full);
   const momoTile = SVC_TILES.find(t => t.full)!;
   const [selectedRecent, setSelectedRecent] = useState<RecentDisplayItem | null>(null);
@@ -93,22 +104,24 @@ export function ServicesHome({ onOpen }: { onOpen: (id: SvcType) => void }) {
             </TouchableOpacity>
           ))}
         </View>
-        <TouchableOpacity
-          onPress={() => onOpen(momoTile.id)}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={momoTile.label}
-          style={grd.momoCard}
-        >
-          <View style={[grd.iconBg, { backgroundColor: momoTile.iconBg }]}>
-            <momoTile.Icon size={24} color={momoTile.iconColor} strokeWidth={1.8} />
-          </View>
-          <View style={{ flex: 1, marginLeft: 14 }}>
-            <Text style={grd.cardLabel}>{momoTile.label}</Text>
-            <Text style={grd.cardSub}>{momoTile.sub}</Text>
-          </View>
-          <ChevronRight size={16} color={C.pale} />
-        </TouchableOpacity>
+        {momoEnabled && (
+          <TouchableOpacity
+            onPress={() => onOpen(momoTile.id)}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={momoTile.label}
+            style={grd.momoCard}
+          >
+            <View style={[grd.iconBg, { backgroundColor: momoTile.iconBg }]}>
+              <momoTile.Icon size={24} color={momoTile.iconColor} strokeWidth={1.8} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text style={grd.cardLabel}>{momoTile.label}</Text>
+              <Text style={grd.cardSub}>{momoTile.sub}</Text>
+            </View>
+            <ChevronRight size={16} color={C.pale} />
+          </TouchableOpacity>
+        )}
 
         <Text style={[grd.sectionTitle, { marginTop: 24 }]}>Recent Activity</Text>
         {recentLoading && !recentItems.length ? (
@@ -122,7 +135,7 @@ export function ServicesHome({ onOpen }: { onOpen: (id: SvcType) => void }) {
         ) : (
           <View style={grd.recentCard}>
             {recentItems.map((item, i) => {
-              const ok = item.status === 'success';
+              const statusMeta = STATUS_META[item.status] ?? STATUS_META.failed;
               return (
                 <View key={i}>
                   <TouchableOpacity
@@ -140,10 +153,8 @@ export function ServicesHome({ onOpen }: { onOpen: (id: SvcType) => void }) {
                     <View style={{ alignItems: 'flex-end' }}>
                       <Text style={grd.recentAmount}>{item.value}</Text>
                       <View style={grd.statusBadge}>
-                        {ok ? <Check size={9} color={C.green} strokeWidth={3} /> : <X size={9} color={C.red} strokeWidth={3} />}
-                        <Text style={[grd.statusText, { color: ok ? C.green : C.red }]}>
-                          {ok ? 'Success' : 'Failed'}
-                        </Text>
+                        <statusMeta.Icon size={9} color={statusMeta.color} strokeWidth={3} />
+                        <Text style={[grd.statusText, { color: statusMeta.color }]}>{statusMeta.label}</Text>
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -172,10 +183,10 @@ export function ServicesHome({ onOpen }: { onOpen: (id: SvcType) => void }) {
                   <Text style={grd.dtName}>{selectedRecent.label}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 20 }}>
-                  <View style={[grd.dtBadge, { backgroundColor: selectedRecent.status === 'success' ? 'rgba(13,168,112,0.12)' : 'rgba(232,51,74,0.12)' }]}>
-                    {selectedRecent.status === 'success' ? <Check size={11} color={C.green} strokeWidth={3} /> : <X size={11} color={C.red} strokeWidth={3} />}
-                    <Text style={[grd.dtBadgeText, { color: selectedRecent.status === 'success' ? C.green : C.red }]}>
-                      {selectedRecent.status === 'success' ? 'Success' : 'Failed'}
+                  <View style={[grd.dtBadge, { backgroundColor: (STATUS_META[selectedRecent.status] ?? STATUS_META.failed).badgeBg }]}>
+                    <DetailStatusIcon status={selectedRecent.status} />
+                    <Text style={[grd.dtBadgeText, { color: (STATUS_META[selectedRecent.status] ?? STATUS_META.failed).color }]}>
+                      {(STATUS_META[selectedRecent.status] ?? STATUS_META.failed).label}
                     </Text>
                   </View>
                 </View>

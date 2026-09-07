@@ -1,7 +1,7 @@
 import type { ApiBundle, ApiProduct } from '@/api';
 import { BundleGrid } from '@/components/services/BundleGrid';
 import { GradHdr } from '@/components/services/GradHdr';
-import { NetSelector } from '@/components/services/NetSelector';
+import { NetworkLogo } from '@/components/svg/NetworkLogo';
 import { GRADIENTS, SVC_DATA_BUNDLES } from '@/constants/services';
 import { useToast } from '@/store/toast.store';
 import { Colors } from '@/theme';
@@ -11,7 +11,7 @@ import * as FileSystem from 'expo-file-system';
 import { Plus, Trash2, Upload } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { F, FL, SubmitBtn, frm, saneStr, shr } from './ServiceFormPrimitives';
+import { F, FL, SubmitBtn, bundleCategoryLabel, frm, saneStr, shr } from './ServiceFormPrimitives';
 
 const C = Colors;
 const G = GRADIENTS;
@@ -36,23 +36,42 @@ export function BulkForm({
     { id: '1', phone: '', network: 'mtn', amount: '' },
   ]);
   const [sharedBundle, setSharedBundle] = useState<SvcBundle | null>(null);
-  const [sharedBundleNetwork, setSharedBundleNetwork] = useState('mtn');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-  useEffect(() => { setSharedBundle(null); }, [bulkType]);
+  useEffect(() => { setSharedBundle(null); setActiveCategory(null); }, [bulkType]);
 
   const dataBundles = useMemo((): SvcBundle[] => {
-    const apiNet = sharedBundleNetwork.toUpperCase();
-    const prod = products.find(p => p.network.toUpperCase() === apiNet && p.Type === 'Data');
+    const prod = products.find(p => p.network.toUpperCase() === 'MTN' && p.Type === 'Data');
     if (!prod?.bundles?.length) return SVC_DATA_BUNDLES;
-    return prod.bundles.map((b: ApiBundle) => ({
-      id: b.BundleCode,
-      label: [saneStr(b.BundleName), saneStr(b.Validity)].filter(Boolean).join(' \u00b7 '),
-      price: b.Amount ?? 0,
-      bundleCode: b.BundleCode,
-      bundleType: b.BundleType,
-      product: prod.prodCode,
-    }));
-  }, [products, sharedBundleNetwork]);
+    return prod.bundles
+      .filter((b: ApiBundle) => (b.BundleType ?? '').toUpperCase() === 'FIXED')
+      .map((b: ApiBundle) => {
+        const category = bundleCategoryLabel(b.BundleName, b.BundleCode);
+        return {
+          id: b.BundleCode,
+          label: [category, saneStr(b.Validity)].filter(Boolean).join(' \u00b7 '),
+          price: b.Amount ?? 0,
+          bundleCode: b.BundleCode,
+          bundleType: b.BundleType,
+          category,
+          product: prod.prodCode,
+        };
+      });
+  }, [products]);
+  const bundleCategories = useMemo(() => {
+    const seen = new Set<string>();
+    const ordered: string[] = [];
+    for (const b of dataBundles) {
+      const cat = b.category || 'Other';
+      if (!seen.has(cat)) { seen.add(cat); ordered.push(cat); }
+    }
+    return ordered;
+  }, [dataBundles]);
+
+  const visibleBundles = useMemo(
+    () => activeCategory ? dataBundles.filter(b => (b.category || 'Other') === activeCategory) : [],
+    [dataBundles, activeCategory],
+  );
 
   const addRow = () =>
     setRows(p => [...p, { id: Date.now().toString(), phone: '', network: 'mtn', amount: '' }]);
@@ -103,21 +122,47 @@ export function BulkForm({
 
         {bulkType === 'data' && (
           <View style={{ marginBottom: 6 }}>
-            <FL label="SELECT NETWORK FOR BUNDLE">
-              <NetSelector
-                selected={sharedBundleNetwork}
-                onSelect={v => { setSharedBundleNetwork(v); setSharedBundle(null); }}
-                accent={C.green}
-              />
-            </FL>
-            <FL label="SELECT BUNDLE FOR ALL ROWS *">
-              <BundleGrid
-                bundles={dataBundles}
-                selected={sharedBundle?.id ?? null}
-                accent={C.green}
-                onSelect={setSharedBundle}
-              />
-            </FL>
+            <View style={[frm.banner, { flexDirection: 'row', alignItems: 'center', gap: 10 }]}>
+              <NetworkLogo id="mtn" size={28} />
+              <Text style={frm.bannerText}>Bulk data bundles are currently available for MTN only.</Text>
+            </View>
+            {bundleCategories.length > 0 && (
+              <FL label="BUNDLE TYPE *">
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {bundleCategories.map(cat => {
+                    const active = activeCategory === cat;
+                    return (
+                      <TouchableOpacity
+                        key={cat}
+                        onPress={() => { setActiveCategory(cat); setSharedBundle(null); }}
+                        accessibilityRole="tab"
+                        accessibilityState={{ selected: active }}
+                        style={{
+                          paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+                          borderWidth: 1.5,
+                          borderColor: active ? C.green : C.border,
+                          backgroundColor: active ? C.green + '14' : C.white,
+                        }}
+                      >
+                        <Text style={{ fontSize: 13, fontFamily: F.bold, color: active ? C.green : C.muted }}>
+                          {cat}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </FL>
+            )}
+            {activeCategory && (
+              <FL label="SELECT BUNDLE FOR ALL ROWS *">
+                <BundleGrid
+                  bundles={visibleBundles}
+                  selected={sharedBundle?.id ?? null}
+                  accent={C.green}
+                  onSelect={setSharedBundle}
+                />
+              </FL>
+            )}
           </View>
         )}
         <View style={blk.summaryBar}>

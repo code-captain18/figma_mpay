@@ -5,7 +5,9 @@ import { Heart, Star } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -120,7 +122,10 @@ function SaveModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={S.overlay}>
+      <KeyboardAvoidingView
+        style={S.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <Pressable style={S.scrim} onPress={onClose} />
         <View style={[S.dialog, { marginBottom: insets.bottom + 24 }]}>
           <View style={S.dialogHeader}>
@@ -166,7 +171,7 @@ function SaveModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -192,7 +197,10 @@ export function EditFavoriteModal({ visible, favorite, onSave, onClose }: EditFa
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={S.overlay}>
+      <KeyboardAvoidingView
+        style={S.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <Pressable style={S.scrim} onPress={onClose} />
         <View style={[S.dialog, { marginBottom: insets.bottom + 24 }]}>
           <View style={S.dialogHeader}>
@@ -235,7 +243,7 @@ export function EditFavoriteModal({ visible, favorite, onSave, onClose }: EditFa
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

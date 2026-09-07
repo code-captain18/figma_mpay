@@ -20,6 +20,9 @@
     "preview": {
       "autoIncrement": true,
       "distribution": "internal",
+      "ios": {
+        "simulator": false
+      },
       "android": {
         "buildType": "apk"
       },
@@ -30,6 +33,9 @@
     "internal-aab": {
       "autoIncrement": true,
       "distribution": "internal",
+      "ios": {
+        "simulator": false
+      },
       "android": {
         "buildType": "app-bundle"
       },
@@ -46,9 +52,23 @@
         "EXPO_PUBLIC_API_BASE_URL": "https://api.mpay.com",
         "EXPO_PUBLIC_SENTRY_DSN": "https://6cd1bca6792180e70c133d9539ea9cd4@o4510240646103040.ingest.us.sentry.io/4511886741667840"
       }
+    },
+    "testflight": {
+      "extends": "preview",
+      "environment": "preview",
+      "distribution": "store",
+      "ios": {
+        "simulator": false
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {},
+    "testflight": {
+      "ios": {}
+    }
   }
 }

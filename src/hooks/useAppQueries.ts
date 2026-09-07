@@ -4,6 +4,7 @@ import {
   apiGetProfile,
   apiGetResellerProducts,
   apiGetTransactions,
+  apiGetUserProducts,
   apiGetWalletBalances,
   apiListAssistants,
 } from '@/api';
@@ -17,6 +18,7 @@ export const QK = {
   profile: (isAssistant: boolean, email: string) => ['profile', isAssistant, email] as const,
   resellerProducts: (isAssistant: boolean, accountId: string) =>
     ['resellerProducts', isAssistant, accountId] as const,
+  userProducts: ['userProducts'] as const,
   assistants: (search: string) => ['assistants', search] as const,
   recentTransactions: (limit: number) => ['recent-transactions', limit] as const,
   transactions: ['transactions'] as const,
@@ -65,6 +67,16 @@ export function useResellerProducts() {
     queryKey: QK.resellerProducts(isAsst, accountId),
     queryFn: () => apiGetResellerProducts(isAsst, accountId),
     enabled: !!accountId,
+  });
+}
+
+// Wallet products (e.g. MOMOCASHIN/MOMOCASHOUT) assigned to the signed-in account
+export function useUserProducts() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: QK.userProducts,
+    queryFn: apiGetUserProducts,
+    enabled: !!user,
   });
 }
 

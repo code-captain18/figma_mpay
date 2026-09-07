@@ -142,6 +142,7 @@ export interface SvcBundle {
   tag?: string;
   bundleCode?: string;
   bundleType?: string;
+  category?: string;
   product?: string;
 }
 

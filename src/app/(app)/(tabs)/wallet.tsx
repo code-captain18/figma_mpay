@@ -33,7 +33,9 @@ export default function WalletScreen() {
   const { data: balancesData, isFetching: balanceLoading, refetch: fetchBalances } = useWalletBalances();
   const balances = balancesData ?? { topup: 0, momo: 0 };
 
-  useFocusEffect(useCallback(() => { setStatusBarStyle('light'); fetchBalances(); }, [fetchBalances]));
+  useFocusEffect(useCallback(() => { setStatusBarStyle(view === 'success' ? 'dark' : 'light'); fetchBalances(); }, [fetchBalances, view]));
+
+  useEffect(() => { setStatusBarStyle(view === 'success' ? 'dark' : 'light'); }, [view]);
 
   // Block Android back press while an API call is in flight
   useEffect(() => {
@@ -95,46 +97,50 @@ export default function WalletScreen() {
       queryClient.invalidateQueries({ queryKey: QK.walletBalances });
     };
 
+    // Poll until the balance(s) actually change from their pre-transaction snapshot
+    // (backend settlement can lag behind a "success" status), so wallet home never shows a stale figure.
+    const pollUntilSettled = (isSettled: (b: { topup: number; momo: number }) => boolean, onDone: () => void) => {
+      const t0 = Date.now();
+      const tick = () => {
+        apiGetWalletBalances().then((b) => {
+          if (isSettled(b) || Date.now() - t0 >= 30_000) {
+            queryClient.setQueryData(QK.walletBalances, b);
+            onDone();
+            return;
+          }
+          setTimeout(tick, 2000);
+        }).catch(() => { if (Date.now() - t0 < 30_000) setTimeout(tick, 2000); else { invalidate(); onDone(); } });
+      };
+      setTimeout(tick, 2000);
+    };
+
     try {
+      const snapTopup = balances.topup;
+      const snapMomo = balances.momo;
+
       if (formData.product === 'MOMOWALLET') {
-        const snapTopup = balances.topup;
-        const snapMomo = balances.momo;
         await apiLoadWalletFromWallet(payload);
         setLoading(false);
         setView('processing');
-        const t0 = Date.now();
-        const pollBalances = () => {
-          apiGetWalletBalances().then((b) => {
-            const bothSettled = b.topup !== snapTopup && b.momo !== snapMomo;
-            if (bothSettled || Date.now() - t0 >= 30_000) {
-              // Write settled balances directly into cache — no extra round-trip
-              queryClient.setQueryData(QK.walletBalances, b);
-              setView('success');
-              return;
-            }
-            setTimeout(pollBalances, 2000);
-          }).catch(() => { if (Date.now() - t0 < 30_000) setTimeout(pollBalances, 2000); else { invalidate(); setView('success'); } });
-        };
-        setTimeout(pollBalances, 3000);
+        pollUntilSettled(b => b.topup !== snapTopup && b.momo !== snapMomo, () => setView('success'));
       } else if (formData.product === 'MOMOCASHIN') {
         await apiSendMoMo(payload);
         await pollStatus(formData.referenceId);
         setLoading(false);
         setView('success');
-        invalidate();
+        pollUntilSettled(b => b.momo !== snapMomo, () => {});
       } else {
         await apiLoadWalletMoMo(payload);
         processingCancelledRef.current = false;
         setLoading(false);
         setView('processing');
         pollStatus(formData.referenceId, 5_000)
-          .then(async () => {
+          .then(() => {
             if (processingCancelledRef.current) return;
-            try {
-              const b = await apiGetWalletBalances();
-              queryClient.setQueryData(QK.walletBalances, b);
-            } catch { invalidate(); }
-            setView('success');
+            const isSettled = formData.product === 'MMONEYDB'
+              ? (b: { topup: number; momo: number }) => b.topup !== snapTopup
+              : (b: { topup: number; momo: number }) => b.momo !== snapMomo;
+            pollUntilSettled(isSettled, () => setView('success'));
           })
           .catch((pollErr: any) => {
             if (processingCancelledRef.current) return;

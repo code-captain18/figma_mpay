@@ -1,12 +1,8 @@
-import { NetSelector } from '@/components/services/NetSelector';
-import { GradHdr } from '@/components/services/GradHdr';
-import { BundleGrid } from '@/components/services/BundleGrid';
-import { Colors } from '@/theme';
 import { GRADIENTS } from '@/constants/services';
-import type { SFState, SvcBundle } from '@/types';
+import { Colors } from '@/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const C = Colors;
 const G = GRADIENTS;
@@ -23,7 +19,14 @@ export const BTN_H = 52;
 export const BTN_FS = 14;
 
 export const saneStr = (v: string | null | undefined) =>
-  (v && v !== 'undefined' && v !== 'null' ? v : '');
+(v && v !== 'undefined' && v !== 'null' ? v : '');
+
+// Bundle codes/names look like "RACT_Video_Flexi_Bundle" – surface just the category.
+export const BUNDLE_CATEGORIES = ['IDD', 'Video', 'Social', 'Kokrokoo', 'Midnight', 'Data'];
+export const bundleCategoryLabel = (name?: string, code?: string) => {
+  const source = `${name ?? ''} ${code ?? ''}`.toLowerCase();
+  return BUNDLE_CATEGORIES.find(cat => source.includes(cat.toLowerCase())) ?? saneStr(name) ?? code ?? '';
+};
 
 export function FL({ label, children }: { label: string; children: React.ReactNode }) {
   return (

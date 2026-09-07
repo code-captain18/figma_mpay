@@ -1,16 +1,16 @@
+import { ContactPickerSheet } from '@/components/contacts/ContactPickerSheet';
+import { SaveFavoriteRow } from '@/components/contacts/SaveFavoriteRow';
 import { BundleGrid } from '@/components/services/BundleGrid';
 import { GradHdr } from '@/components/services/GradHdr';
 import { NetworkLogo } from '@/components/svg/NetworkLogo';
-import { ContactPickerSheet } from '@/components/contacts/ContactPickerSheet';
-import { SaveFavoriteRow } from '@/components/contacts/SaveFavoriteRow';
-import { useContactPicker } from '@/features/contacts/hooks';
 import { GRADIENTS } from '@/constants/services';
+import { useContactPicker } from '@/features/contacts/hooks';
 import { Colors } from '@/theme';
-import { ghanaPhoneSchema } from '@/utils/phone';
 import type { SFState, SvcBundle } from '@/types';
+import { ghanaPhoneSchema } from '@/utils/phone';
+import { UserRound } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { UserRound } from 'lucide-react-native';
 import { FL, SubmitBtn, frm, shr } from './ServiceFormPrimitives';
 
 const C = Colors;
@@ -48,11 +48,28 @@ export function DataForm({
 
     const [activeType, setActiveType] = useState<string>(() => categories[0] ?? '');
     const isFlexiTab = activeType === 'FLEXI';
+    const isFixedTab = activeType === 'FIXED';
 
-    const visibleBundles = useMemo(
-        () => bundles.filter(b => (b.bundleType ?? 'OTHER').toUpperCase() === activeType),
-        [bundles, activeType],
-    );
+    const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
+    const fixedCategories = useMemo(() => {
+        const seen = new Set<string>();
+        const ordered: string[] = [];
+        for (const b of bundles) {
+            if ((b.bundleType ?? '').toUpperCase() !== 'FIXED') continue;
+            const cat = b.category || 'Other';
+            if (!seen.has(cat)) { seen.add(cat); ordered.push(cat); }
+        }
+        return ordered;
+    }, [bundles]);
+
+    const visibleBundles = useMemo(() => {
+        if (isFixedTab) {
+            if (!activeCategory) return [];
+            return bundles.filter(b => (b.bundleType ?? '').toUpperCase() === 'FIXED' && (b.category || 'Other') === activeCategory);
+        }
+        return bundles.filter(b => (b.bundleType ?? 'OTHER').toUpperCase() === activeType);
+    }, [bundles, activeType, isFixedTab, activeCategory]);
 
     const flexiNum = parseFloat(form.amount);
     const flexiMin = form.bundle?.priceMin ?? 0;
@@ -112,7 +129,7 @@ export function DataForm({
                             return (
                                 <TouchableOpacity
                                     key={type}
-                                    onPress={() => { setActiveType(type); setForm(p => ({ ...p, bundle: null, amount: '' })); }}
+                                    onPress={() => { setActiveType(type); setActiveCategory(null); setForm(p => ({ ...p, bundle: null, amount: '' })); }}
                                     accessibilityRole="tab"
                                     accessibilityState={{ selected: active }}
                                     style={{
@@ -130,14 +147,43 @@ export function DataForm({
                         })}
                     </View>
                 )}
-                <FL label="SELECT BUNDLE *">
-                    <BundleGrid
-                        bundles={visibleBundles}
-                        selected={form.bundle?.id ?? null}
-                        accent={C.green}
-                        onSelect={b => setForm(p => ({ ...p, bundle: b, amount: '' }))}
-                    />
-                </FL>
+                {isFixedTab && fixedCategories.length > 0 && (
+                    <FL label="BUNDLE TYPE *">
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                            {fixedCategories.map(cat => {
+                                const active = activeCategory === cat;
+                                return (
+                                    <TouchableOpacity
+                                        key={cat}
+                                        onPress={() => { setActiveCategory(cat); setForm(p => ({ ...p, bundle: null, amount: '' })); }}
+                                        accessibilityRole="tab"
+                                        accessibilityState={{ selected: active }}
+                                        style={{
+                                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+                                            borderWidth: 1.5,
+                                            borderColor: active ? C.green : C.border,
+                                            backgroundColor: active ? C.green + '14' : C.surface,
+                                        }}
+                                    >
+                                        <Text style={{ fontSize: 13, fontFamily: 'Urbanist_700Bold', color: active ? C.green : C.textMuted }}>
+                                            {cat}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </FL>
+                )}
+                {(!isFixedTab || activeCategory) && (
+                    <FL label="SELECT BUNDLE *">
+                        <BundleGrid
+                            bundles={visibleBundles}
+                            selected={form.bundle?.id ?? null}
+                            accent={C.green}
+                            onSelect={b => setForm(p => ({ ...p, bundle: b, amount: '' }))}
+                        />
+                    </FL>
+                )}
                 {isFlexiTab && form.bundle && (
                     <FL label={`AMOUNT  •  GHS ${flexiMin.toFixed(2)} – ${isFinite(flexiMax) ? flexiMax.toFixed(2) : '∞'}`}>
                         <TextInput
